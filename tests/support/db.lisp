@@ -1,3 +1,8 @@
+;;;; tests/support/db.lisp --- Shared test utilities for database setup/teardown.
+;;;;
+;;;; Provides with-test-db, create-test-user, and create-test-post
+;;;; helpers used by all database and integration test suites.
+
 (defpackage #:cl-blog/tests/support/db
   (:use #:cl)
   (:import-from #:cl-blog/db/core

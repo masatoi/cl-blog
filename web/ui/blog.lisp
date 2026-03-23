@@ -1,3 +1,5 @@
+;;;; web/ui/blog.lisp --- Public blog listing page (no auth required).
+
 (defpackage #:cl-blog/web/ui/blog
   (:use #:cl)
   (:import-from #:spinneret

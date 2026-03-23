@@ -1,3 +1,5 @@
+;;;; db.lisp --- Aggregate package re-exporting all DB layer symbols.
+
 (defpackage #:cl-blog/db
   (:use #:cl)
   (:documentation "Database access facade. All database operations are delegated to specialized modules.")

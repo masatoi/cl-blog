@@ -1,3 +1,5 @@
+;;;; tests/web/auth.lisp --- Tests for authentication (register, login, hashing).
+
 (defpackage #:cl-blog/tests/web/auth
   (:use #:cl
         #:rove)

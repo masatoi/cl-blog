@@ -1,3 +1,5 @@
+;;;; web/ui/blog-post.lisp --- Public single blog post view.
+
 (defpackage #:cl-blog/web/ui/blog-post
   (:use #:cl)
   (:import-from #:spinneret

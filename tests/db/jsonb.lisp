@@ -1,3 +1,5 @@
+;;;; tests/db/jsonb.lisp --- Tests for JSONB helper functions (db/jsonb).
+
 (defpackage #:cl-blog/tests/db/jsonb
   (:use #:cl #:rove)
   (:import-from #:cl-blog/db/jsonb

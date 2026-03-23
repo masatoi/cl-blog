@@ -1,3 +1,9 @@
+;;;; web/ui/styles.lisp --- Shared CSS design tokens and component styles.
+;;;;
+;;;; All CSS is defined as Lisp string parameters and concatenated at
+;;;; render time by common-styles / page-styles.  No external CSS files
+;;;; are used; styles are inlined into each page via <style> tags.
+
 (defpackage #:cl-blog/web/ui/styles
   (:use #:cl)
   (:export #:*color-vars*

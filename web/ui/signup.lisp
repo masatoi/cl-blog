@@ -1,3 +1,5 @@
+;;;; web/ui/signup.lisp --- User registration page.
+
 (defpackage #:cl-blog/web/ui/signup
   (:use #:cl)
   (:import-from #:spinneret

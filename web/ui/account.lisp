@@ -1,3 +1,8 @@
+;;;; web/ui/account.lisp --- Account settings page with HTMX delete modal.
+;;;;
+;;;; Renders profile settings (display name, language, timezone) and a
+;;;; danger zone with HTMX-powered account deletion confirmation modal.
+
 (defpackage #:cl-blog/web/ui/account
   (:use #:cl)
   (:import-from #:spinneret

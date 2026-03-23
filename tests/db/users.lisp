@@ -1,3 +1,5 @@
+;;;; tests/db/users.lisp --- Tests for user CRUD operations (db/users).
+
 (defpackage #:cl-blog/tests/db/users
   (:use #:cl
         #:rove)

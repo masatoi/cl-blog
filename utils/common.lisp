@@ -1,3 +1,8 @@
+;;;; utils/common.lisp --- Shared utility functions.
+;;;;
+;;;; UUID generation, string manipulation (trim, blank check, normalize),
+;;;; and JSON serialization helpers used across the application.
+
 (defpackage #:cl-blog/utils/common
   (:use #:cl)
   (:import-from #:uuid)

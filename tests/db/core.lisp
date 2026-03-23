@@ -1,3 +1,5 @@
+;;;; tests/db/core.lisp --- Tests for db/core value conversion and query utilities.
+
 (defpackage #:cl-blog/tests/db/core
   (:use #:cl #:rove)
   (:import-from #:cl-blog/db/core

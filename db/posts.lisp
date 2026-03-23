@@ -1,3 +1,9 @@
+;;;; db/posts.lisp --- CRUD operations for the post table.
+;;;;
+;;;; Provides create, read, update, delete, listing, and counting for
+;;;; blog posts.  Includes slug generation (slugify) and filtering by
+;;;; status and author.
+
 (defpackage #:cl-blog/db/posts
   (:use #:cl)
   (:import-from #:mito
@@ -174,6 +180,10 @@ Arguments:
 
 Returns:
   List of POST instances."
+  ;; NOTE: Pagination is done in-memory with SUBSEQ after fetching all
+  ;; matching rows via Mito's select-dao.  This is simple and sufficient
+  ;; for a small blog, but for large datasets you'd want SQL-level
+  ;; LIMIT/OFFSET (which requires raw SQL or SxQL workarounds with Mito).
   (let ((all (cond
                ((and status author-id)
                 (select-dao 'post

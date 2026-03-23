@@ -1,3 +1,9 @@
+;;;; db/core.lisp --- Database connection management and shared utilities.
+;;;;
+;;;; Manages PostgreSQL connections via Mito/cl-dbi.  Provides helpers
+;;;; for NULL handling (nil->null, null->nil), JSON serialization,
+;;;; timestamp formatting, UUID conversion, and raw SQL execution.
+
 (defpackage #:cl-blog/db/core
   (:use #:cl)
   (:import-from #:mito

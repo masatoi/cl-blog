@@ -1,3 +1,5 @@
+;;;; web/ui/login.lisp --- Login page.
+
 (defpackage #:cl-blog/web/ui/login
   (:use #:cl)
   (:import-from #:spinneret

@@ -1,3 +1,5 @@
+;;;; tests/utils/common.lisp --- Tests for shared utility functions (utils/common).
+
 (defpackage #:cl-blog/tests/utils/common
   (:use #:cl #:rove)
   (:import-from #:cl-blog/utils/common

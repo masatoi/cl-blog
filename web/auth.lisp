@@ -1,3 +1,9 @@
+;;;; web/auth.lisp --- Session-based authentication with salted SHA-256.
+;;;;
+;;;; Password hashing (derive-password / verify-password), user
+;;;; registration, login authentication, and default admin seeding.
+;;;; All passwords are stored as hex-encoded salt + SHA-256(salt+password).
+
 (defpackage #:cl-blog/web/auth
   (:use #:cl)
   (:import-from #:cl-blog/db/users

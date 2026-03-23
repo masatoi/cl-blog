@@ -1,3 +1,9 @@
+;;;; web/ui/posts.lisp --- Admin posts list page with HTMX interactions.
+;;;;
+;;;; Renders the post management table with HTMX-powered status toggle
+;;;; (click pill to swap draft/published) and delete confirmation modals
+;;;; (hx-get loads modal fragment into #modal-container).
+
 (defpackage #:cl-blog/web/ui/posts
   (:use #:cl)
   (:import-from #:spinneret

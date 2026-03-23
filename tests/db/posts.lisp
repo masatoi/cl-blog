@@ -1,3 +1,5 @@
+;;;; tests/db/posts.lisp --- Tests for post CRUD operations (db/posts).
+
 (defpackage #:cl-blog/tests/db/posts
   (:use #:cl
         #:rove)

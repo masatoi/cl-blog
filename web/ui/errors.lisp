@@ -1,3 +1,5 @@
+;;;; web/ui/errors.lisp --- Error pages (404, 500).
+
 (defpackage #:cl-blog/web/ui/errors
   (:use #:cl)
   (:import-from #:spinneret

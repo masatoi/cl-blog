@@ -1,3 +1,8 @@
+;;;; web/app.lisp --- Ningle application instance and initialization.
+;;;;
+;;;; Creates the Ningle app, wires routes via setup-routes, and exports
+;;;; *app* for use by the server and middleware layers.
+
 (defpackage #:cl-blog/web/app
   (:use #:cl)
   (:export #:*app*

@@ -1,3 +1,9 @@
+;;;; models/users.lisp --- Mito ORM table definition for the users table.
+;;;;
+;;;; Defines the `users` table schema with UUID primary key, email,
+;;;; password hash/salt, display name, role, and regional preferences.
+;;;; Accessor functions are exported for use by the DB and web layers.
+
 (defpackage #:cl-blog/models/users
   (:use #:cl
         #:mito)
@@ -44,6 +50,7 @@
              :initarg :timezone
              :initform "UTC"
              :accessor users-timezone))
+  ;; Disable Mito's auto-generated integer PK; we use an explicit UUID column.
   (:auto-pk nil)
   (:unique-keys email)
   (:documentation "User account with authentication credentials and preferences."))
@@ -53,7 +60,9 @@
   (%users-id user))
 
 (defun users-created-at (user)
+  "Return the creation timestamp for USER."
   (mito:object-created-at user))
 
 (defun users-updated-at (user)
+  "Return the last-updated timestamp for USER."
   (mito:object-updated-at user))

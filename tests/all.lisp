@@ -1,3 +1,5 @@
+;;;; tests/all.lisp --- Aggregate test runner for all cl-blog test suites.
+
 (defpackage #:cl-blog/tests/all
   (:use #:cl)
   (:export #:run-all-tests))

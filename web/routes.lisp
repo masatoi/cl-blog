@@ -1,3 +1,10 @@
+;;;; web/routes.lisp --- Route handlers for the Ningle web application.
+;;;;
+;;;; Maps URL paths to handler functions for authentication, blog post
+;;;; management, account settings, and public blog pages.  Includes
+;;;; helpers for session management, pagination, and HTMX fragment
+;;;; responses (status pills, confirmation modals, OOB swaps).
+
 (defpackage #:cl-blog/web/routes
   (:use #:cl)
   (:import-from #:cl-blog/web/auth
@@ -368,9 +375,14 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
           (:h3 title)
           (:p message)
           (:div :class "modal-actions"
+            ;; Cancel: clear #modal-container innerHTML to remove the modal.
+            ;; No server round-trip needed — hx-on:click runs client-side JS.
             (:button :type "button" :class "button-secondary"
                      :hx-on\:click "htmx.find('#modal-container').innerHTML=''"
                      "Cancel")
+            ;; Confirm: POST to the action URL.  The response is swapped into
+            ;; #modal-container (default), clearing the modal.  Handlers may
+            ;; also include OOB swap elements to update other parts of the page.
             (:button :type "button" :class "button-danger"
                      :hx-post confirm-hx-post
                      :hx-target (or confirm-hx-target "#modal-container")
@@ -388,6 +400,9 @@ Returns the updated status pill HTML fragment."
           (cond
             ((null post)
              (html-response "Not found" :status 404))
+            ;; Ownership check: compare UUIDs as strings via princ-to-string
+            ;; because session stores the ID as a string while Mito may
+            ;; return a different representation.
             ((not (equal (princ-to-string (post-author-id post))
                          (princ-to-string (getf user :id))))
              (html-response "Forbidden" :status 403))
@@ -439,6 +454,11 @@ Returns empty HTML for HTMX requests (row removal), or redirects for normal requ
             (t
              (delete-post! id)
              (if (htmx-request-p)
+                 ;; HTMX OOB (Out-of-Band) swap: the primary swap target is
+                 ;; #modal-container which receives "" (clearing the modal).
+                 ;; The <tr> carries hx-swap-oob="outerHTML" so HTMX also
+                 ;; replaces the matching post row with this empty element,
+                 ;; effectively removing the row from the table.
                  (html-response
                   (spinneret:with-html-string
                     (:tr :id (format nil "post-row-~A" id)
@@ -519,6 +539,10 @@ For HTMX requests, returns HX-Redirect header. For normal requests, redirects."
         (progn
           (clear-session!)
           (if (htmx-request-p)
+              ;; HTMX requests: use HX-Redirect header (not 302) because a
+              ;; 302 redirect only applies to the AJAX sub-request — the
+              ;; browser window wouldn't navigate.  HX-Redirect tells htmx.js
+              ;; to set window.location, giving a full-page navigation.
               (list 200
                     (list :content-type "text/html; charset=utf-8"
                           :hx-redirect "/login")

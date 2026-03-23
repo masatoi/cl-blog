@@ -1,3 +1,9 @@
+;;;; db/jsonb.lisp --- PostgreSQL JSONB column helpers.
+;;;;
+;;;; Utilities for reading/writing JSONB columns: serialization
+;;;; (lisp->jsonb, jsonb->lisp), accessor functions (json-get, etc.),
+;;;; and SQL result key normalization for mixed-case column names.
+
 (defpackage #:cl-blog/db/jsonb
   (:use #:cl)
   (:import-from #:cl-blog/utils/common

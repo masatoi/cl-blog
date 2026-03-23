@@ -1,3 +1,9 @@
+;;;; web/ui/layout.lisp --- Shared page layout: header, page shell, styles.
+;;;;
+;;;; Provides the application header (with nav, user menu, logout) and
+;;;; page-shell for wrapping authenticated pages in a consistent layout.
+;;;; User plist shape: (:id :email :name :language :timezone).
+
 (defpackage #:cl-blog/web/ui/layout
   (:use #:cl)
   (:import-from #:spinneret

@@ -1,3 +1,9 @@
+;;;; models/post.lisp --- Mito ORM table definition for the post table.
+;;;;
+;;;; Defines the `post` table schema with UUID primary key, title, slug,
+;;;; body, excerpt, status (draft/published), and a foreign-key reference
+;;;; to the users table via the author column.
+
 (defpackage #:cl-blog/models/post
   (:use #:cl
         #:mito)
@@ -49,6 +55,7 @@
            :initarg :author
            :initform nil
            :accessor post-author))
+  ;; Disable Mito's auto-generated integer PK; we use an explicit UUID column.
   (:auto-pk nil)
   (:unique-keys slug)
   (:keys (status :created_at))

@@ -1,3 +1,5 @@
+;;;; web/ui/post-form.lisp --- Create/edit form for blog posts.
+
 (defpackage #:cl-blog/web/ui/post-form
   (:use #:cl)
   (:import-from #:spinneret

@@ -1,3 +1,9 @@
+;;;; db/users.lisp --- CRUD operations for the users table.
+;;;;
+;;;; Provides create, read, update, delete, and listing for users.
+;;;; Uses Mito ORM (select-dao, insert-dao) with the users deftable
+;;;; defined in models/users.lisp.
+
 (defpackage #:cl-blog/db/users
   (:use #:cl)
   (:import-from #:mito

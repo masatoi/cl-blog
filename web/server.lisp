@@ -1,3 +1,9 @@
+;;;; web/server.lisp --- Clack/Hunchentoot HTTP server lifecycle.
+;;;;
+;;;; Provides start!/stop! for the Hunchentoot-backed web server.
+;;;; The Lack application is built in build-app with session and
+;;;; backtrace middleware (see web/app.lisp for the Ningle app).
+
 (defpackage #:cl-blog/web/server
   (:use #:cl)
   (:import-from #:clack
@@ -32,12 +38,13 @@
   "Build the complete Lack application with middleware."
   (let ((app (make-cl-blog-app)))
     (setup-routes app)
+    ;; Lack middleware stack (outermost listed first):
+    ;; 1. :session  — cookie-based session (provides ningle/context:*session*)
+    ;; 2. :backtrace — renders a debug backtrace page on unhandled errors
+    ;; 3. app       — the Ningle router with all route handlers
     (lack/builder:builder
-     ;; Session middleware
      :session
-     ;; Backtrace middleware for debugging
      :backtrace
-     ;; The Ningle app
      app)))
 
 (defun start! (&key (port nil) (address "0.0.0.0"))
