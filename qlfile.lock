@@ -1,0 +1,104 @@
+("quicklisp" .
+ (:class qlot/source/dist:source-dist
+  :initargs (:distribution "https://beta.quicklisp.org/dist/quicklisp.txt" :%version :latest)
+  :version "2026-01-01"))
+("mito" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/mito")
+  :version "git-5d315c8904c334e8ac6f54e369e32b098ed405af"))
+("mito-attachment" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/mito-attachment" :branch "aws-sdk")
+  :version "git-00e14b608a0319cd54277f28272c3689e5365aaa"))
+("sxql" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/sxql")
+  :version "git-72c1c8c1642a572fcd2039304cd10ef56925c8c1"))
+("cl-dbi" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/cl-dbi")
+  :version "git-5cf8b754affee7b20782e64ac7c80db9a45e488b"))
+("postmodern" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("rove" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/rove")
+  :version "git-1a4474901e7ab49e8184241dd88e74c95233195a"))
+("aws-sdk-lisp" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/aws-sdk-lisp")
+  :version "git-55f94373417618ccf6b8e4aa7e70c7b12e72f633"))
+("cl-ppcre" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("slime" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/slime/slime.git")
+  :version "git-8f6aaf56978f95fb029a9aeb6b601c163c3bcb99"))
+("cl+ssl" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("dissect" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/shinmera/dissect")
+  :version "git-43b42a3a4d2264b78690a2e9ee1cc15538718ca6"))
+("bordeaux-threads" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("jzon" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/Zulu-Inuoe/jzon" :branch "v1.1.4")
+  :version "git-99b19fb18ab3555c04564a51a990db06ed1d8a23"))
+("log4cl" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("uuid" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("cl-mcp" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/cl-ai-project/cl-mcp")
+  :version "git-1a2ebc80de910a823f40122866a6580e2a923a7a"))
+("ningle" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/ningle")
+  :version "git-ae0c79bbd7c71633268fe3130ed4f12ca4be2f9a"))
+("clack" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/clack")
+  :version "git-935be5b7c862225556a312ed5ed5521a4afd98ae"))
+("lack" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/fukamachi/lack")
+  :version "git-f3302ce01627d170ecb78c2001d32c7c37f553b2"))
+("spinneret" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("quri" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("ironclad" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("babel" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("hunchentoot" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
+("flexi-streams" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))

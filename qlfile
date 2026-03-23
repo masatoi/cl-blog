@@ -1,0 +1,26 @@
+git mito https://github.com/fukamachi/mito
+git mito-attachment https://github.com/fukamachi/mito-attachment :branch aws-sdk
+git sxql https://github.com/fukamachi/sxql
+git cl-dbi https://github.com/fukamachi/cl-dbi
+ql postmodern :latest
+git rove https://github.com/fukamachi/rove
+git aws-sdk-lisp https://github.com/fukamachi/aws-sdk-lisp
+ql cl-ppcre :latest
+git slime https://github.com/slime/slime.git
+ql cl+ssl :latest
+git dissect https://github.com/shinmera/dissect
+ql bordeaux-threads
+git jzon https://github.com/Zulu-Inuoe/jzon :branch v1.1.4
+ql log4cl :latest
+ql uuid :latest
+git cl-mcp https://github.com/cl-ai-project/cl-mcp
+# Web framework
+git ningle https://github.com/fukamachi/ningle
+git clack https://github.com/fukamachi/clack
+git lack https://github.com/fukamachi/lack
+ql spinneret :latest
+ql quri :latest
+ql ironclad :latest
+ql babel :latest
+ql hunchentoot :latest
+ql flexi-streams :latest

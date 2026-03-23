@@ -1,0 +1,25 @@
+.DS_Store
+*~
+.#*
+
+# FASL compiled files
+*.fasl
+*.dx32fsl
+*.dx64fsl
+*.lx32fsl
+*.lx64fsl
+*.x86f
+
+# Common Lisp
+.qlot/
+.cache/
+
+# IDE/Editor
+.nrepl-port
+.db-port
+.serena/
+
+# Environment (secrets)
+.env
+.env.local
+.env.*.local

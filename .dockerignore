@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+.github
+
+# qlot local dependencies (will be installed in container)
+.qlot/
+
+# FASL cache
+.cache/
+**/*.fasl
+
+# Editor files
+*~
+*.swp
+.DS_Store
+
+# Documentation
+README.md
+docs/
+prompts/
+
+# Test artifacts
+tests/fixtures/
+coverage/
+
+# Local development files
+.db-port
+*.log
+
+# IDE/Editor configs
+.claude/
+.serena/
+.mcp.json
