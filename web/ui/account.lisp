@@ -78,9 +78,6 @@ form.settings .button-primary {
     ("Pacific/Auckland" . "Auckland"))
   "Common timezone options for user preferences.")
 
-(defparameter *delete-modal-script*
-  "document.addEventListener('DOMContentLoaded',function(){var modal=document.getElementById('account-delete-modal');if(!modal){return;}var messageEl=modal.querySelector('[data-role=\"message\"]');var confirmBtn=modal.querySelector('[data-role=\"confirm\"]');var cancelBtn=modal.querySelector('[data-role=\"cancel\"]');var activeForm=null;var openModal=function(form){activeForm=form;var email=form.getAttribute('data-email')||'your account';messageEl.textContent='Deleting '+email+' will remove all datasets, features, jobs, and stored files.';modal.setAttribute('data-open','true');confirmBtn.focus();};var closeModal=function(){modal.setAttribute('data-open','false');activeForm=null;};document.querySelectorAll('form[data-role=\"account-delete\"]').forEach(function(form){form.addEventListener('submit',function(evt){if(modal.getAttribute('data-open')==='true'){return;}evt.preventDefault();openModal(form);});});confirmBtn.addEventListener('click',function(){if(activeForm){var form=activeForm;closeModal();form.submit();}});cancelBtn.addEventListener('click',function(){closeModal();});modal.addEventListener('click',function(evt){if(evt.target===modal){closeModal();}});document.addEventListener('keydown',function(evt){if(evt.key==='Escape'&&modal.getAttribute('data-open')==='true'){evt.preventDefault();closeModal();}});});")
-
 (defun render (&key user message error)
   "Render the account settings page."
   (let ((email (getf user :email))
@@ -95,6 +92,9 @@ form.settings .button-primary {
           (:meta :charset "utf-8")
           (:meta :name "viewport" :content "width=device-width, initial-scale=1")
           (:title "Account settings - cl-blog")
+          (:script :src "https://unpkg.com/htmx.org@2.0.4"
+           :integrity "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
+           :crossorigin "anonymous")
           (:style (:raw all-styles)))
         (:body
           (:raw (header user))
@@ -145,22 +145,9 @@ form.settings .button-primary {
             (:div :class "card"
               (:h2 "Danger zone")
               (:p :class "muted" "Deleting your account removes all datasets, features, jobs, and stored files. This action cannot be undone.")
-              (:form :method "post"
-                     :action "/account/delete"
-                     :data-role "account-delete"
-                     :data-email email
-                (:button :type "submit" :class "button-danger" "Delete account"))))
-          ;; Delete confirmation modal
-          (:div :id "account-delete-modal"
-                :class "modal-overlay"
-                :data-open "false"
-                :role "dialog"
-                :aria-modal "true"
-                :aria-labelledby "account-delete-title"
-            (:div :class "modal-card"
-              (:h3 :id "account-delete-title" "Delete your account?")
-              (:p :data-role "message" "Deleting your account removes all datasets, features, jobs, and stored files associated with it.")
-              (:div :class "modal-actions"
-                (:button :type "button" :class "button-secondary" :data-role "cancel" "Keep account")
-                (:button :type "button" :class "button-danger" :data-role "confirm" "Delete account"))))
-          (:script (:raw *delete-modal-script*)))))))
+              (:button :type "button" :class "button-danger"
+                       :hx-get "/account/confirm-delete"
+                       :hx-target "#modal-container"
+                       :hx-swap "innerHTML"
+                       "Delete account")))
+          (:div :id "modal-container"))))))

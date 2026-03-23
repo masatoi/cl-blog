@@ -292,15 +292,11 @@ tbody tr:hover {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.55);
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   z-index: 140;
   padding: 1.5rem;
-}
-
-.modal-overlay[data-open=\"true\"] {
-  display: flex;
 }
 
 .modal-card {

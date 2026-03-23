@@ -38,7 +38,11 @@
                 #:post-author-id
                 #:post-created-at
                 #:post-updated-at)
-  (:export #:setup-routes))
+  (:export #:setup-routes
+           #:account-confirm-delete-handler
+           #:account-delete-handler
+           #:post-confirm-delete-handler
+           #:post-delete-handler))
 
 
 (in-package #:cl-blog/web/routes)
@@ -325,9 +329,14 @@ Includes :author-name extracted from the FK author."
                     (redirect "/posts")))))))))))
 
 (defun htmx-request-p ()
-  "Return T if the current request was made by HTMX (HX-Request header present)."
-  (let ((env (lack/request:request-env ningle/context:*request*)))
-    (not (null (getf env :http-hx-request)))))
+  "Return T if the current request was made by HTMX (HX-Request header present).
+Checks both the Clack :headers hash-table (Hunchentoot) and the :http-hx-request
+plist key (some Clack handlers normalize headers there)."
+  (let* ((env (lack/request:request-env ningle/context:*request*))
+         (headers (getf env :headers)))
+    (or (getf env :http-hx-request)
+        (and headers
+             (gethash "hx-request" headers)))))
 
 (defun render-status-pill (id status)
   "Render a status pill HTML fragment for HTMX swap.
@@ -341,6 +350,32 @@ ID is the post UUID, STATUS is the current status string."
        :hx-target (format nil "#status-~A" id)
        :hx-swap "outerHTML"
        (string-capitalize status-lower)))))
+
+(defun render-confirm-modal (&key title message confirm-hx-post
+                                   confirm-hx-target confirm-hx-swap
+                                   confirm-label)
+  "Render a confirmation modal overlay as an HTML fragment.
+TITLE and MESSAGE describe the action. CONFIRM-HX-POST is the URL for the
+confirm button's hx-post. CONFIRM-HX-TARGET and CONFIRM-HX-SWAP control
+where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
+  (let ((confirm-label (or confirm-label "Delete")))
+    (spinneret:with-html-string
+      (:div :class "modal-overlay"
+            :role "dialog"
+            :aria-modal "true"
+            :hx-on\:click "if(event.target===this) htmx.find('#modal-container').innerHTML=''"
+        (:div :class "modal-card"
+          (:h3 title)
+          (:p message)
+          (:div :class "modal-actions"
+            (:button :type "button" :class "button-secondary"
+                     :hx-on\:click "htmx.find('#modal-container').innerHTML=''"
+                     "Cancel")
+            (:button :type "button" :class "button-danger"
+                     :hx-post confirm-hx-post
+                     :hx-target (or confirm-hx-target "#modal-container")
+                     :hx-swap (or confirm-hx-swap "innerHTML")
+                     confirm-label)))))))
 
 (defun post-toggle-status-handler (params)
   "Handle POST /posts/:id/toggle-status - toggle between draft and published (HTMX).
@@ -364,6 +399,29 @@ Returns the updated status pill HTML fragment."
                                 :published-at published-at)
                (html-response (render-status-pill id new-status)))))))))
 
+(defun post-confirm-delete-handler (params)
+  "Handle GET /posts/:id/confirm-delete - return modal fragment for post deletion.
+Auth + ownership check, then renders a confirmation modal with HTMX attributes."
+  (let ((user (get-current-user)))
+    (if (null user)
+        (html-response "Unauthorized" :status 401)
+        (let* ((id (get-path-param params :id))
+               (post (get-post-by-id id)))
+          (cond
+            ((null post)
+             (html-response "Not found" :status 404))
+            ((not (equal (princ-to-string (post-author-id post))
+                         (princ-to-string (getf user :id))))
+             (html-response "Forbidden" :status 403))
+            (t
+             (html-response
+              (render-confirm-modal
+               :title "Delete this post?"
+               :message (format nil "\"~A\" will be permanently deleted. This cannot be undone."
+                                (post-title post))
+               :confirm-hx-post (format nil "/posts/~A/delete" id)
+               :confirm-label "Delete post"))))))))
+
 (defun post-delete-handler (params)
   "Handle POST /posts/:id/delete - delete a post (owner only).
 Returns empty HTML for HTMX requests (row removal), or redirects for normal requests."
@@ -381,7 +439,10 @@ Returns empty HTML for HTMX requests (row removal), or redirects for normal requ
             (t
              (delete-post! id)
              (if (htmx-request-p)
-                 (html-response "")
+                 (html-response
+                  (spinneret:with-html-string
+                    (:tr :id (format nil "post-row-~A" id)
+                         :hx-swap-oob "outerHTML")))
                  (redirect "/posts"))))))))
 
 (defun blog-handler (params)
@@ -435,15 +496,34 @@ Returns empty HTML for HTMX requests (row removal), or redirects for normal requ
                 (set-session-user! user)
                 (redirect "/account?message=Settings+updated")))))))
 
+(defun account-confirm-delete-handler (params)
+  "Handle GET /account/confirm-delete - return modal fragment for account deletion."
+  (declare (ignore params))
+  (let ((user (get-current-user)))
+    (if (null user)
+        (html-response "Unauthorized" :status 401)
+        (html-response
+         (render-confirm-modal
+          :title "Delete your account?"
+          :message "This will permanently delete your account and all associated posts. This action cannot be undone."
+          :confirm-hx-post "/account/delete"
+          :confirm-label "Delete account")))))
+
 (defun account-delete-handler (params)
-  "Handle POST /account/delete - delete account."
+  "Handle POST /account/delete - delete account.
+For HTMX requests, returns HX-Redirect header. For normal requests, redirects."
   (declare (ignore params))
   (let ((user (get-current-user)))
     (if (null user)
         (redirect "/login")
         (progn
           (clear-session!)
-          (redirect "/login")))))
+          (if (htmx-request-p)
+              (list 200
+                    (list :content-type "text/html; charset=utf-8"
+                          :hx-redirect "/login")
+                    (list ""))
+              (redirect "/login"))))))
 
 ;;; Dynamic dispatch support for REPL-driven development
 
@@ -489,6 +569,8 @@ without restarting the server."
           (make-dynamic-handler 'post-update-handler))
   (setf (ningle/app:route app "/posts/:id/toggle-status" :method :post)
           (make-dynamic-handler 'post-toggle-status-handler))
+  (setf (ningle/app:route app "/posts/:id/confirm-delete")
+          (make-dynamic-handler 'post-confirm-delete-handler))
   (setf (ningle/app:route app "/posts/:id/delete" :method :post)
           (make-dynamic-handler 'post-delete-handler))
   ;; Public blog routes (no auth)
@@ -501,6 +583,8 @@ without restarting the server."
           (make-dynamic-handler 'account-page-handler))
   (setf (ningle/app:route app "/account" :method :post)
           (make-dynamic-handler 'account-update-handler))
+  (setf (ningle/app:route app "/account/confirm-delete")
+          (make-dynamic-handler 'account-confirm-delete-handler))
   (setf (ningle/app:route app "/account/delete" :method :post)
           (make-dynamic-handler 'account-delete-handler))
   app)

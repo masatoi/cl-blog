@@ -151,10 +151,9 @@ tr.htmx-swapping {
                        (:div :class "actions-cell"
                         (:a :class "link" :href (format nil "/posts/~A/edit" id) "Edit")
                         (:button :class "button-danger btn-sm"
-                         :hx-post (format nil "/posts/~A/delete" id)
-                         :hx-target (format nil "#post-row-~A" id)
-                         :hx-swap "outerHTML swap:0.3s"
-                         :hx-confirm "Are you sure you want to delete this post?"
+                         :hx-get (format nil "/posts/~A/confirm-delete" id)
+                         :hx-target "#modal-container"
+                         :hx-swap "innerHTML"
                          "Delete"))))))))
                ;; Pagination
                (when pagination
@@ -174,4 +173,5 @@ tr.htmx-swapping {
                      (if has-next
                          (:a :class "pagination-btn" :href next-url "Next →")
                          (:span :class "pagination-btn disabled" "Next →")))))))
-              (:p :class "muted" "No posts yet. Create your first post!")))))))))
+              (:p :class "muted" "No posts yet. Create your first post!"))))
+        (:div :id "modal-container"))))))

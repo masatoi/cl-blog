@@ -10,6 +10,10 @@
                 #:logout-handler
                 #:account-page-handler
                 #:account-update-handler
+                #:account-confirm-delete-handler
+                #:account-delete-handler
+                #:post-confirm-delete-handler
+                #:post-delete-handler
                 #:get-param
                 ;; Pagination helpers
                 #:parse-page-param
@@ -23,7 +27,11 @@
                 #:get-user-by-id
                 #:users-display-name
                 #:users-language
-                #:users-timezone))
+                #:users-timezone)
+  (:import-from #:cl-blog/db/posts
+                #:create-post!
+                #:delete-post!
+                #:post-id))
 
 (in-package #:cl-blog/tests/web/routes)
 
@@ -374,3 +382,178 @@
       (ok (= 1 (getf pag :total-pages)))
       (ok (null (getf pag :has-prev)))
       (ok (null (getf pag :has-next))))))
+
+;;; ---------------------------------------------------------------------------
+;;; HTMX Confirmation Modal Tests
+;;; ---------------------------------------------------------------------------
+
+(defmacro with-mock-request ((&key htmx) &body body)
+  "Execute BODY with a mock Lack request bound to ningle/context:*request*.
+When HTMX is true, the HX-Request header is present."
+  `(let* ((headers (make-hash-table :test 'equal))
+          (env (append (list :request-method :get
+                             :path-info "/test"
+                             :headers headers)
+                       (when ,htmx (list :http-hx-request "true"))))
+          (ningle/context:*request* (lack/request:make-request env)))
+     ,@body))
+
+(defun create-test-post (author-obj)
+  "Create a test post owned by AUTHOR-OBJ (a Mito DAO user object).
+Returns the post object."
+  (create-post! :title "Test Post for Delete"
+                :body "This is a test post body."
+                :status "draft"
+                :author author-obj))
+
+(deftest render-confirm-modal-generates-correct-html
+  (testing "render-confirm-modal produces modal overlay with HTMX attributes"
+    (let ((html (cl-blog/web/routes::render-confirm-modal
+                 :title "Delete?"
+                 :message "Are you sure?"
+                 :confirm-hx-post "/items/1/delete"
+                 :confirm-label "Confirm")))
+      (ok (search "modal-overlay" html) "Contains modal-overlay class")
+      (ok (search "modal-card" html) "Contains modal-card class")
+      (ok (search "Delete?" html) "Contains title")
+      (ok (search "Are you sure?" html) "Contains message")
+      (ok (search "hx-post=\"/items/1/delete\"" html) "Contains hx-post on confirm button")
+      (ok (search "Confirm" html) "Contains confirm label")
+      (ok (search "Cancel" html) "Contains cancel button")))
+
+  (testing "render-confirm-modal uses custom target and swap"
+    (let ((html (cl-blog/web/routes::render-confirm-modal
+                 :title "Delete?"
+                 :message "Sure?"
+                 :confirm-hx-post "/x"
+                 :confirm-hx-target "#row-1"
+                 :confirm-hx-swap "outerHTML swap:0.3s")))
+      (ok (search "hx-target=#row-1" html) "Contains custom hx-target")
+      (ok (search "outerHTML swap:0.3s" html) "Contains custom hx-swap"))))
+
+(deftest post-confirm-delete-requires-auth
+  (testing "returns 401 when not authenticated"
+    (with-mock-session (make-session)
+      (let ((response (post-confirm-delete-handler '((:id . "fake-id")))))
+        (ok (= 401 (response-status response)))))))
+
+(deftest post-confirm-delete-returns-404-for-missing-post
+  (testing "returns 404 when post does not exist"
+    (with-test-db
+      (let ((user (create-test-user))
+            (fake-uuid (princ-to-string (uuid:make-v4-uuid))))
+        (with-mock-session (make-session :user user)
+          (let ((response (post-confirm-delete-handler
+                           (list (cons :id fake-uuid)))))
+            (ok (= 404 (response-status response)))))))))
+
+(deftest post-confirm-delete-returns-modal-fragment
+  (testing "returns modal HTML with correct HTMX attributes for owned post"
+    (with-test-db
+      (let* ((user (create-test-user))
+             (author-obj (get-user-by-id (getf user :id)))
+             (post (create-test-post author-obj))
+             (id (princ-to-string (post-id post))))
+        (unwind-protect
+             (with-mock-session (make-session :user user)
+               (let* ((response (post-confirm-delete-handler
+                                 (list (cons :id id))))
+                      (body (first (response-body response))))
+                 (ok (= 200 (response-status response)))
+                 (ok (search "modal-overlay" body) "Contains modal overlay")
+                 (ok (search "Delete this post?" body) "Contains title")
+                 (ok (search (format nil "hx-post=\"/posts/~A/delete\"" id) body)
+                     "Confirm button posts to correct delete URL")
+                 (ok (search "hx-target=#modal-container" body)
+                     "Confirm button targets modal-container")
+                 (ok (search "Delete post" body) "Confirm label is 'Delete post'")))
+          (ignore-errors (delete-post! (princ-to-string (post-id post))))
+          (ignore-errors (delete-user! (getf user :email))))))))
+
+(deftest post-confirm-delete-rejects-non-owner
+  (testing "returns 403 when user does not own the post"
+    (with-test-db
+      (let* ((owner (create-test-user))
+             (other (create-test-user))
+             (author-obj (get-user-by-id (getf owner :id)))
+             (post (create-test-post author-obj))
+             (id (princ-to-string (post-id post))))
+        (unwind-protect
+             (with-mock-session (make-session :user other)
+               (let ((response (post-confirm-delete-handler
+                                (list (cons :id id)))))
+                 (ok (= 403 (response-status response)))))
+          (ignore-errors (delete-post! (princ-to-string (post-id post))))
+          (ignore-errors (delete-user! (getf owner :email)))
+          (ignore-errors (delete-user! (getf other :email))))))))
+
+(deftest account-confirm-delete-requires-auth
+  (testing "returns 401 when not authenticated"
+    (with-mock-session (make-session)
+      (let ((response (account-confirm-delete-handler nil)))
+        (ok (= 401 (response-status response)))))))
+
+(deftest account-confirm-delete-returns-modal-fragment
+  (testing "returns modal HTML with correct HTMX attributes"
+    (with-mock-session (make-session :user '(:id "123" :email "test@example.com"))
+      (let* ((response (account-confirm-delete-handler nil))
+             (body (first (response-body response))))
+        (ok (= 200 (response-status response)))
+        (ok (search "modal-overlay" body) "Contains modal overlay")
+        (ok (search "Delete your account?" body) "Contains title")
+        (ok (search "hx-post=\"/account/delete\"" body)
+            "Confirm button posts to /account/delete")
+        (ok (search "Delete account" body) "Confirm label is 'Delete account'")))))
+
+(deftest post-delete-returns-oob-swap-for-htmx
+  (testing "HTMX delete returns OOB swap to remove post row"
+    (with-test-db
+      (let* ((user (create-test-user))
+             (author-obj (get-user-by-id (getf user :id)))
+             (post (create-test-post author-obj))
+             (id (princ-to-string (post-id post))))
+        (unwind-protect
+             (with-mock-session (make-session :user user)
+               (with-mock-request (:htmx t)
+                 (let* ((response (post-delete-handler
+                                   (list (cons :id id))))
+                        (body (first (response-body response))))
+                   (ok (= 200 (response-status response)))
+                   (ok (search (format nil "post-row-~A" id) body)
+                       "Response contains post-row OOB element")
+                   (ok (search "hx-swap-oob" body)
+                       "Response contains hx-swap-oob attribute"))))
+          (ignore-errors (delete-user! (getf user :email))))))))
+
+(deftest post-delete-redirects-for-non-htmx
+  (testing "non-HTMX delete redirects to /posts"
+    (with-test-db
+      (let* ((user (create-test-user))
+             (author-obj (get-user-by-id (getf user :id)))
+             (post (create-test-post author-obj))
+             (id (princ-to-string (post-id post))))
+        (unwind-protect
+             (with-mock-session (make-session :user user)
+               (with-mock-request (:htmx nil)
+                 (let ((response (post-delete-handler
+                                  (list (cons :id id)))))
+                   (ok (= 302 (response-status response)))
+                   (ok (string= "/posts" (response-location response))))))
+          (ignore-errors (delete-user! (getf user :email))))))))
+
+(deftest account-delete-returns-hx-redirect-for-htmx
+  (testing "HTMX account delete returns HX-Redirect header"
+    (with-mock-session (make-session :user '(:id "123" :email "test@example.com"))
+      (with-mock-request (:htmx t)
+        (let ((response (account-delete-handler nil)))
+          (ok (= 200 (response-status response)))
+          (ok (string= "/login"
+                       (getf (response-headers response) :hx-redirect))
+              "HX-Redirect header points to /login")))))
+
+  (testing "non-HTMX account delete redirects normally"
+    (with-mock-session (make-session :user '(:id "123" :email "test@example.com"))
+      (with-mock-request (:htmx nil)
+        (let ((response (account-delete-handler nil)))
+          (ok (= 302 (response-status response)))
+          (ok (string= "/login" (response-location response))))))))

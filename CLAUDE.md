@@ -148,3 +148,7 @@ Use the `/mito-migrate` skill for migration operations. Quick reference:
 - **Helper functions**: `nil->null` (write), `null->nil` (read) for PostgreSQL NULL handling
 - **Timestamps**: Use `local-time:now` for creation, format with ISO-8601 for database
 - **Testing**: Rove framework with `:style :spec`
+
+## cl-mcp Feedback
+
+When you encounter issues, friction, or improvement ideas while using cl-mcp (Common Lisp MCP server), append them to `~/.claude/memory/cl-mcp-feedback.md`. Each entry should include date, context, and specific details. If the file already exists, always append to the end rather than overwriting.

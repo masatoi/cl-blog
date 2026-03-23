@@ -58,6 +58,7 @@ services:
       POSTGRES_DB: cl_blog
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      MCP_NO_WORKER_POOL: "1"
     volumes:
       - ${PWD}:${PWD}:cached
     working_dir: ${PWD}
