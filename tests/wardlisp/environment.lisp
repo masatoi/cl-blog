@@ -27,7 +27,7 @@
 
   (testing "unbound variable signals error"
     (let ((env (make-env)))
-      (ok (signals (error) (env-lookup env "z"))))))
+      (ok (signals error (env-lookup env "z"))))))
 
 (deftest define
   (testing "define adds to current frame"

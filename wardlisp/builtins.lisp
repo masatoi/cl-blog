@@ -25,9 +25,9 @@
   "Registry of built-in functions. Maps name string to function.")
 
 (defmacro defbuiltin (name params &body body)
-  "Define a built-in function. PARAMS is the WardLisp arg list name."
+  "Define a built-in function. PARAMS is the lambda list for the builtin."
   `(setf (gethash ,name *builtins*)
-         (lambda (,params) ,@body)))
+         (lambda ,params ,@body)))
 
 ;;; --- Arithmetic ---
 
