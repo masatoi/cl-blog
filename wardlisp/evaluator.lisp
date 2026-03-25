@@ -30,7 +30,8 @@
   (:import-from #:recurya/wardlisp/reader
                 #:wardlisp-read-all)
   (:import-from #:recurya/wardlisp/builtins
-                #:lookup-builtin)
+                #:lookup-builtin
+                #:make-print-builtin)
   (:export #:eval-program
            #:make-execution-limits
            #:execution-limits-fuel
@@ -293,6 +294,16 @@
 Never signals — all errors are captured in the result."
   (let ((state (make-execution-state))
         (env (env-extend (make-env) nil)))
+    ;; Register print with output limits
+    (env-define! env "print"
+      (make-print-builtin
+       (lambda (str)
+         (let ((len (length str)))
+           (incf (execution-state-output-used state) len)
+           (when (> (execution-state-output-used state)
+                    (execution-limits-max-output limits))
+             (error 'output-limit-exceeded))
+           (write-string str (execution-state-output-stream state))))))
     (handler-case
         (let* ((forms (wardlisp-read-all source))
                (value (eval-body forms env state limits)))

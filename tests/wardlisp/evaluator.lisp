@@ -144,3 +144,17 @@
   (testing "same input produces same result"
     (let ((code "(define fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))) (fact 10)"))
       (ok (= (run code) (run code) (run code))))))
+
+(deftest print-output
+  (testing "print captures output"
+    (let ((result (run-result "(print 42) (print (+ 1 2))")))
+      (ok (null (execution-result-error result)))
+      (ok (search "42" (execution-result-output result)))
+      (ok (search "3" (execution-result-output result)))))
+
+  (testing "print output limit"
+    (let ((result (run-result
+                    "(define (spam n) (if (= n 0) 0 (begin (print n) (spam (- n 1))))) (spam 10000)"
+                    :fuel 50000)))
+      (ok (execution-result-error result))
+      (ok (search "utput" (string-downcase (execution-result-error result)))))))

@@ -14,7 +14,8 @@
                 #:wardlisp-boolean-p
                 #:wardlisp-symbol-p
                 #:wardlisp-list-p
-                #:wardlisp-equal)
+                #:wardlisp-equal
+                #:wardlisp->string)
   (:export #:lookup-builtin
            #:builtin-names
            #:make-print-builtin))
@@ -102,13 +103,14 @@
 
 ;;; --- Print (created per-execution with output limit) ---
 
-(defun make-print-builtin (state limits)
-  "Create a print builtin that respects output limits.
-STATE and LIMITS are from the evaluator's execution context."
-  (declare (ignore state limits))
+(defun make-print-builtin (output-fn)
+  "Create a print builtin. OUTPUT-FN is called with the string to output.
+It should signal an error if output limit is exceeded."
   (lambda (args)
-    (declare (ignore args))
-    wardlisp-nil))
+    (let* ((val (first args))
+           (str (format nil "~A~%" (wardlisp->string val))))
+      (funcall output-fn str)
+      wardlisp-nil)))
 
 ;;; --- Public API ---
 
