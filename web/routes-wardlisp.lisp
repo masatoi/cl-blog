@@ -13,6 +13,12 @@
                 #:with-html-string)
   (:import-from #:recurya/web/ui/wardlisp-home)
   (:import-from #:recurya/web/ui/puzzle)
+  (:import-from #:recurya/game/arena
+                #:simulate-arena
+                #:arena-result-error)
+  (:import-from #:recurya/game/scenario
+                #:default-scenario)
+  (:import-from #:recurya/web/ui/arena)
   (:export #:setup-wardlisp-routes))
 
 (in-package #:recurya/web/routes-wardlisp)
@@ -59,6 +65,17 @@
           (html-response (recurya/web/ui/puzzle:render-result result)))
         (html-response "<div class=\"error\">Puzzle not found</div>" :status 404))))
 
+(defun arena-page-handler (params)
+  "GET /wardlisp/arena - Arena page with code editor."
+  (declare (ignore params))
+  (html-response (recurya/web/ui/arena:render)))
+
+(defun arena-run-handler (params)
+  "POST /wardlisp/arena/run - Execute arena simulation (HTMX fragment)."
+  (let* ((code (get-param params "code"))
+         (result (simulate-arena (or code "") (default-scenario))))
+    (html-response (recurya/web/ui/arena:render-result result))))
+
 ;;; --- Dynamic dispatch ---
 
 (defun make-dynamic-handler (handler-symbol)
@@ -76,4 +93,8 @@
         (make-dynamic-handler 'puzzle-page-handler))
   (setf (ningle/app:route app "/wardlisp/puzzle/:id/run" :method :post)
         (make-dynamic-handler 'puzzle-run-handler))
+  (setf (ningle/app:route app "/wardlisp/arena")
+        (make-dynamic-handler 'arena-page-handler))
+  (setf (ningle/app:route app "/wardlisp/arena/run" :method :post)
+        (make-dynamic-handler 'arena-run-handler))
   app)
