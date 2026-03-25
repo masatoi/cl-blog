@@ -31,7 +31,12 @@
                "recurya/game/puzzles/adjacent"
                "recurya/game/puzzles/contains"
                "recurya/game/puzzles/nearest-point"
+               "recurya/game/puzzles/safe-moves"
+               "recurya/game/puzzles/choose-action"
                "recurya/game/puzzles/registry"
+               ;; Arena
+               "recurya/game/arena"
+               "recurya/game/scenario"
                ;; Shared utilities
                "recurya/utils/common"
                ;; Database layer
@@ -61,6 +66,7 @@
                ;; WardLisp UI
                "recurya/web/ui/wardlisp-home"
                "recurya/web/ui/puzzle"
+               "recurya/web/ui/arena"
                "recurya/web/routes-wardlisp"
                "recurya/web/server")
   :description "Recurya - Lisp learning game web system"
@@ -86,6 +92,7 @@
                "recurya/tests/web/routes"
                ;; Game tests
                "recurya/tests/game/puzzle"
+               "recurya/tests/game/arena"
                ;; WardLisp tests
                "recurya/tests/wardlisp/types"
                "recurya/tests/wardlisp/environment"
