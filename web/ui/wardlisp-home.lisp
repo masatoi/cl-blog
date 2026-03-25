@@ -59,4 +59,11 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
                  (format nil "(~A)" (puzzle-title p)))
             (:p :class "puzzle-card__desc" (puzzle-description p))
             (:span :class "puzzle-card__diff"
-                   (difficulty-label (puzzle-difficulty p))))))))))))
+                   (difficulty-label (puzzle-difficulty p)))))))
+       (:div :style "margin-top: 2.5rem; display: flex; gap: 1rem; justify-content: center;"
+        (:a :href "/wardlisp/arena"
+            :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
+            "Bot Arena")
+        (:a :href "/wardlisp/reference"
+            :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
+            "Language Reference")))))))

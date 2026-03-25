@@ -19,6 +19,7 @@
   (:import-from #:recurya/game/scenario
                 #:default-scenario)
   (:import-from #:recurya/web/ui/arena)
+  (:import-from #:recurya/web/ui/reference)
   (:export #:setup-wardlisp-routes))
 
 (in-package #:recurya/web/routes-wardlisp)
@@ -76,6 +77,11 @@
          (result (simulate-arena (or code "") (default-scenario))))
     (html-response (recurya/web/ui/arena:render-result result))))
 
+(defun reference-page-handler (params)
+  "GET /wardlisp/reference - Language reference page."
+  (declare (ignore params))
+  (html-response (recurya/web/ui/reference:render)))
+
 ;;; --- Dynamic dispatch ---
 
 (defun make-dynamic-handler (handler-symbol)
@@ -97,4 +103,6 @@
         (make-dynamic-handler 'arena-page-handler))
   (setf (ningle/app:route app "/wardlisp/arena/run" :method :post)
         (make-dynamic-handler 'arena-run-handler))
+  (setf (ningle/app:route app "/wardlisp/reference")
+        (make-dynamic-handler 'reference-page-handler))
   app)
