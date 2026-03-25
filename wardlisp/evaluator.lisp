@@ -136,12 +136,13 @@
     ;; Self-evaluating: numbers, booleans, keywords
     ((wardlisp-self-evaluating-p expr) expr)
 
-    ;; Variable lookup (strings are variable names)
+    ;; Variable lookup: env first (overrides), then builtins fallback
     ((stringp expr)
-     (let ((builtin (lookup-builtin expr)))
-       (if builtin
-           builtin
-           (env-lookup env expr))))
+     (handler-case (env-lookup env expr)
+       (error ()
+         (or (lookup-builtin expr)
+             (error 'wardlisp-runtime-error
+                    :message (format nil "Unbound variable: ~A" expr))))))
 
     ;; Special forms and application (must be a cons)
     ((consp expr)
@@ -304,6 +305,14 @@ Never signals — all errors are captured in the result."
                     (execution-limits-max-output limits))
              (error 'output-limit-exceeded))
            (write-string str (execution-state-output-stream state))))))
+    ;; Wrap cons-allocating builtins with cons tracking
+    (dolist (name '("cons" "list" "append"))
+      (let ((orig (lookup-builtin name)))
+        (when orig
+          (env-define! env name
+            (lambda (args)
+              (check-cons! state limits)
+              (funcall orig args))))))
     (handler-case
         (let* ((forms (wardlisp-read-all source))
                (value (eval-body forms env state limits)))

@@ -121,8 +121,8 @@
     (let ((result (run-result
                     "(define make-list (lambda (n)
                        (if (= n 0) '() (cons n (make-list (- n 1))))))
-                     (make-list 10000)"
-                    :max-cons 50)))
+                     (make-list 200)"
+                    :max-cons 50 :max-depth 500 :fuel 50000)))
       (ok (execution-result-error result))
       (ok (search "ons" (string-downcase (execution-result-error result)))))))
 
