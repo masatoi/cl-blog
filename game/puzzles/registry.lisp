@@ -5,6 +5,8 @@
   (:import-from #:recurya/game/puzzles/adjacent #:make-adjacent-puzzle)
   (:import-from #:recurya/game/puzzles/contains #:make-contains-puzzle)
   (:import-from #:recurya/game/puzzles/nearest-point #:make-nearest-point-puzzle)
+  (:import-from #:recurya/game/puzzles/safe-moves #:make-safe-moves-puzzle)
+  (:import-from #:recurya/game/puzzles/choose-action #:make-choose-action-puzzle)
   (:import-from #:recurya/game/puzzle #:puzzle-id)
   (:export #:get-puzzle
            #:all-puzzles))
@@ -14,7 +16,9 @@
 (defvar *puzzles*
   (list (make-adjacent-puzzle)
         (make-contains-puzzle)
-        (make-nearest-point-puzzle))
+        (make-nearest-point-puzzle)
+        (make-safe-moves-puzzle)
+        (make-choose-action-puzzle))
   "All available puzzles, in display order.")
 
 (defun get-puzzle (id)
