@@ -67,6 +67,7 @@
                "recurya/web/ui/wardlisp-home"
                "recurya/web/ui/puzzle"
                "recurya/web/ui/arena"
+               "recurya/web/ui/reference"
                "recurya/web/routes-wardlisp"
                "recurya/web/server")
   :description "Recurya - Lisp learning game web system"

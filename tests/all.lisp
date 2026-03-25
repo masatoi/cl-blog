@@ -1,19 +1,28 @@
-;;;; tests/all.lisp --- Aggregate test runner for all cl-blog test suites.
+;;;; tests/all.lisp --- Aggregate test runner for all recurya test suites.
 
-(defpackage #:cl-blog/tests/all
+(defpackage #:recurya/tests/all
   (:use #:cl)
   (:export #:run-all-tests))
 
-(in-package #:cl-blog/tests/all)
+(in-package #:recurya/tests/all)
 
 (defparameter *test-packages*
-  '(:cl-blog/tests/utils/common
-    :cl-blog/tests/db/core
-    :cl-blog/tests/db/jsonb
-    :cl-blog/tests/db/users
-    :cl-blog/tests/db/posts
-    :cl-blog/tests/web/auth
-    :cl-blog/tests/web/routes)
+  '(:recurya/tests/utils/common
+    :recurya/tests/db/core
+    :recurya/tests/db/jsonb
+    :recurya/tests/db/users
+    :recurya/tests/db/posts
+    :recurya/tests/web/auth
+    :recurya/tests/web/routes
+    ;; WardLisp tests
+    :recurya/tests/wardlisp/types
+    :recurya/tests/wardlisp/environment
+    :recurya/tests/wardlisp/reader
+    :recurya/tests/wardlisp/builtins
+    :recurya/tests/wardlisp/evaluator
+    ;; Game tests
+    :recurya/tests/game/puzzle
+    :recurya/tests/game/arena)
   "List of all test packages to run.")
 
 (defun run-all-tests ()

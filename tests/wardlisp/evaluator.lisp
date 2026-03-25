@@ -21,7 +21,7 @@
 (in-package #:recurya/tests/wardlisp/evaluator)
 
 ;;; Helper
-(defun run (code &key (fuel 10000) (max-cons 5000) (max-depth 100))
+(defun eval-code (code &key (fuel 10000) (max-cons 5000) (max-depth 100))
   "Run WardLisp code and return the result value."
   (let ((result (eval-program code
                   :limits (make-execution-limits
@@ -37,71 +37,71 @@
 
 (deftest self-evaluating
   (testing "numbers"
-    (ok (= 42 (run "42"))))
+    (ok (= 42 (eval-code "42"))))
 
   (testing "booleans"
-    (ok (eq wardlisp-true (run "#t")))
-    (ok (eq wardlisp-false (run "#f"))))
+    (ok (eq wardlisp-true (eval-code "#t")))
+    (ok (eq wardlisp-false (eval-code "#f"))))
 
   (testing "keywords"
-    (ok (eq :up (run ":up")))))
+    (ok (eq :up (eval-code ":up")))))
 
 (deftest arithmetic
   (testing "basic ops"
-    (ok (= 5 (run "(+ 2 3)")))
-    (ok (= 6 (run "(* 2 3)")))
-    (ok (= 10 (run "(+ 1 2 3 4)")))))
+    (ok (= 5 (eval-code "(+ 2 3)")))
+    (ok (= 6 (eval-code "(* 2 3)")))
+    (ok (= 10 (eval-code "(+ 1 2 3 4)")))))
 
 (deftest special-forms
   (testing "if true branch"
-    (ok (= 1 (run "(if #t 1 2)"))))
+    (ok (= 1 (eval-code "(if #t 1 2)"))))
 
   (testing "if false branch"
-    (ok (= 2 (run "(if #f 1 2)"))))
+    (ok (= 2 (eval-code "(if #f 1 2)"))))
 
   (testing "let binding"
-    (ok (= 3 (run "(let ((x 1) (y 2)) (+ x y))"))))
+    (ok (= 3 (eval-code "(let ((x 1) (y 2)) (+ x y))"))))
 
   (testing "define and use"
-    (ok (= 42 (run "(define x 42) x"))))
+    (ok (= 42 (eval-code "(define x 42) x"))))
 
   (testing "begin returns last"
-    (ok (= 3 (run "(begin 1 2 3)"))))
+    (ok (= 3 (eval-code "(begin 1 2 3)"))))
 
   (testing "quote"
-    (ok (wardlisp-equal (run "'(1 2 3)")
-                        (run "(list 1 2 3)")))))
+    (ok (wardlisp-equal (eval-code "'(1 2 3)")
+                        (eval-code "(list 1 2 3)")))))
 
 (deftest lambda-and-closure
   (testing "lambda application"
-    (ok (= 5 (run "((lambda (x) (+ x 2)) 3)"))))
+    (ok (= 5 (eval-code "((lambda (x) (+ x 2)) 3)"))))
 
   (testing "closure captures environment"
-    (ok (= 10 (run "(define add5 (lambda (x) (+ x 5))) (add5 5)"))))
+    (ok (= 10 (eval-code "(define add5 (lambda (x) (+ x 5))) (add5 5)"))))
 
   (testing "higher-order function"
-    (ok (= 9 (run "(define apply-twice (lambda (f x) (f (f x))))
+    (ok (= 9 (eval-code "(define apply-twice (lambda (f x) (f (f x))))
                     (define inc (lambda (x) (+ x 1)))
                     (apply-twice inc 7)")))))
 
 (deftest recursion
   (testing "factorial"
-    (ok (= 120 (run "(define fact (lambda (n)
+    (ok (= 120 (eval-code "(define fact (lambda (n)
                         (if (= n 0) 1 (* n (fact (- n 1))))))
                       (fact 5)"))))
 
   (testing "list operations"
-    (ok (= 6 (run "(define sum (lambda (lst)
+    (ok (= 6 (eval-code "(define sum (lambda (lst)
                       (if (null? lst) 0
                           (+ (car lst) (sum (cdr lst))))))
                     (sum '(1 2 3))")))))
 
 (deftest and-or
   (testing "and short-circuits"
-    (ok (eq wardlisp-false (run "(and #f (/ 1 0))"))))
+    (ok (eq wardlisp-false (eval-code "(and #f (/ 1 0))"))))
 
   (testing "or short-circuits"
-    (ok (eq wardlisp-true (run "(or #t (/ 1 0))")))))
+    (ok (eq wardlisp-true (eval-code "(or #t (/ 1 0))")))))
 
 (deftest fuel-limit
   (testing "fuel exhaustion"
@@ -143,7 +143,7 @@
 (deftest deterministic
   (testing "same input produces same result"
     (let ((code "(define fact (lambda (n) (if (= n 0) 1 (* n (fact (- n 1)))))) (fact 10)"))
-      (ok (= (run code) (run code) (run code))))))
+      (ok (= (eval-code code) (eval-code code) (eval-code code))))))
 
 (deftest print-output
   (testing "print captures output"
