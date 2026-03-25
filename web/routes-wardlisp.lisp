@@ -11,6 +11,8 @@
                 #:puzzle-id)
   (:import-from #:spinneret
                 #:with-html-string)
+  (:import-from #:recurya/web/ui/wardlisp-home)
+  (:import-from #:recurya/web/ui/puzzle)
   (:export #:setup-wardlisp-routes))
 
 (in-package #:recurya/web/routes-wardlisp)

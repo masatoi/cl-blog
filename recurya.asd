@@ -26,6 +26,12 @@
                "recurya/wardlisp/reader"
                "recurya/wardlisp/builtins"
                "recurya/wardlisp/evaluator"
+               ;; Game logic
+               "recurya/game/puzzle"
+               "recurya/game/puzzles/adjacent"
+               "recurya/game/puzzles/contains"
+               "recurya/game/puzzles/nearest-point"
+               "recurya/game/puzzles/registry"
                ;; Shared utilities
                "recurya/utils/common"
                ;; Database layer
@@ -52,6 +58,10 @@
                "recurya/web/ui/blog"
                "recurya/web/ui/blog-post"
                "recurya/web/routes"
+               ;; WardLisp UI
+               "recurya/web/ui/wardlisp-home"
+               "recurya/web/ui/puzzle"
+               "recurya/web/routes-wardlisp"
                "recurya/web/server")
   :description "Recurya - Lisp learning game web system"
   :in-order-to ((test-op (test-op "recurya/tests"))))
@@ -74,6 +84,8 @@
                ;; Web tests
                "recurya/tests/web/auth"
                "recurya/tests/web/routes"
+               ;; Game tests
+               "recurya/tests/game/puzzle"
                ;; WardLisp tests
                "recurya/tests/wardlisp/types"
                "recurya/tests/wardlisp/environment"
