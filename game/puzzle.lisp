@@ -8,18 +8,9 @@
 
 (defpackage #:recurya/game/puzzle
   (:use #:cl)
-  (:import-from #:recurya/wardlisp/evaluator
-                #:eval-program
-                #:make-execution-limits
-                #:execution-result-value
-                #:execution-result-fuel-used
-                #:execution-result-cons-used
-                #:execution-result-depth-reached
-                #:execution-result-output
-                #:execution-result-error)
-  (:import-from #:recurya/wardlisp/types
-                #:wardlisp-equal
-                #:wardlisp->string)
+  (:import-from #:wardlisp
+                #:evaluate
+                #:print-value)
   (:export #:puzzle
            #:make-puzzle
            #:puzzle-id
@@ -93,9 +84,20 @@
 
 ;;; --- Grading ---
 
-(defparameter *puzzle-limits*
-  (make-execution-limits :fuel 10000 :max-cons 5000 :max-depth 100 :max-output 4096)
-  "Default resource limits for puzzle execution.")
+(defparameter *puzzle-fuel* 10000
+  "Default fuel limit for puzzle execution.")
+
+(defparameter *puzzle-max-cons* 5000
+  "Default cons limit for puzzle execution.")
+
+(defparameter *puzzle-max-depth* 100
+  "Default depth limit for puzzle execution.")
+
+(defparameter *puzzle-max-output* 4096
+  "Default output limit for puzzle execution.")
+
+(defparameter *puzzle-timeout* 5
+  "Default timeout in seconds for puzzle execution.")
 
 (defun run-puzzle (puzzle user-code)
   "Grade user code against puzzle test cases. Returns a puzzle-result."
@@ -103,30 +105,36 @@
         (total-fuel 0)
         (total-cons 0)
         (max-depth 0))
-    ;; Run each test case with user definitions prepended
     (dolist (tc (puzzle-test-cases puzzle))
-      (let* ((full-code (format nil "~A~%~A" user-code (test-case-input tc)))
-             (result (eval-program full-code :limits *puzzle-limits*)))
-        (incf total-fuel (execution-result-fuel-used result))
-        (incf total-cons (execution-result-cons-used result))
-        (setf max-depth (max max-depth (execution-result-depth-reached result)))
-        (if (execution-result-error result)
-            (push (make-test-result
-                   :passed-p nil
-                   :expected (test-case-expected tc)
-                   :actual nil
-                   :description (test-case-description tc)
-                   :error (execution-result-error result))
-                  test-results)
-            (let ((passed (wardlisp-equal
-                           (execution-result-value result)
-                           (test-case-expected tc))))
+      (let ((full-code (format nil "~A~%~A" user-code (test-case-input tc))))
+        (multiple-value-bind (result metrics)
+            (evaluate full-code
+                      :fuel *puzzle-fuel*
+                      :max-cons *puzzle-max-cons*
+                      :max-depth *puzzle-max-depth*
+                      :max-output *puzzle-max-output*
+                      :timeout *puzzle-timeout*)
+          (incf total-fuel (getf metrics :steps-used))
+          (incf total-cons (getf metrics :cons-allocated))
+          (setf max-depth (max max-depth (getf metrics :max-depth-reached)))
+          (if (getf metrics :error-message)
               (push (make-test-result
-                     :passed-p passed
+                     :passed-p nil
                      :expected (test-case-expected tc)
-                     :actual (execution-result-value result)
-                     :description (test-case-description tc))
-                    test-results)))))
+                     :actual nil
+                     :description (test-case-description tc)
+                     :error (getf metrics :error-message))
+                    test-results)
+              (let* ((expected-str (if (stringp (test-case-expected tc))
+                                       (test-case-expected tc)
+                                       (print-value (test-case-expected tc))))
+                     (passed (string= (print-value result) expected-str)))
+                (push (make-test-result
+                       :passed-p passed
+                       :expected (test-case-expected tc)
+                       :actual result
+                       :description (test-case-description tc))
+                      test-results))))))
     (let ((results (nreverse test-results)))
       (make-puzzle-result
        :passed (count-if #'test-result-passed-p results)
