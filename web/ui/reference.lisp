@@ -56,10 +56,10 @@ td code { font-size: 0.85rem; }
        (:table
         (:tr (:th "Type") (:th "Examples") (:th "Notes"))
         (:tr (:td "Integer") (:td (:code "42") ", " (:code "-7") ", " (:code "0")) (:td "Whole numbers"))
-        (:tr (:td "Boolean") (:td (:code "#t") ", " (:code "#f")) (:td "True and false"))
+        (:tr (:td "Boolean") (:td (:code "t") ", " (:code "nil")) (:td "True and false"))
         (:tr (:td "Keyword") (:td (:code ":up") ", " (:code ":foo")) (:td "Colon-prefixed symbols"))
         (:tr (:td "List") (:td (:code "'(1 2 3)")) (:td "Cons cells ending in nil"))
-        (:tr (:td "Nil") (:td (:code "'()")) (:td "Empty list / false-ish"))
+        (:tr (:td "Nil") (:td (:code "nil")) (:td "Empty list, false value"))
         (:tr (:td "Function") (:td (:code "(lambda (x) x)")) (:td "Closures with lexical scope")))
 
        ;; Special Forms
@@ -75,7 +75,7 @@ td code { font-size: 0.85rem; }
         (:div :class "entry-desc" "Create an anonymous function (closure)."))
        (:div :class "entry"
         (:div :class "entry-sig" "(if test then else)")
-        (:div :class "entry-desc" "Conditional. Only #f and '() are falsy."))
+        (:div :class "entry-desc" "Conditional. Only nil is falsy."))
        (:div :class "entry"
         (:div :class "entry-sig" "(let ((var val) ...) body...)")
         (:div :class "entry-desc" "Local bindings evaluated in order."))
@@ -91,6 +91,12 @@ td code { font-size: 0.85rem; }
        (:div :class "entry"
         (:div :class "entry-sig" "(or expr...)")
         (:div :class "entry-desc" "Short-circuit logical OR."))
+       (:div :class "entry"
+        (:div :class "entry-sig" "(cond (test expr...) ...)")
+        (:div :class "entry-desc" "Multi-branch conditional. First true test's body is evaluated."))
+       (:div :class "entry"
+        (:div :class "entry-sig" "(apply func args-list)")
+        (:div :class "entry-desc" "Apply function to a list of arguments."))
 
        ;; Arithmetic
        (:h2 "Built-in Functions")
@@ -98,19 +104,19 @@ td code { font-size: 0.85rem; }
        (:pre (:code "(+ 1 2 3)    ; => 6
 (- 10 3)      ; => 7
 (* 2 3 4)     ; => 24
-(/ 10 2)      ; => 5
+(div 10 3)    ; => 3  (integer division)
 (mod 7 3)     ; => 1
 (abs -5)      ; => 5"))
 
        ;; Comparison
        (:h3 "Comparison")
-       (:pre (:code "(= 3 3)      ; => #t
-(< 1 2)       ; => #t
-(> 5 3)       ; => #t
-(<= 3 3)      ; => #t
-(>= 4 4)      ; => #t
+       (:pre (:code "(= 3 3)      ; => t
+(< 1 2)       ; => t
+(> 5 3)       ; => t
+(<= 3 3)      ; => t
+(>= 4 4)      ; => t
 (equal? x y)  ; deep equality
-(not #f)      ; => #t"))
+(not nil)     ; => t"))
 
        ;; Lists
        (:h3 "List Operations")
@@ -118,21 +124,24 @@ td code { font-size: 0.85rem; }
 (car '(1 2 3))        ; => 1
 (cdr '(1 2 3))        ; => (2 3)
 (list 1 2 3)          ; => (1 2 3)
-(null? '())           ; => #t
-(pair? '(1 2))        ; => #t
+(null? '())           ; => t
+(pair? '(1 2))        ; => t
 (length '(1 2 3))     ; => 3
 (append '(1 2) '(3))  ; => (1 2 3)"))
 
        ;; Type Predicates
        (:h3 "Type Predicates")
-       (:pre (:code "(number? 42)    ; => #t
-(boolean? #t)   ; => #t
-(symbol? :up)   ; => #t
-(list? '(1))    ; => #t"))
+       (:pre (:code "(number? 42)    ; => t
+(boolean? t)    ; => t
+(symbol? :up)   ; => t
+(list? '(1))    ; => t
+(atom? 42)      ; => t
+(eq? x y)       ; reference equality"))
 
        ;; Utility
        (:h3 "Utility")
-       (:pre (:code "(alist-ref :key '((:key . val) (:other . 2)))  ; => val"))
+       (:pre (:code "(print 42)      ; prints to output
+(equal? x y)    ; deep structural equality"))
 
        ;; Resource Limits
        (:h2 "Resource Limits")
@@ -142,7 +151,8 @@ td code { font-size: 0.85rem; }
         (:tr (:td "Fuel") (:td "10,000 steps") (:td "Maximum evaluation steps"))
         (:tr (:td "Cons") (:td "5,000 cells") (:td "Maximum list allocations"))
         (:tr (:td "Depth") (:td "100 levels") (:td "Maximum recursion depth"))
-        (:tr (:td "Output") (:td "4,096 bytes") (:td "Maximum printed output")))
+        (:tr (:td "Output") (:td "4,096 bytes") (:td "Maximum printed output"))
+        (:tr (:td "Timeout") (:td "5 seconds") (:td "Wall-clock time limit")))
 
        ;; Examples
        (:h2 "Examples")
@@ -160,6 +170,12 @@ td code { font-size: 0.85rem; }
 (map (lambda (x) (* x x)) '(1 2 3 4))  ; => (1 4 9 16)"))
 
        (:h3 "Working with alists")
-       (:pre (:code "(define state '((:pos . (3 4)) (:score . 5)))
+       (:pre (:code ";; Define your own alist-ref helper:
+(define (alist-ref key alist)
+  (cond ((null? alist) nil)
+        ((equal? key (car (car alist))) (cdr (car alist)))
+        (t (alist-ref key (cdr alist)))))
+
+(define state '((:pos 3 4) (:score . 5)))
 (alist-ref :pos state)    ; => (3 4)
 (alist-ref :score state)  ; => 5")))))))
