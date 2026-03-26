@@ -2,7 +2,6 @@
 
 (defpackage #:recurya/game/puzzles/nearest-point
   (:use #:cl)
-  (:import-from #:recurya/wardlisp/types #:wardlisp-nil)
   (:import-from #:recurya/game/puzzle #:make-puzzle #:make-test-case)
   (:export #:make-nearest-point-puzzle))
 
@@ -22,11 +21,11 @@ Return the first point if there's a tie."
    :test-cases
    (list
     (make-test-case :input "(nearest '(0 0) '((1 0) (2 2) (0 3)))"
-                    :expected (cons 1 (cons 0 wardlisp-nil))
+                    :expected "(1 0)"
                     :description "closest by Manhattan distance")
     (make-test-case :input "(nearest '(3 3) '((0 0) (3 4) (5 5)))"
-                    :expected (cons 3 (cons 4 wardlisp-nil))
+                    :expected "(3 4)"
                     :description "non-origin reference point")
     (make-test-case :input "(nearest '(0 0) '((1 0)))"
-                    :expected (cons 1 (cons 0 wardlisp-nil))
+                    :expected "(1 0)"
                     :description "single point in list"))))

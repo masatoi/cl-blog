@@ -2,8 +2,6 @@
 
 (defpackage #:recurya/game/puzzles/choose-action
   (:use #:cl)
-  (:import-from #:recurya/wardlisp/types
-                #:wardlisp-nil)
   (:import-from #:recurya/game/puzzle #:make-puzzle #:make-test-case)
   (:export #:make-choose-action-puzzle))
 

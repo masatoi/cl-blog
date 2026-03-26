@@ -2,7 +2,6 @@
 
 (defpackage #:recurya/game/puzzles/adjacent
   (:use #:cl)
-  (:import-from #:recurya/wardlisp/types #:wardlisp-true #:wardlisp-false)
   (:import-from #:recurya/game/puzzle #:make-puzzle #:make-test-case)
   (:export #:make-adjacent-puzzle))
 
@@ -20,13 +19,13 @@ are horizontally or vertically adjacent (Manhattan distance = 1)."
    :difficulty 1
    :test-cases
    (list
-    (make-test-case :input "(adjacent? '(0 0) '(0 1))" :expected wardlisp-true
+    (make-test-case :input "(adjacent? '(0 0) '(0 1))" :expected t
                     :description "horizontal neighbor")
-    (make-test-case :input "(adjacent? '(0 0) '(1 0))" :expected wardlisp-true
+    (make-test-case :input "(adjacent? '(0 0) '(1 0))" :expected t
                     :description "vertical neighbor")
-    (make-test-case :input "(adjacent? '(0 0) '(1 1))" :expected wardlisp-false
+    (make-test-case :input "(adjacent? '(0 0) '(1 1))" :expected nil
                     :description "diagonal is not adjacent")
-    (make-test-case :input "(adjacent? '(0 0) '(0 0))" :expected wardlisp-false
+    (make-test-case :input "(adjacent? '(0 0) '(0 0))" :expected nil
                     :description "same point is not adjacent")
-    (make-test-case :input "(adjacent? '(3 4) '(3 5))" :expected wardlisp-true
+    (make-test-case :input "(adjacent? '(3 4) '(3 5))" :expected t
                     :description "non-origin adjacent"))))
