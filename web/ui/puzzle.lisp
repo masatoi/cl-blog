@@ -25,8 +25,8 @@
                 #:test-result-actual
                 #:test-result-description
                 #:test-result-error)
-  (:import-from #:recurya/wardlisp/types
-                #:wardlisp->string)
+  (:import-from #:wardlisp
+                #:print-value)
   (:export #:render
            #:render-result))
 
@@ -150,8 +150,10 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
                          (format nil " error: ~A" (test-result-error tr)))
                   (:span :class "test-detail"
                          (format nil " expected ~A, got ~A"
-                                 (wardlisp->string (test-result-expected tr))
-                                 (wardlisp->string (test-result-actual tr)))))))))
+                                 (if (stringp (test-result-expected tr))
+                                     (test-result-expected tr)
+                                     (print-value (test-result-expected tr)))
+                                 (print-value (test-result-actual tr)))))))))
        ;; Metrics
        (:div :class "metrics"
         (format nil "Fuel: ~D" (puzzle-result-fuel-used result)))))))
