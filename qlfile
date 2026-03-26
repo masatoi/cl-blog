@@ -14,6 +14,9 @@ git jzon https://github.com/Zulu-Inuoe/jzon :branch v1.1.4
 ql log4cl :latest
 ql uuid :latest
 git cl-mcp https://github.com/cl-ai-project/cl-mcp
+
+git wardlisp https://github.com/masatoi/wardlisp
+
 # Web framework
 git ningle https://github.com/fukamachi/ningle
 git clack https://github.com/fukamachi/clack

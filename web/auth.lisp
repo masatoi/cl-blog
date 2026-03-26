@@ -4,9 +4,9 @@
 ;;;; registration, login authentication, and default admin seeding.
 ;;;; All passwords are stored as hex-encoded salt + SHA-256(salt+password).
 
-(defpackage #:cl-blog/web/auth
+(defpackage #:recurya/web/auth
   (:use #:cl)
-  (:import-from #:cl-blog/db/users
+  (:import-from #:recurya/db/users
                 #:get-user-by-email
                 #:create-user!)
   (:import-from #:ironclad
@@ -25,7 +25,7 @@
            #:email-exists-p
            #:ensure-default-admin!))
 
-(in-package #:cl-blog/web/auth)
+(in-package #:recurya/web/auth)
 
 ;;; Password hashing using SHA-256 with salt
 
@@ -99,14 +99,14 @@ Returns:
          (user (get-user-by-email normalized-email)))
     (when (and user
                (verify-password password
-                                (cl-blog/db/users:users-password-salt user)
-                                (cl-blog/db/users:users-password-hash user)))
-      (list :id (cl-blog/db/users:users-id user)
-            :email (cl-blog/db/users:users-email user)
-            :name (cl-blog/db/users:users-display-name user)
-            :role (intern (string-upcase (cl-blog/db/users:users-role user)) :keyword)
-            :language (cl-blog/db/users:users-language user)
-            :timezone (cl-blog/db/users:users-timezone user)))))
+                                (recurya/db/users:users-password-salt user)
+                                (recurya/db/users:users-password-hash user)))
+      (list :id (recurya/db/users:users-id user)
+            :email (recurya/db/users:users-email user)
+            :name (recurya/db/users:users-display-name user)
+            :role (intern (string-upcase (recurya/db/users:users-role user)) :keyword)
+            :language (recurya/db/users:users-language user)
+            :timezone (recurya/db/users:users-timezone user)))))
 
 (declaim (ftype (function (&key (:email (or string null))
                                 (:password (or string null))
@@ -144,12 +144,12 @@ Returns:
                      :password-hash (getf derived :hash)
                      :password-salt (getf derived :salt)
                      :role (or (and role (string-downcase (string role))) "user"))))
-         (list :ok (list :id (cl-blog/db/users:users-id user)
-                         :email (cl-blog/db/users:users-email user)
-                         :name (cl-blog/db/users:users-display-name user)
-                         :role (intern (string-upcase (cl-blog/db/users:users-role user)) :keyword)
-                         :language (cl-blog/db/users:users-language user)
-                         :timezone (cl-blog/db/users:users-timezone user))))))))
+         (list :ok (list :id (recurya/db/users:users-id user)
+                         :email (recurya/db/users:users-email user)
+                         :name (recurya/db/users:users-display-name user)
+                         :role (intern (string-upcase (recurya/db/users:users-role user)) :keyword)
+                         :language (recurya/db/users:users-language user)
+                         :timezone (recurya/db/users:users-timezone user))))))))
 
 (declaim (ftype (function () (or list null)) ensure-default-admin!))
 (defun ensure-default-admin! ()
@@ -159,8 +159,8 @@ Returns:
   Registration result if user was created, NIL if already exists.
 
 Side Effects:
-  Creates admin@cl-blog.dev user with password 'changeme'."
-  (let ((email "admin@cl-blog.dev"))
+  Creates admin@recurya.dev user with password 'changeme'."
+  (let ((email "admin@recurya.dev"))
     (unless (email-exists-p email)
       (register! :email email
                  :password "changeme"

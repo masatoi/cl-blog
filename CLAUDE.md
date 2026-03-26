@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-cl-blog is a simple blog system built with Common Lisp, intended as a reusable template for HTMX-powered responsive MPAs. The tech stack is: PostgreSQL (cl-dbi), Mito ORM, Ningle/Clack web framework, Spinneret HTML templates, and HTMX.
+Recurya is a Lisp learning game web system built with Common Lisp. Originally based on a blog template, it uses PostgreSQL (cl-dbi), Mito ORM, Ningle/Clack web framework, Spinneret HTML templates, and HTMX. It includes wardlisp, a safe server-side Lisp dialect for user code execution.
 
 **Directory Structure:**
 ```
-cl-blog/
+recurya/
 ├── models/     # Mito ORM table classes (deftable): users, post
 ├── db/         # Database layer: core, users, posts, jsonb
 │   └── core.lisp  # Connection management
@@ -63,7 +63,7 @@ docker compose up -d
 docker compose --profile app up -d
 
 # View logs
-docker compose logs -f cl-blog
+docker compose logs -f recurya
 
 # Stop services
 docker compose down      # preserves data
@@ -72,15 +72,15 @@ docker compose down -v   # removes data
 
 ### Database Access
 ```bash
-psql postgresql://postgres:postgres@localhost:15434/cl_blog
+psql postgresql://postgres:postgres@localhost:15434/recurya
 ```
 
 ### Running Tests
 ```bash
 # Via Docker exec (inside container)
-docker compose exec cl-blog qlot exec ros run \
-  -e '(ql:quickload :cl-blog/tests)' \
-  -e '(rove:run :cl-blog/tests/db/users)' -q
+docker compose exec recurya qlot exec ros run \
+  -e '(ql:quickload :recurya/tests)' \
+  -e '(rove:run :recurya/tests/db/users)' -q
 ```
 
 ### Code Reload vs Container Restart (IMPORTANT)
@@ -90,7 +90,7 @@ docker compose exec cl-blog qlot exec ros run \
 **Hot-Reload** (most code changes):
 ```lisp
 (load "web/routes.lisp")
-(asdf:load-system :cl-blog/web/routes :force t)
+(asdf:load-system :recurya/web/routes :force t)
 ```
 
 **Container Restart Required** only for:
@@ -100,7 +100,7 @@ docker compose exec cl-blog qlot exec ros run \
 4. Environment variable changes
 
 ```bash
-docker compose build cl-blog && docker compose --profile app up -d
+docker compose build recurya && docker compose --profile app up -d
 ```
 
 > After container restart, cl-mcp/SLIME reconnection is needed.
@@ -117,7 +117,7 @@ Use the `/mito-migrate` skill for migration operations. Quick reference:
 
 ```bash
 .qlot/bin/mito migrate -t postgres -H localhost -P 15434 \
-  -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+  -d recurya -u postgres -p postgres -s recurya -D db/
 ```
 
 ## Configuration
@@ -127,7 +127,7 @@ Use the `/mito-migrate` skill for migration operations. Quick reference:
 |----------|-------------|
 | `POSTGRES_HOST` | PostgreSQL host (default: localhost) |
 | `POSTGRES_PORT` | PostgreSQL port (default: 5432) |
-| `POSTGRES_DB` | Database name (default: cl_blog) |
+| `POSTGRES_DB` | Database name (default: recurya) |
 | `POSTGRES_USER` | Database user (default: postgres) |
 | `POSTGRES_PASSWORD` | Database password |
 | `PORT` | HTTP server port (default: 3000) |
@@ -142,7 +142,7 @@ Use the `/mito-migrate` skill for migration operations. Quick reference:
 
 ## Key Conventions
 
-- **Package-inferred system**: Package names must match file paths (e.g., `cl-blog/db/users` for `db/users.lisp`)
+- **Package-inferred system**: Package names must match file paths (e.g., `recurya/db/users` for `db/users.lisp`)
 - **Mito ORM**: Use `deftable` for model definitions, singular table names
 - **cl-dbi quirk**: NIL converts to string "false" in PostgreSQL; use `:null` for SQL NULL
 - **Helper functions**: `nil->null` (write), `null->nil` (read) for PostgreSQL NULL handling

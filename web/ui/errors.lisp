@@ -1,16 +1,16 @@
 ;;;; web/ui/errors.lisp --- Error pages (404, 500).
 
-(defpackage #:cl-blog/web/ui/errors
+(defpackage #:recurya/web/ui/errors
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/styles
+  (:import-from #:recurya/web/ui/styles
                 #:*color-vars*
                 #:*base-styles*)
   (:export #:not-found
            #:server-error))
 
-(in-package #:cl-blog/web/ui/errors)
+(in-package #:recurya/web/ui/errors)
 
 (defparameter *error-page-styles*
   ".error-container {

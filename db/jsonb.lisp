@@ -4,9 +4,9 @@
 ;;;; (lisp->jsonb, jsonb->lisp), accessor functions (json-get, etc.),
 ;;;; and SQL result key normalization for mixed-case column names.
 
-(defpackage #:cl-blog/db/jsonb
+(defpackage #:recurya/db/jsonb
   (:use #:cl)
-  (:import-from #:cl-blog/utils/common
+  (:import-from #:recurya/utils/common
                 #:parse-json
                 #:json->string)
   (:export
@@ -31,7 +31,7 @@
    #:json-values
    #:map-json))
 
-(in-package #:cl-blog/db/jsonb)
+(in-package #:recurya/db/jsonb)
 
 ;;; ============================================================
 ;;; SQL Result Key Normalization

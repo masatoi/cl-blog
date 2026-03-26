@@ -1,13 +1,13 @@
-# Dockerfile for cl-blog development (Common Lisp)
+# Dockerfile for recurya development (Common Lisp)
 #
 # Build:
-#   docker compose build cl-blog
+#   docker compose build recurya
 #
 # Run (with docker compose):
 #   docker compose --profile app up -d
 #
 # Run (interactive REPL):
-#   docker compose run --rm cl-blog sbcl
+#   docker compose run --rm recurya sbcl
 
 ARG SBCL_VERSION=2.5.10
 ARG QLOT_VERSION=1.7.5
@@ -82,13 +82,13 @@ COPY --chown=app:app . /app
 # Precompile the system
 RUN qlot exec ros run \
     -e "(push #P\"/app/\" asdf:*central-registry*)" \
-    -e "(ql:quickload :cl-blog)" \
+    -e "(ql:quickload :recurya)" \
     || echo "Precompilation completed (warnings may be expected)"
 
 # Default environment variables for Docker Compose
 ENV POSTGRES_HOST=postgres \
     POSTGRES_PORT=5432 \
-    POSTGRES_DB=cl_blog \
+    POSTGRES_DB=recurya \
     POSTGRES_USER=postgres \
     POSTGRES_PASSWORD=postgres
 

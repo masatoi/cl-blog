@@ -4,7 +4,7 @@
 ;;;; render time by common-styles / page-styles.  No external CSS files
 ;;;; are used; styles are inlined into each page via <style> tags.
 
-(defpackage #:cl-blog/web/ui/styles
+(defpackage #:recurya/web/ui/styles
   (:use #:cl)
   (:export #:*color-vars*
            #:*base-styles*
@@ -19,7 +19,7 @@
            #:page-styles
            #:auth-page-styles))
 
-(in-package #:cl-blog/web/ui/styles)
+(in-package #:recurya/web/ui/styles)
 
 ;;; ---------------------------------------------------------------------------
 ;;; Color Palette (CSS Custom Properties)

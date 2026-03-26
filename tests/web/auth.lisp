@@ -1,25 +1,25 @@
 ;;;; tests/web/auth.lisp --- Tests for authentication (register, login, hashing).
 
-(defpackage #:cl-blog/tests/web/auth
+(defpackage #:recurya/tests/web/auth
   (:use #:cl
         #:rove)
-  (:import-from #:cl-blog/web/auth
+  (:import-from #:recurya/web/auth
                 #:register!
                 #:authenticate
                 #:ensure-default-admin!
                 #:email-exists-p
                 #:derive-password
                 #:verify-password)
-  (:import-from #:cl-blog/db/users
+  (:import-from #:recurya/db/users
                 #:get-user-by-email
                 #:users-display-name
                 #:users-password-hash
                 #:users-id)
-  (:import-from #:cl-blog/db/core
+  (:import-from #:recurya/db/core
                 #:start!
                 #:stop!))
 
-(in-package #:cl-blog/tests/web/auth)
+(in-package #:recurya/tests/web/auth)
 
 (defun call-with-test-db (thunk)
   "Set up a fresh test database for each test."
@@ -75,12 +75,12 @@
     (with-test-db
       ;; First call should create admin
       (ensure-default-admin!)
-      (ok (authenticate "admin@cl-blog.dev" "changeme")
+      (ok (authenticate "admin@recurya.dev" "changeme")
           "Admin should be able to authenticate after first call")
 
       ;; Second call should be idempotent
       (ensure-default-admin!)
-      (ok (authenticate "admin@cl-blog.dev" "changeme")
+      (ok (authenticate "admin@recurya.dev" "changeme")
           "Admin should still authenticate after second call (idempotent)"))))
 
 (deftest register-validation

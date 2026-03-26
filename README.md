@@ -1,6 +1,6 @@
-# cl-blog
+# Recurya
 
-A simple blog system built with Common Lisp, intended as a reusable template for HTMX-powered responsive MPAs.
+A Lisp learning game web system built with Common Lisp. Includes wardlisp, a safe server-side Lisp dialect for user code execution.
 
 ## Prerequisites
 
@@ -22,11 +22,11 @@ A simple blog system built with Common Lisp, intended as a reusable template for
 
 3. **Run the application:**
    ```bash
-   POSTGRES_HOST=localhost POSTGRES_PORT=15434 POSTGRES_DB=cl_blog \
+   POSTGRES_HOST=localhost POSTGRES_PORT=15434 POSTGRES_DB=recurya \
    POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres \
-   qlot exec ros run -e '(ql:quickload :cl-blog)' \
-                     -e '(cl-blog/db/core:start!)' \
-                     -e '(cl-blog/web/server:start!)'
+   qlot exec ros run -e '(ql:quickload :recurya)' \
+                     -e '(recurya/db/core:start!)' \
+                     -e '(recurya/web/server:start!)'
    ```
 
 4. **Open http://localhost:3000** in your browser.
@@ -40,12 +40,12 @@ A simple blog system built with Common Lisp, intended as a reusable template for
 ## Running Tests
 
 ```bash
-POSTGRES_HOST=localhost POSTGRES_PORT=15434 POSTGRES_DB=cl_blog \
+POSTGRES_HOST=localhost POSTGRES_PORT=15434 POSTGRES_DB=recurya \
 POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres \
 qlot exec ros run \
   -e '(push (truename ".") asdf:*central-registry*)' \
-  -e '(ql:quickload :cl-blog/tests)' \
-  -e '(rove:run :cl-blog/tests)' \
+  -e '(ql:quickload :recurya/tests)' \
+  -e '(rove:run :recurya/tests)' \
   -q
 ```
 
@@ -53,20 +53,20 @@ qlot exec ros run \
 
 This project uses the Mito CLI for schema migrations.
 
-The current Lisp system name is still `:cl-blog`, so migration commands use `-s cl-blog`.
+The Lisp system name is `:recurya`, so migration commands use `-s recurya`.
 
 ### Apply migrations (local)
 
 ```bash
 .qlot/bin/mito migrate -t postgres -H localhost -P 15434 \
-  -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+  -d recurya -u postgres -p postgres -s recurya -D db/
 ```
 
 ### Check migration status
 
 ```bash
 .qlot/bin/mito migration-status -t postgres -H localhost -P 15434 \
-  -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+  -d recurya -u postgres -p postgres -s recurya -D db/
 ```
 
 ### Generate a new migration
@@ -75,7 +75,7 @@ After editing `models/*.lisp`, generate migration files with:
 
 ```bash
 .qlot/bin/mito generate-migrations -t postgres -H localhost -P 15434 \
-  -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+  -d recurya -u postgres -p postgres -s recurya -D db/
 ```
 
 Review the generated SQL before applying it.
@@ -83,7 +83,7 @@ Review the generated SQL before applying it.
 ## Project Structure
 
 ```
-cl-blog/
+recurya/
 ├── models/     # Mito ORM table definitions (users, post)
 ├── db/         # Database layer (core, jsonb, users, posts)
 ├── utils/      # Shared utilities
@@ -102,7 +102,7 @@ cl-blog/
 |----------|-------------|
 | `POSTGRES_HOST` | PostgreSQL host (default: localhost) |
 | `POSTGRES_PORT` | PostgreSQL port (default: 5432) |
-| `POSTGRES_DB` | Database name (default: cl_blog) |
+| `POSTGRES_DB` | Database name (default: recurya) |
 | `POSTGRES_USER` | Database user (default: postgres) |
 | `POSTGRES_PASSWORD` | Database password |
 | `PORT` | HTTP server port (default: 3000) |
@@ -120,12 +120,12 @@ Endpoint: `http://localhost:12346/mcp`
 docker compose --profile app up -d
 
 # View logs
-docker logs -f cl-blog
+docker logs -f recurya
 
 # Connect to Swank REPL (Emacs: M-x slime-connect → localhost:14005)
 
 # Rebuild after Dockerfile/dependency changes
-docker compose build cl-blog
+docker compose build recurya
 docker compose --profile app up -d
 ```
 

@@ -1,8 +1,8 @@
 ;;;; tests/db/core.lisp --- Tests for db/core value conversion and query utilities.
 
-(defpackage #:cl-blog/tests/db/core
+(defpackage #:recurya/tests/db/core
   (:use #:cl #:rove)
-  (:import-from #:cl-blog/db/core
+  (:import-from #:recurya/db/core
                 #:nil->null
                 #:null->nil
                 #:keyword->db-string
@@ -12,7 +12,7 @@
                 #:maybe-instant
                 #:format-timestamp-for-db))
 
-(in-package #:cl-blog/tests/db/core)
+(in-package #:recurya/tests/db/core)
 
 ;;; ============================================================
 ;;; nil->null / null->nil Tests

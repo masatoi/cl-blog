@@ -3,17 +3,17 @@
 ;;;; Renders profile settings (display name, language, timezone) and a
 ;;;; danger zone with HTMX-powered account deletion confirmation modal.
 
-(defpackage #:cl-blog/web/ui/account
+(defpackage #:recurya/web/ui/account
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/layout
+  (:import-from #:recurya/web/ui/layout
                 #:header
                 #:header-styles
                 #:common-styles)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/account)
+(in-package #:recurya/web/ui/account)
 
 (defparameter *account-styles*
   "/* Account page specific styles */
@@ -96,7 +96,7 @@ form.settings .button-primary {
         (:head
           (:meta :charset "utf-8")
           (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-          (:title "Account settings - cl-blog")
+          (:title "Account settings - recurya")
           (:script :src "https://unpkg.com/htmx.org@2.0.4"
            :integrity "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
            :crossorigin "anonymous")

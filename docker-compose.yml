@@ -1,47 +1,47 @@
-# Docker Compose configuration for cl-blog development environment
+# Docker Compose configuration for recurya development environment
 # Simple blog system built with Common Lisp.
 #
 # Usage (run from project root):
 #   docker compose up -d                          # Start PostgreSQL only (default)
-#   docker compose --profile app up -d            # Start PostgreSQL + cl-blog app
-#   docker compose logs -f cl-blog                # View logs
+#   docker compose --profile app up -d            # Start PostgreSQL + recurya app
+#   docker compose logs -f recurya                # View logs
 #   docker compose down                           # Stop services
 #   docker compose down -v                        # Stop and remove volumes (data loss!)
 #
 # Ports:
 #   - 3000:  Web server (Ningle/Hunchentoot)
-#   - 15434: PostgreSQL (user: postgres, password: postgres, db: cl_blog)
+#   - 15434: PostgreSQL (user: postgres, password: postgres, db: recurya)
 #   - 14005: Swank server (Emacs SLIME connection)
 #   - 12346: cl-mcp HTTP server (AI agent connection)
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: cl-blog-postgres
+    container_name: recurya-postgres
     restart: unless-stopped
     ports:
       - "15434:5432"
     environment:
-      POSTGRES_DB: cl_blog
+      POSTGRES_DB: recurya
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d cl_blog"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d recurya"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  cl-blog:
+  recurya:
     build:
       context: .
       dockerfile: Dockerfile
       args:
         SBCL_VERSION: "2.5.10"
         QLOT_VERSION: "1.7.5"
-    container_name: cl-blog
+    container_name: recurya
     user: "${UID:-1000}:${GID:-1000}"
     depends_on:
       postgres:
@@ -55,7 +55,7 @@ services:
       PATH: /home/app/.roswell/bin:/usr/local/bin:/usr/bin:/bin
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_DB: cl_blog
+      POSTGRES_DB: recurya
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       MCP_NO_WORKER_POOL: "1"

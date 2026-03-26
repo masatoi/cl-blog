@@ -1,5 +1,5 @@
 #!/bin/bash
-# Entrypoint script for cl-blog development
+# Entrypoint script for recurya development
 # Ensures proper output flushing for Docker logs
 #
 # Working directory is set externally:
@@ -12,7 +12,7 @@
 
 set -e
 
-echo "Starting cl-blog development environment..."
+echo "Starting recurya development environment..."
 echo "Working directory: $(pwd)"
 echo "Environment: POSTGRES_HOST=$POSTGRES_HOST POSTGRES_PORT=$POSTGRES_PORT POSTGRES_DB=$POSTGRES_DB"
 
@@ -30,8 +30,8 @@ fi
 
 exec qlot exec ros run \
     --eval "(setf sb-impl::*default-external-format* :utf-8)" \
-    --eval "(ql:quickload :cl-blog)" \
-    --eval "(format t \"~%ASDF system :cl-blog loaded successfully.~%\")" \
+    --eval "(ql:quickload :recurya)" \
+    --eval "(format t \"~%ASDF system :recurya loaded successfully.~%\")" \
     --eval "(force-output)" \
     --eval "(ql:quickload :swank)" \
     --eval "(setf swank:*communication-style* :spawn)" \
@@ -42,14 +42,14 @@ exec qlot exec ros run \
     --eval "(mcp:start-http-server :port 12346 :host \"0.0.0.0\")" \
     --eval "(format t \"cl-mcp HTTP server started on port 12346~%\")" \
     --eval "(force-output)" \
-    --eval "(ql:quickload :cl-blog/web/server :verbose nil)" \
-    --eval "(cl-blog/db/core:start!)" \
+    --eval "(ql:quickload :recurya/web/server :verbose nil)" \
+    --eval "(recurya/db/core:start!)" \
     --eval "(format t \"Database connection established~%\")" \
     --eval "(force-output)" \
-    --eval "(cl-blog/web/server:start! :port 3000)" \
+    --eval "(recurya/web/server:start! :port 3000)" \
     --eval "(format t \"Web server started on port 3000~%\")" \
     --eval "(force-output)" \
-    --eval "(format t \"~%=== cl-blog development environment ready ===\")" \
+    --eval "(format t \"~%=== recurya development environment ready ===\")" \
     --eval "(format t \"~%  Web: http://localhost:3000\")" \
     --eval "(format t \"~%  Swank: localhost:4005 (M-x slime-connect)\")" \
     --eval "(format t \"~%  cl-mcp HTTP: http://localhost:12346/mcp~%\")" \

@@ -4,7 +4,7 @@
 ;;;; blog posts.  Includes slug generation (slugify) and filtering by
 ;;;; status and author.
 
-(defpackage #:cl-blog/db/posts
+(defpackage #:recurya/db/posts
   (:use #:cl)
   (:import-from #:mito
                 #:find-dao
@@ -16,11 +16,11 @@
                 #:where
                 #:order-by
                 #:limit)
-  (:import-from #:cl-blog/db/core
+  (:import-from #:recurya/db/core
                 #:generate-uuid
                 #:ensure-uuid)
   ;; Import post class and accessors from models
-  (:import-from #:cl-blog/models/post
+  (:import-from #:recurya/models/post
                 #:post
                 #:post-id
                 #:post-title
@@ -58,7 +58,7 @@
    ;; Utilities
    #:slugify))
 
-(in-package #:cl-blog/db/posts)
+(in-package #:recurya/db/posts)
 
 ;;; ============================================================
 ;;; Utilities

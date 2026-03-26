@@ -5,27 +5,27 @@
 ;;;; helpers for session management, pagination, and HTMX fragment
 ;;;; responses (status pills, confirmation modals, OOB swaps).
 
-(defpackage #:cl-blog/web/routes
+(defpackage #:recurya/web/routes
   (:use #:cl)
-  (:import-from #:cl-blog/web/auth
+  (:import-from #:recurya/web/auth
                 #:authenticate
                 #:register!)
-  (:import-from #:cl-blog/db/users
+  (:import-from #:recurya/db/users
                 #:update-user!
                 #:get-user-by-id)
-  (:import-from #:cl-blog/web/ui/login)
-  (:import-from #:cl-blog/web/ui/signup)
-  (:import-from #:cl-blog/web/ui/errors)
-  (:import-from #:cl-blog/web/ui/account)
-  (:import-from #:cl-blog/web/ui/posts)
-  (:import-from #:cl-blog/web/ui/post-form)
-  (:import-from #:cl-blog/web/ui/blog)
+  (:import-from #:recurya/web/ui/login)
+  (:import-from #:recurya/web/ui/signup)
+  (:import-from #:recurya/web/ui/errors)
+  (:import-from #:recurya/web/ui/account)
+  (:import-from #:recurya/web/ui/posts)
+  (:import-from #:recurya/web/ui/post-form)
+  (:import-from #:recurya/web/ui/blog)
   (:import-from #:spinneret
                 #:with-html-string)
   (:import-from #:lack/request
                 #:request-env)
-  (:import-from #:cl-blog/web/ui/blog-post)
-  (:import-from #:cl-blog/db/posts
+  (:import-from #:recurya/web/ui/blog-post)
+  (:import-from #:recurya/db/posts
                 #:create-post!
                 #:get-post-by-id
                 #:get-post-by-slug
@@ -52,7 +52,7 @@
            #:post-delete-handler))
 
 
-(in-package #:cl-blog/web/routes)
+(in-package #:recurya/web/routes)
 
 ;;; Response helpers
 
@@ -138,7 +138,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
   (declare (ignore params))
   (if (get-current-user)
       (redirect "/posts")
-      (html-response (cl-blog/web/ui/login:render))))
+      (html-response (recurya/web/ui/login:render))))
 
 (defun login-handler (params)
   "Handle POST /login - authenticate user."
@@ -149,7 +149,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
         (progn
           (set-session-user! user)
           (redirect "/posts"))
-        (html-response (cl-blog/web/ui/login:render :error "Invalid email or password.")
+        (html-response (recurya/web/ui/login:render :error "Invalid email or password.")
                        :status 401))))
 
 (defun logout-handler (params)
@@ -163,7 +163,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
   (declare (ignore params))
   (if (get-current-user)
       (redirect "/posts")
-      (html-response (cl-blog/web/ui/signup:render))))
+      (html-response (recurya/web/ui/signup:render))))
 
 (defun signup-handler (params)
   "Handle POST /signup - register new user."
@@ -176,7 +176,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
           (set-session-user! user)
           (redirect "/posts"))
         (let ((error-key (getf result :error)))
-          (html-response (cl-blog/web/ui/signup:render
+          (html-response (recurya/web/ui/signup:render
                           :error (princ-to-string error-key))
                          :status 400)))))
 
@@ -187,7 +187,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
 Includes :author-name extracted from the FK author."
   (let* ((author (post-author p))
          (author-name (when author
-                        (cl-blog/models/users:users-display-name author))))
+                        (recurya/models/users:users-display-name author))))
     (list :id (post-id p)
           :title (post-title p)
           :slug (post-slug p)
@@ -221,7 +221,7 @@ Includes :author-name extracted from the FK author."
                (posts (mapcar #'post->plist posts-raw))
                (pagination (make-pagination page total-count *page-size* "/posts")))
           (html-response
-           (cl-blog/web/ui/posts:render :user user :posts posts
+           (recurya/web/ui/posts:render :user user :posts posts
                                            :pagination pagination))))))
 
 (defun post-new-handler (params)
@@ -231,7 +231,7 @@ Includes :author-name extracted from the FK author."
     (if (null user)
         (redirect "/login")
         (html-response
-         (cl-blog/web/ui/post-form:render :user user)))))
+         (recurya/web/ui/post-form:render :user user)))))
 
 (defun post-create-handler (params)
   "Handle POST /posts - create a new post."
@@ -246,11 +246,11 @@ Includes :author-name extracted from the FK author."
           (cond
             ((or (null title) (equal title ""))
              (html-response
-              (cl-blog/web/ui/post-form:render :user user
+              (recurya/web/ui/post-form:render :user user
                                                   :errors '("Title is required."))))
             ((or (null body) (equal body ""))
              (html-response
-              (cl-blog/web/ui/post-form:render :user user
+              (recurya/web/ui/post-form:render :user user
                                                   :errors '("Body is required.")
                                                   :post (list :title title :slug slug
                                                               :excerpt excerpt :status status))))
@@ -277,13 +277,13 @@ Includes :author-name extracted from the FK author."
                (post (get-post-by-id id)))
           (cond
             ((null post)
-             (html-response (cl-blog/web/ui/errors:not-found) :status 404))
+             (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (post-author-id post))
                          (princ-to-string (getf user :id))))
              (html-response "Forbidden" :status 403))
             (t
              (html-response
-              (cl-blog/web/ui/post-form:render :user user
+              (recurya/web/ui/post-form:render :user user
                                                   :post (post->plist post)))))))))
 
 (defun post-update-handler (params)
@@ -295,7 +295,7 @@ Includes :author-name extracted from the FK author."
                (existing (get-post-by-id id)))
           (cond
             ((null existing)
-             (html-response (cl-blog/web/ui/errors:not-found) :status 404))
+             (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (post-author-id existing))
                          (princ-to-string (getf user :id))))
              (html-response "Forbidden" :status 403))
@@ -308,13 +308,13 @@ Includes :author-name extracted from the FK author."
                (cond
                  ((or (null title) (equal title ""))
                   (html-response
-                   (cl-blog/web/ui/post-form:render
+                   (recurya/web/ui/post-form:render
                     :user user
                     :post (post->plist existing)
                     :errors '("Title is required."))))
                  ((or (null body) (equal body ""))
                   (html-response
-                   (cl-blog/web/ui/post-form:render
+                   (recurya/web/ui/post-form:render
                     :user user
                     :post (list :id id :title title :slug slug
                                 :excerpt excerpt :status status)
@@ -447,7 +447,7 @@ Returns empty HTML for HTMX requests (row removal), or redirects for normal requ
                (post (get-post-by-id id)))
           (cond
             ((null post)
-             (html-response (cl-blog/web/ui/errors:not-found) :status 404))
+             (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (post-author-id post))
                          (princ-to-string (getf user :id))))
              (html-response "Forbidden" :status 403))
@@ -474,16 +474,16 @@ Returns empty HTML for HTMX requests (row removal), or redirects for normal requ
          (posts (mapcar #'post->plist posts-raw))
          (pagination (make-pagination page total-count *page-size* "/blog")))
     (html-response
-     (cl-blog/web/ui/blog:render :posts posts :pagination pagination))))
+     (recurya/web/ui/blog:render :posts posts :pagination pagination))))
 
 (defun blog-post-handler (params)
   "Handle GET /blog/:slug - public single post view."
   (let* ((slug (get-path-param params :slug))
          (post (get-post-by-slug slug)))
     (if (or (null post) (not (equal (post-status post) "published")))
-        (html-response (cl-blog/web/ui/blog-post:render :post nil) :status 404)
+        (html-response (recurya/web/ui/blog-post:render :post nil) :status 404)
         (html-response
-         (cl-blog/web/ui/blog-post:render :post (post->plist post))))))
+         (recurya/web/ui/blog-post:render :post (post->plist post))))))
 
 ;;; Account Handlers
 
@@ -493,7 +493,7 @@ Returns empty HTML for HTMX requests (row removal), or redirects for normal requ
   (let ((user (get-current-user)))
     (if (null user)
         (redirect "/login")
-        (html-response (cl-blog/web/ui/account:render :user user)))))
+        (html-response (recurya/web/ui/account:render :user user)))))
 
 (defun account-update-handler (params)
   "Handle POST /account - update account settings."
@@ -561,7 +561,7 @@ without restarting the server."
 (defun not-found-handler (params)
   "Handle 404 - not found."
   (declare (ignore params))
-  (html-response (cl-blog/web/ui/errors:not-found) :status 404))
+  (html-response (recurya/web/ui/errors:not-found) :status 404))
 
 ;;; Route setup
 

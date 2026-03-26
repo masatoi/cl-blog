@@ -4,10 +4,10 @@
 ;;;; body, excerpt, status (draft/published), and a foreign-key reference
 ;;;; to the users table via the author column.
 
-(defpackage #:cl-blog/models/post
+(defpackage #:recurya/models/post
   (:use #:cl
         #:mito)
-  (:import-from #:cl-blog/models/users
+  (:import-from #:recurya/models/users
                 #:users
                 #:users-id)
   (:export #:post
@@ -23,7 +23,7 @@
            #:post-created-at
            #:post-updated-at))
 
-(in-package #:cl-blog/models/post)
+(in-package #:recurya/models/post)
 
 (deftable post ()
   ((id :col-type :uuid

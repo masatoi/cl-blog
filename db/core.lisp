@@ -4,7 +4,7 @@
 ;;;; for NULL handling (nil->null, null->nil), JSON serialization,
 ;;;; timestamp formatting, UUID conversion, and raw SQL execution.
 
-(defpackage #:cl-blog/db/core
+(defpackage #:recurya/db/core
   (:use #:cl)
   (:import-from #:mito
                 #:connect-toplevel
@@ -15,7 +15,7 @@
                 #:fetch-all
                 #:fetch)
   (:import-from #:log4cl)
-  (:import-from #:cl-blog/utils/common
+  (:import-from #:recurya/utils/common
                 #:generate-uuid
                 #:parse-json
                 #:json->string)
@@ -42,7 +42,7 @@
    #:execute-one
    #:execute!))
 
-(in-package #:cl-blog/db/core)
+(in-package #:recurya/db/core)
 
 ;;; ============================================================
 ;;; Configuration
@@ -80,7 +80,7 @@ that the dataset is currently being processed.")
   "Build Mito connection spec from environment variables."
   (let ((host (get-env "POSTGRES_HOST" "localhost"))
         (port (parse-integer (get-env "POSTGRES_PORT" "5432")))
-        (db (get-env "POSTGRES_DB" "cl_blog"))
+        (db (get-env "POSTGRES_DB" "recurya"))
         (user (get-env "POSTGRES_USER" "postgres"))
         (password (get-env "POSTGRES_PASSWORD" "postgres")))
     (list :postgres
@@ -104,7 +104,7 @@ Arguments:
 Environment Variables:
   POSTGRES_HOST     - Database host (default: localhost)
   POSTGRES_PORT     - Database port (default: 5432)
-  POSTGRES_DB       - Database name (default: cl_blog)
+  POSTGRES_DB       - Database name (default: recurya)
   POSTGRES_USER     - Username (default: postgres)
   POSTGRES_PASSWORD - Password (default: postgres)
 

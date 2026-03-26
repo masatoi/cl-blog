@@ -1,16 +1,16 @@
 ;;;; web/ui/post-form.lisp --- Create/edit form for blog posts.
 
-(defpackage #:cl-blog/web/ui/post-form
+(defpackage #:recurya/web/ui/post-form
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/layout
+  (:import-from #:recurya/web/ui/layout
                 #:header
                 #:header-styles
                 #:common-styles)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/post-form)
+(in-package #:recurya/web/ui/post-form)
 
 (defparameter *form-page-styles*
   "/* Post form page styles */
@@ -98,7 +98,7 @@ When POST is NIL, renders a new post form."
       (:html
        (:head (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title (format nil "cl-blog - ~A" page-title))
+        (:title (format nil "recurya - ~A" page-title))
         (:style (:raw all-styles)))
        (:body (:raw (header user))
         (:main

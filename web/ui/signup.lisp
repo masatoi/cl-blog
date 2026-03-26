@@ -1,14 +1,14 @@
 ;;;; web/ui/signup.lisp --- User registration page.
 
-(defpackage #:cl-blog/web/ui/signup
+(defpackage #:recurya/web/ui/signup
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/styles
+  (:import-from #:recurya/web/ui/styles
                 #:auth-page-styles)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/signup)
+(in-package #:recurya/web/ui/signup)
 
 (defun render (&key error)
   "Render the signup page as an HTML string."
@@ -18,7 +18,7 @@
       (:head
         (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title "cl-blog - Sign up")
+        (:title "recurya - Sign up")
         (:style (:raw (auth-page-styles))))
       (:body
         (:div :class "auth-container"

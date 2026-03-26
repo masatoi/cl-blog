@@ -1,22 +1,22 @@
 #!/bin/bash
-# Check that all test files are registered in cl-blog.asd
+# Check that all test files are registered in recurya.asd
 # This script should be run in CI to detect orphaned test files.
 
 set -e
 
 cd "$(dirname "$0")/.."
 
-echo "Checking test file coverage in cl-blog.asd..."
+echo "Checking test file coverage in recurya.asd..."
 
 # Find all .lisp files in tests/ and convert to system names
-# e.g., tests/db/users.lisp -> cl-blog/tests/db/users
+# e.g., tests/db/users.lisp -> recurya/tests/db/users
 ACTUAL_FILES=$(find tests -name "*.lisp" -type f | \
-    sed 's|^tests/|cl-blog/tests/|; s|\.lisp$||' | \
+    sed 's|^tests/|recurya/tests/|; s|\.lisp$||' | \
     sort)
 
-# Extract system names from cl-blog.asd depends-on
-# Look for strings matching "cl-blog/tests/..."
-REGISTERED=$(grep -oE '"cl-blog/tests/[^"]*"' cl-blog.asd | \
+# Extract system names from recurya.asd depends-on
+# Look for strings matching "recurya/tests/..."
+REGISTERED=$(grep -oE '"recurya/tests/[^"]*"' recurya.asd | \
     tr -d '"' | \
     sort)
 
@@ -32,7 +32,7 @@ done
 STALE=""
 for reg in $REGISTERED; do
     # Convert system name back to file path
-    filepath=$(echo "$reg" | sed 's|^cl-blog/||').lisp
+    filepath=$(echo "$reg" | sed 's|^recurya/||').lisp
     if [ ! -f "$filepath" ]; then
         STALE="$STALE$reg\n"
     fi
@@ -42,12 +42,12 @@ EXIT_CODE=0
 
 if [ -n "$MISSING" ]; then
     echo ""
-    echo "ERROR: Test files not registered in cl-blog.asd:"
+    echo "ERROR: Test files not registered in recurya.asd:"
     echo -e "$MISSING" | grep -v '^$' | while read -r f; do
         echo "  - $f"
     done
     echo ""
-    echo "Add these to the :depends-on list in cl-blog.asd"
+    echo "Add these to the :depends-on list in recurya.asd"
     EXIT_CODE=1
 fi
 

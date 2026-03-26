@@ -1,8 +1,8 @@
 ;;;; tests/db/jsonb.lisp --- Tests for JSONB helper functions (db/jsonb).
 
-(defpackage #:cl-blog/tests/db/jsonb
+(defpackage #:recurya/tests/db/jsonb
   (:use #:cl #:rove)
-  (:import-from #:cl-blog/db/jsonb
+  (:import-from #:recurya/db/jsonb
                 #:normalize-sql-key
                 #:sql-getf
                 #:sql-result-value
@@ -17,7 +17,7 @@
                 #:json-values
                 #:map-json))
 
-(in-package #:cl-blog/tests/db/jsonb)
+(in-package #:recurya/tests/db/jsonb)
 
 ;;; ============================================================
 ;;; SQL Key Normalization Tests

@@ -21,16 +21,16 @@ Manage PostgreSQL schema changes via Mito CLI for this project.
 ## Connection Parameters
 
 ```
-DB_HOST=localhost  DB_PORT=15434  DB_NAME=cl_blog
+DB_HOST=localhost  DB_PORT=15434  DB_NAME=recurya
 DB_USER=postgres   DB_PASS=postgres
-ASDF_SYSTEM=cl-blog
+ASDF_SYSTEM=recurya
 MITO=.qlot/bin/mito
 ```
 
 All CLI commands use:
 ```bash
 .qlot/bin/mito <command> -t postgres -H localhost -P 15434 \
-  -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+  -d recurya -u postgres -p postgres -s recurya -D db/
 ```
 
 ## Workflow by Operation
@@ -41,7 +41,7 @@ All CLI commands use:
 2. Run:
    ```bash
    .qlot/bin/mito generate-migrations -t postgres -H localhost -P 15434 \
-     -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+     -d recurya -u postgres -p postgres -s recurya -D db/
    ```
 3. Show the generated SQL (`db/migrations/YYYYMMDDHHMMSS.up.sql`) to the user for review
 4. Ask if they want to apply immediately
@@ -52,7 +52,7 @@ All CLI commands use:
 2. Run:
    ```bash
    .qlot/bin/mito migrate -t postgres -H localhost -P 15434 \
-     -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+     -d recurya -u postgres -p postgres -s recurya -D db/
    ```
 3. Verify with status check after applying
 
@@ -61,7 +61,7 @@ All CLI commands use:
 Run:
 ```bash
 .qlot/bin/mito migration-status -t postgres -H localhost -P 15434 \
-  -d cl_blog -u postgres -p postgres -s cl-blog -D db/
+  -d recurya -u postgres -p postgres -s recurya -D db/
 ```
 
 ### reset (Development Only)
@@ -71,8 +71,8 @@ Run:
 1. Stop the application container
 2. Drop and recreate database:
    ```bash
-   PGPASSWORD=postgres dropdb -h localhost -p 15434 -U postgres cl_blog
-   PGPASSWORD=postgres createdb -h localhost -p 15434 -U postgres cl_blog
+   PGPASSWORD=postgres dropdb -h localhost -p 15434 -U postgres recurya
+   PGPASSWORD=postgres createdb -h localhost -p 15434 -U postgres recurya
    ```
 3. Optionally delete old migration files: `rm db/migrations/*.sql`
 4. Generate initial migration from current models
@@ -85,7 +85,7 @@ When the user wants to check if models match the database without running CLI:
 
 ```lisp
 ;; Returns NIL if schema matches, or list of needed changes
-(mito:migration-expressions 'cl-blog/models/my-table:my-table)
+(mito:migration-expressions 'recurya/models/my-table:my-table)
 ```
 
 ## Mito Conventions
@@ -100,12 +100,12 @@ When the user wants to check if models match the database without running CLI:
 ### Important Notes
 - Auto-migration is disabled (`mito:*auto-migration-mode*` is `nil`)
 - Always run `mito migrate` before starting the application after model changes
-- The `-s cl-blog` flag loads the ASDF system so Mito can find model definitions
+- The `-s recurya` flag loads the ASDF system so Mito can find model definitions
 - Migration files: `db/migrations/`
 - Schema snapshot: `db/schema.sql`
 
 ## Troubleshooting
 
 - **"relation already exists"**: Normal for `schema_migrations` table. Safe to ignore.
-- **Migration not detected**: Ensure `-s cl-blog` is passed so models are loaded.
+- **Migration not detected**: Ensure `-s recurya` is passed so models are loaded.
 - **Schema drift after manual SQL**: Use the `reset` workflow to resync.

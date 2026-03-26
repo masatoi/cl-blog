@@ -1,12 +1,12 @@
 ;;;; tests/db/posts.lisp --- Tests for post CRUD operations (db/posts).
 
-(defpackage #:cl-blog/tests/db/posts
+(defpackage #:recurya/tests/db/posts
   (:use #:cl
         #:rove)
-  (:import-from #:cl-blog/tests/support/db
+  (:import-from #:recurya/tests/support/db
                 #:with-test-db
                 #:create-test-post)
-  (:import-from #:cl-blog/db/posts
+  (:import-from #:recurya/db/posts
                 #:post-id
                 #:post-title
                 #:post-slug
@@ -23,7 +23,7 @@
                 #:count-posts
                 #:slugify))
 
-(in-package #:cl-blog/tests/db/posts)
+(in-package #:recurya/tests/db/posts)
 
 (deftest slugify-test
   (testing "slugify converts titles to URL-friendly slugs"

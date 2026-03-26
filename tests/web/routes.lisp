@@ -1,11 +1,11 @@
 ;;;; tests/web/routes.lisp --- Tests for route handlers and HTMX interactions.
 
-(defpackage #:cl-blog/tests/web/routes
+(defpackage #:recurya/tests/web/routes
   (:use #:cl
         #:rove)
-  (:import-from #:cl-blog/tests/support/db
+  (:import-from #:recurya/tests/support/db
                 #:with-test-db)
-  (:import-from #:cl-blog/web/routes
+  (:import-from #:recurya/web/routes
                 #:root-handler
                 #:login-handler
                 #:login-page-handler
@@ -20,22 +20,22 @@
                 ;; Pagination helpers
                 #:parse-page-param
                 #:make-pagination)
-  (:import-from #:cl-blog/web/auth
+  (:import-from #:recurya/web/auth
                 #:authenticate
                 #:ensure-default-admin!
                 #:register!)
-  (:import-from #:cl-blog/db/users
+  (:import-from #:recurya/db/users
                 #:delete-user!
                 #:get-user-by-id
                 #:users-display-name
                 #:users-language
                 #:users-timezone)
-  (:import-from #:cl-blog/db/posts
+  (:import-from #:recurya/db/posts
                 #:create-post!
                 #:delete-post!
                 #:post-id))
 
-(in-package #:cl-blog/tests/web/routes)
+(in-package #:recurya/tests/web/routes)
 
 ;;; Test helpers
 
@@ -87,14 +87,14 @@
     (with-test-db
       (ensure-default-admin!)
       (with-mock-session (make-session)
-        (let* ((params '(("email" . "admin@cl-blog.dev")
+        (let* ((params '(("email" . "admin@recurya.dev")
                          ("password" . "changeme")))
                (response (login-handler params)))
           (ok (= 302 (response-status response)))
           (ok (string= "/posts" (response-location response)))
           ;; Session should have user
           (ok (gethash :user ningle/context:*session*))
-          (ok (string= "admin@cl-blog.dev"
+          (ok (string= "admin@recurya.dev"
                        (getf (gethash :user ningle/context:*session*) :email))))))))
 
 
@@ -103,7 +103,7 @@
     (with-test-db
       (ensure-default-admin!)
       (with-mock-session (make-session)
-        (let* ((params '(("email" . "admin@cl-blog.dev")
+        (let* ((params '(("email" . "admin@recurya.dev")
                          ("password" . "wrongpassword")))
                (response (login-handler params)))
           (ok (= 401 (response-status response)))
@@ -135,12 +135,12 @@
   (testing "account page renders for authenticated user"
     (with-test-db
       (ensure-default-admin!)
-      (let ((user (authenticate "admin@cl-blog.dev" "changeme")))
+      (let ((user (authenticate "admin@recurya.dev" "changeme")))
         (with-mock-session (make-session :user user)
           (let ((response (account-page-handler nil)))
             (ok (= 200 (response-status response)))
             ;; Should include user email in the rendered page
-            (ok (search "admin@cl-blog.dev" (first (response-body response))))))))))
+            (ok (search "admin@recurya.dev" (first (response-body response))))))))))
 
 
 (deftest account-update-validates-display-name
@@ -410,7 +410,7 @@ Returns the post object."
 
 (deftest render-confirm-modal-generates-correct-html
   (testing "render-confirm-modal produces modal overlay with HTMX attributes"
-    (let ((html (cl-blog/web/routes::render-confirm-modal
+    (let ((html (recurya/web/routes::render-confirm-modal
                  :title "Delete?"
                  :message "Are you sure?"
                  :confirm-hx-post "/items/1/delete"
@@ -424,7 +424,7 @@ Returns the post object."
       (ok (search "Cancel" html) "Contains cancel button")))
 
   (testing "render-confirm-modal uses custom target and swap"
-    (let ((html (cl-blog/web/routes::render-confirm-modal
+    (let ((html (recurya/web/routes::render-confirm-modal
                  :title "Delete?"
                  :message "Sure?"
                  :confirm-hx-post "/x"

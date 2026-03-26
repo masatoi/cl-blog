@@ -1,14 +1,14 @@
 ;;;; web/ui/login.lisp --- Login page.
 
-(defpackage #:cl-blog/web/ui/login
+(defpackage #:recurya/web/ui/login
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/styles
+  (:import-from #:recurya/web/ui/styles
                 #:auth-page-styles)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/login)
+(in-package #:recurya/web/ui/login)
 
 
 (defun render (&key error)
@@ -19,11 +19,11 @@
       (:head
         (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title "cl-blog - Sign in")
+        (:title "recurya - Sign in")
         (:style (:raw (auth-page-styles))))
       (:body
         (:div :class "auth-container"
-          (:div :class "app-name" "Sign in to continue to cl-blog")
+          (:div :class "app-name" "Sign in to continue to recurya")
           (when error
             (:div :class "error" error))
           (:h1 "Welcome back")
@@ -33,7 +33,7 @@
             (:label :for "password" "Password")
             (:input :type "password" :id "password" :name "password" :required t :autocomplete "current-password")
             (:button :type "submit" :class "button-primary" "Sign in"))
-          (:p :class "app-name" "Demo credentials: admin@cl-blog.dev / changeme")
+          (:p :class "app-name" "Demo credentials: admin@recurya.dev / changeme")
           (:p :class "app-name"
             "Need an account? "
             (:a :href "/signup" "Sign up")))))))

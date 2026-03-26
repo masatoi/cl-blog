@@ -1,11 +1,11 @@
 ;;;; tests/db/users.lisp --- Tests for user CRUD operations (db/users).
 
-(defpackage #:cl-blog/tests/db/users
+(defpackage #:recurya/tests/db/users
   (:use #:cl
         #:rove)
-  (:import-from #:cl-blog/tests/support/db
+  (:import-from #:recurya/tests/support/db
                 #:with-test-db)
-  (:import-from #:cl-blog/db/users
+  (:import-from #:recurya/db/users
                 #:users-id
                 #:users-display-name
                 #:users-role
@@ -16,7 +16,7 @@
                 #:update-user!
                 #:delete-user!))
 
-(in-package #:cl-blog/tests/db/users)
+(in-package #:recurya/tests/db/users)
 
 ;;; ---------------------------------------------------------------------------
 ;;; Tests

@@ -1,8 +1,8 @@
 ;;;; tests/utils/common.lisp --- Tests for shared utility functions (utils/common).
 
-(defpackage #:cl-blog/tests/utils/common
+(defpackage #:recurya/tests/utils/common
   (:use #:cl #:rove)
-  (:import-from #:cl-blog/utils/common
+  (:import-from #:recurya/utils/common
                 #:generate-uuid
                 #:trim-whitespace
                 #:blank-string-p
@@ -10,7 +10,7 @@
                 #:parse-json
                 #:json->string))
 
-(in-package #:cl-blog/tests/utils/common)
+(in-package #:recurya/tests/utils/common)
 
 ;;; ============================================================
 ;;; UUID Tests

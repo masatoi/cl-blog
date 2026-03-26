@@ -1,14 +1,14 @@
 ;;;; web/ui/blog-post.lisp --- Public single blog post view.
 
-(defpackage #:cl-blog/web/ui/blog-post
+(defpackage #:recurya/web/ui/blog-post
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/layout
+  (:import-from #:recurya/web/ui/layout
                 #:format-timestamp)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/blog-post)
+(in-package #:recurya/web/ui/blog-post)
 
 (defparameter *blog-post-styles*
   "/* Public single blog post styles */

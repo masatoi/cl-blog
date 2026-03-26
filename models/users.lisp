@@ -4,7 +4,7 @@
 ;;;; password hash/salt, display name, role, and regional preferences.
 ;;;; Accessor functions are exported for use by the DB and web layers.
 
-(defpackage #:cl-blog/models/users
+(defpackage #:recurya/models/users
   (:use #:cl
         #:mito)
   (:export #:users
@@ -19,7 +19,7 @@
            #:users-created-at
            #:users-updated-at))
 
-(in-package #:cl-blog/models/users)
+(in-package #:recurya/models/users)
 
 (deftable users ()
   ((id :col-type :uuid

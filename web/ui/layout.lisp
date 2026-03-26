@@ -4,11 +4,11 @@
 ;;;; page-shell for wrapping authenticated pages in a consistent layout.
 ;;;; User plist shape: (:id :email :name :language :timezone).
 
-(defpackage #:cl-blog/web/ui/layout
+(defpackage #:recurya/web/ui/layout
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/styles
+  (:import-from #:recurya/web/ui/styles
                 #:common-styles
                 #:page-styles)
   (:export #:header
@@ -19,7 +19,7 @@
            #:common-styles
            #:page-styles))
 
-(in-package #:cl-blog/web/ui/layout)
+(in-package #:recurya/web/ui/layout)
 
 (defparameter *header-styles*
   ".app-header { background:#0f172a; color:#f8fafc; }
@@ -106,7 +106,7 @@
       (:header :class "app-header"
         (:div :class "app-header__inner"
           (:div :class "app-header__left"
-            (:a :class "app-header__brand" :href "/posts" "cl-blog")
+            (:a :class "app-header__brand" :href "/posts" "Recurya")
             (:nav :class "app-header__nav"
               (:a :class "app-header__link" :href "/blog" "Blog")
               (:a :class "app-header__link" :href "/posts" "Posts")))

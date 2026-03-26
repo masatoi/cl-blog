@@ -4,7 +4,7 @@
 ;;;; Uses Mito ORM (select-dao, insert-dao) with the users deftable
 ;;;; defined in models/users.lisp.
 
-(defpackage #:cl-blog/db/users
+(defpackage #:recurya/db/users
   (:use #:cl)
   (:import-from #:mito
                 #:find-dao
@@ -14,10 +14,10 @@
                 #:delete-dao)
   (:import-from #:sxql
                 #:order-by)
-  (:import-from #:cl-blog/db/core
+  (:import-from #:recurya/db/core
                 #:generate-uuid)
   ;; Import users class and accessors from models
-  (:import-from #:cl-blog/models/users
+  (:import-from #:recurya/models/users
                 #:users
                 #:users-id
                 #:users-email
@@ -50,7 +50,7 @@
    #:delete-user!
    #:list-users))
 
-(in-package #:cl-blog/db/users)
+(in-package #:recurya/db/users)
 
 ;;; ============================================================
 ;;; CRUD Operations using Mito DAO

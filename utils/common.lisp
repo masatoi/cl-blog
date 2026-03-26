@@ -3,7 +3,7 @@
 ;;;; UUID generation, string manipulation (trim, blank check, normalize),
 ;;;; and JSON serialization helpers used across the application.
 
-(defpackage #:cl-blog/utils/common
+(defpackage #:recurya/utils/common
   (:use #:cl)
   (:import-from #:uuid)
   (:import-from #:alexandria
@@ -22,7 +22,7 @@
    #:parse-json
    #:json->string))
 
-(in-package #:cl-blog/utils/common)
+(in-package #:recurya/utils/common)
 
 ;;; ============================================================
 ;;; UUID Utilities

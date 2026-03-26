@@ -20,12 +20,8 @@
                "babel"
                "hunchentoot"
                "cl-ppcre"
-               ;; WardLisp language
-               "recurya/wardlisp/types"
-               "recurya/wardlisp/environment"
-               "recurya/wardlisp/reader"
-               "recurya/wardlisp/builtins"
-               "recurya/wardlisp/evaluator"
+               ;; WardLisp language (external library)
+               "wardlisp"
                ;; Game logic
                "recurya/game/puzzle"
                "recurya/game/puzzles/adjacent"
@@ -94,12 +90,8 @@
                ;; Game tests
                "recurya/tests/game/puzzle"
                "recurya/tests/game/arena"
-               ;; WardLisp tests
-               "recurya/tests/wardlisp/types"
-               "recurya/tests/wardlisp/environment"
-               "recurya/tests/wardlisp/reader"
-               "recurya/tests/wardlisp/builtins"
-               "recurya/tests/wardlisp/evaluator"
+               ;; WardLisp integration tests
+               "recurya/tests/wardlisp-integration"
                ;; Main test runner
                "recurya/tests/all")
   :perform (test-op (o c)

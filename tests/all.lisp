@@ -14,12 +14,8 @@
     :recurya/tests/db/posts
     :recurya/tests/web/auth
     :recurya/tests/web/routes
-    ;; WardLisp tests
-    :recurya/tests/wardlisp/types
-    :recurya/tests/wardlisp/environment
-    :recurya/tests/wardlisp/reader
-    :recurya/tests/wardlisp/builtins
-    :recurya/tests/wardlisp/evaluator
+    ;; WardLisp integration tests
+    :recurya/tests/wardlisp-integration
     ;; Game tests
     :recurya/tests/game/puzzle
     :recurya/tests/game/arena)

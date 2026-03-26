@@ -66,6 +66,10 @@
  (:class qlot/source/git:source-git
   :initargs (:remote-url "https://github.com/cl-ai-project/cl-mcp")
   :version "git-1a2ebc80de910a823f40122866a6580e2a923a7a"))
+("wardlisp" .
+ (:class qlot/source/git:source-git
+  :initargs (:remote-url "https://github.com/masatoi/wardlisp")
+  :version "git-cb4b5bc46983e864e57c935b024aac85a3ef5441"))
 ("ningle" .
  (:class qlot/source/git:source-git
   :initargs (:remote-url "https://github.com/fukamachi/ningle")

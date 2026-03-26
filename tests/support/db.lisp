@@ -3,16 +3,16 @@
 ;;;; Provides with-test-db, create-test-user, and create-test-post
 ;;;; helpers used by all database and integration test suites.
 
-(defpackage #:cl-blog/tests/support/db
+(defpackage #:recurya/tests/support/db
   (:use #:cl)
-  (:import-from #:cl-blog/db/core
+  (:import-from #:recurya/db/core
                 #:start!
                 #:execute!
                 #:datasource)
-  (:import-from #:cl-blog/db/users
+  (:import-from #:recurya/db/users
                 #:users-id
                 #:create-user!)
-  (:import-from #:cl-blog/db/posts
+  (:import-from #:recurya/db/posts
                 #:post-id
                 #:create-post!)
   (:import-from #:uuid
@@ -27,7 +27,7 @@
    ;; Blog post entity creation
    #:create-test-post))
 
-(in-package #:cl-blog/tests/support/db)
+(in-package #:recurya/tests/support/db)
 
 ;;; ============================================================
 ;;; Database Setup

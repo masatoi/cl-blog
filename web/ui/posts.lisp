@@ -4,18 +4,18 @@
 ;;;; (click pill to swap draft/published) and delete confirmation modals
 ;;;; (hx-get loads modal fragment into #modal-container).
 
-(defpackage #:cl-blog/web/ui/posts
+(defpackage #:recurya/web/ui/posts
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/layout
+  (:import-from #:recurya/web/ui/layout
                 #:header
                 #:header-styles
                 #:common-styles
                 #:format-timestamp)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/posts)
+(in-package #:recurya/web/ui/posts)
 
 (defparameter *posts-styles*
   "/* Posts admin page styles */
@@ -109,7 +109,7 @@ tr.htmx-swapping {
       (:html
        (:head (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title "cl-blog - Blog Posts")
+        (:title "recurya - Blog Posts")
         (:script :src "https://unpkg.com/htmx.org@2.0.4"
          :integrity "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
          :crossorigin "anonymous")

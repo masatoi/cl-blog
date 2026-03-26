@@ -4,22 +4,22 @@
 ;;;; The Lack application is built in build-app with session and
 ;;;; backtrace middleware (see web/app.lisp for the Ningle app).
 
-(defpackage #:cl-blog/web/server
+(defpackage #:recurya/web/server
   (:use #:cl)
   (:import-from #:clack
                 #:clackup
                 #:stop)
-  (:import-from #:cl-blog/web/app
-                #:make-cl-blog-app)
-  (:import-from #:cl-blog/web/routes
+  (:import-from #:recurya/web/app
+                #:make-recurya-app)
+  (:import-from #:recurya/web/routes
                 #:setup-routes)
-  (:import-from #:cl-blog/web/auth
+  (:import-from #:recurya/web/auth
                 #:ensure-default-admin!)
   (:export #:start!
            #:stop!
            #:*handler*))
 
-(in-package #:cl-blog/web/server)
+(in-package #:recurya/web/server)
 
 (defvar *handler* nil
   "The Clack handler for the running server.")
@@ -36,7 +36,7 @@
 
 (defun build-app ()
   "Build the complete Lack application with middleware."
-  (let ((app (make-cl-blog-app)))
+  (let ((app (make-recurya-app)))
     (setup-routes app)
     ;; Lack middleware stack (outermost listed first):
     ;; 1. :session  — cookie-based session (provides ningle/context:*session*)

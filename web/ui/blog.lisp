@@ -1,16 +1,16 @@
 ;;;; web/ui/blog.lisp --- Public blog listing page (no auth required).
 
-(defpackage #:cl-blog/web/ui/blog
+(defpackage #:recurya/web/ui/blog
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
-  (:import-from #:cl-blog/web/ui/layout
+  (:import-from #:recurya/web/ui/layout
                 #:page-shell
                 #:common-styles
                 #:format-timestamp)
   (:export #:render))
 
-(in-package #:cl-blog/web/ui/blog)
+(in-package #:recurya/web/ui/blog)
 
 (defparameter *blog-styles*
   "/* Public blog listing styles */
