@@ -59,8 +59,8 @@
 
 (defparameter *arena-timeout* 5 "Timeout in seconds per turn for arena evaluation.")
 
-(defparameter *valid-actions* '(:up :down :left :right :wait :pickup)
-  "Valid action keywords.")
+(defparameter *valid-action-strings* '("up" "down" "left" "right" "wait" "pickup")
+  "Valid action names as strings (WardLisp symbols are CL strings).")
 
 ;;; --- Grid Operations ---
 
@@ -181,8 +181,11 @@ If move is invalid (wall/OOB), returns original position."
 ;;; --- State Conversion to WardLisp ---
 
 (defun state->wardlisp-source (state)
-  "Generate WardLisp source code that defines `state` as an alist."
-  (format nil "(define state '((:my-pos ~A ~A) (:enemy-pos ~A ~A) (:my-score . ~A) (:enemy-score . ~A) (:turn . ~A) (:max-turns . ~A)))"
+  "Generate WardLisp source code that defines `state` as an alist.
+Keys are plain symbols (no colon prefix) since external wardlisp
+does not support CL keywords. Positions are wrapped in sublists.
+All values are accessed via (alist-ref 'key state) using cadr pattern."
+  (format nil "(define state '((my-pos (~A ~A)) (enemy-pos (~A ~A)) (my-score ~A) (enemy-score ~A) (turn ~A) (max-turns ~A)))"
           (car (arena-state-bot-pos state))
           (cdr (arena-state-bot-pos state))
           (car (arena-state-enemy-pos state))
@@ -206,9 +209,14 @@ If move is invalid (wall/OOB), returns original position."
    :max-turns (arena-state-max-turns state)))
 
 (defun parse-action (value)
-  "Convert a WardLisp value to an action keyword. Returns :wait for invalid."
-  (if (and (keywordp value) (member value *valid-actions*))
-      value
+  "Convert a WardLisp value to an action keyword. Returns :wait for invalid.
+External wardlisp returns symbols as CL strings, so we map string values
+to CL keywords for the arena engine."
+  (if (stringp value)
+      (let ((action (find value *valid-action-strings* :test #'string-equal)))
+        (if action
+            (intern (string-upcase action) :keyword)
+            :wait))
       :wait))
 
 (defun simulate-arena (user-code initial-state)

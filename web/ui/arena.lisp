@@ -126,17 +126,17 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
         (:a :href "/wardlisp/" "WardLisp") " / Arena")
        (:h1 "Bot Arena")
        (:p :class "arena-desc"
-        "Write a (decide-action state) function that returns an action keyword: "
-        ":up, :down, :left, :right, :wait, or :pickup. "
+        "Write a (decide-action state) function that returns an action symbol: "
+        "'up, 'down, 'left, 'right, 'wait, or 'pickup. "
         "Compete against a greedy enemy bot to collect resources on a 7x7 grid over 20 turns.")
        (:form :class "editor-area"
         (:textarea :name "code" :placeholder "Write your decide-action function..."
                    :autofocus t :spellcheck "false"
                    "(define (decide-action state)
   ; state is an alist with keys:
-  ;   :my-pos, :enemy-pos, :my-score, :enemy-score, :turn, :max-turns
-  ; Return: :up, :down, :left, :right, :wait, or :pickup
-  :right)")
+  ;   my-pos, enemy-pos, my-score, enemy-score, turn, max-turns
+  ; Return: 'up, 'down, 'left, 'right, 'wait, or 'pickup
+  'right)")
         (:button :class "btn-run" :type "button"
                  :hx-post "/wardlisp/arena/run"
                  :hx-include "closest form"

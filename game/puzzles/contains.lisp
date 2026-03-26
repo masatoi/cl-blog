@@ -27,5 +27,5 @@ Use recursion with car/cdr."
                     :description "empty list")
     (make-test-case :input "(contains? '(1) 1)" :expected t
                     :description "single element match")
-    (make-test-case :input "(contains? '(:up :down :left) :down)" :expected t
-                    :description "keyword search"))))
+    (make-test-case :input "(contains? '(up down left) 'down)" :expected t
+                    :description "symbol search"))))

@@ -57,7 +57,7 @@ td code { font-size: 0.85rem; }
         (:tr (:th "Type") (:th "Examples") (:th "Notes"))
         (:tr (:td "Integer") (:td (:code "42") ", " (:code "-7") ", " (:code "0")) (:td "Whole numbers"))
         (:tr (:td "Boolean") (:td (:code "t") ", " (:code "nil")) (:td "True and false"))
-        (:tr (:td "Keyword") (:td (:code ":up") ", " (:code ":foo")) (:td "Colon-prefixed symbols"))
+        (:tr (:td "Symbol") (:td (:code "'up") ", " (:code "'foo")) (:td "Named values (quote to use as data)"))
         (:tr (:td "List") (:td (:code "'(1 2 3)")) (:td "Cons cells ending in nil"))
         (:tr (:td "Nil") (:td (:code "nil")) (:td "Empty list, false value"))
         (:tr (:td "Function") (:td (:code "(lambda (x) x)")) (:td "Closures with lexical scope")))
@@ -133,7 +133,7 @@ td code { font-size: 0.85rem; }
        (:h3 "Type Predicates")
        (:pre (:code "(number? 42)    ; => t
 (boolean? t)    ; => t
-(symbol? :up)   ; => t
+(symbol? 'up)   ; => t
 (list? '(1))    ; => t
 (atom? 42)      ; => t
 (eq? x y)       ; reference equality"))
@@ -173,9 +173,9 @@ td code { font-size: 0.85rem; }
        (:pre (:code ";; Define your own alist-ref helper:
 (define (alist-ref key alist)
   (cond ((null? alist) nil)
-        ((equal? key (car (car alist))) (cdr (car alist)))
+        ((equal? key (car (car alist))) (car (cdr (car alist))))
         (t (alist-ref key (cdr alist)))))
 
-(define state '((:pos 3 4) (:score . 5)))
-(alist-ref :pos state)    ; => (3 4)
-(alist-ref :score state)  ; => 5")))))))
+(define state '((pos (3 4)) (score 5)))
+(alist-ref 'pos state)    ; => (3 4)
+(alist-ref 'score state)  ; => 5")))))))

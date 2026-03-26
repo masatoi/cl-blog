@@ -41,10 +41,10 @@
   (testing "booleans"
     (ok (string= "t" (print-value t)))
     (ok (string= "nil" (print-value nil))))
-  (testing "keywords"
-    (multiple-value-bind (result metrics) (evaluate ":up")
+  (testing "symbols"
+    (multiple-value-bind (result metrics) (evaluate "'up")
       (declare (ignore metrics))
-      (ok (string= ":up" (print-value result))))))
+      (ok (string= "up" (print-value result))))))
 
 (deftest puzzle-grading-integration
   (testing "correct puzzle solution grades properly"
@@ -65,6 +65,6 @@
 (deftest arena-integration
   (testing "arena simulation completes"
     (let ((result (recurya/game/arena:simulate-arena
-                   "(define (decide-action state) :wait)"
+                   "(define (decide-action state) 'wait)"
                    (recurya/game/scenario:default-scenario))))
       (ok (null (recurya/game/arena:arena-result-error result))))))

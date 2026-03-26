@@ -135,7 +135,10 @@
                        :actual result
                        :description (test-case-description tc))
                       test-results))))))
-    (let ((results (nreverse test-results)))
+    (let* ((results (nreverse test-results))
+           ;; If all test cases errored, propagate as puzzle-level error.
+           (all-errored (and results
+                             (every #'test-result-error results))))
       (make-puzzle-result
        :passed (count-if #'test-result-passed-p results)
        :failed (count-if-not #'test-result-passed-p results)
@@ -143,4 +146,6 @@
        :test-results results
        :fuel-used total-fuel
        :cons-used total-cons
-       :depth-reached max-depth))))
+       :depth-reached max-depth
+       :error (when all-errored
+                (test-result-error (first results)))))))
