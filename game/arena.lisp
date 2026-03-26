@@ -5,18 +5,8 @@
 
 (defpackage #:recurya/game/arena
   (:use #:cl)
-  (:import-from #:recurya/wardlisp/evaluator
-                #:eval-program
-                #:make-execution-limits
-                #:execution-result-value
-                #:execution-result-fuel-used
-                #:execution-result-cons-used
-                #:execution-result-depth-reached
-                #:execution-result-error)
-  (:import-from #:recurya/wardlisp/types
-                #:wardlisp-nil
-                #:wardlisp-symbol-p
-                #:wardlisp->string)
+  (:import-from #:wardlisp
+                #:evaluate)
   (:export #:arena-state
            #:make-arena-state
            #:arena-state-grid
@@ -59,9 +49,15 @@
   (fuel-used 0 :type fixnum)
   (error nil))
 
-(defparameter *arena-limits*
-  (make-execution-limits :fuel 5000 :max-cons 2000 :max-depth 50 :max-output 1024)
-  "Resource limits per turn for user code evaluation.")
+(defparameter *arena-fuel* 5000 "Fuel limit per turn for arena evaluation.")
+
+(defparameter *arena-max-cons* 2000 "Cons limit per turn for arena evaluation.")
+
+(defparameter *arena-max-depth* 50 "Depth limit per turn for arena evaluation.")
+
+(defparameter *arena-max-output* 1024 "Output limit per turn for arena evaluation.")
+
+(defparameter *arena-timeout* 5 "Timeout in seconds per turn for arena evaluation.")
 
 (defparameter *valid-actions* '(:up :down :left :right :wait :pickup)
   "Valid action keywords.")
@@ -184,22 +180,6 @@ If move is invalid (wall/OOB), returns original position."
 
 ;;; --- State Conversion to WardLisp ---
 
-(defun grid->wardlisp-list (grid)
-  "Convert grid to WardLisp list of (row col type) entries for non-empty cells."
-  (let ((entries nil))
-    (dotimes (r (grid-rows grid))
-      (dotimes (c (grid-cols grid))
-        (let ((val (grid-ref grid r c)))
-          (unless (eq val :empty)
-            (push (cons r (cons c (cons val wardlisp-nil))) entries)))))
-    (nreverse entries)))
-
-(defun list->wardlisp-list (items)
-  "Convert a CL list to WardLisp cons-based list terminated by :wnil."
-  (if (null items)
-      wardlisp-nil
-      (cons (car items) (list->wardlisp-list (cdr items)))))
-
 (defun state->wardlisp-source (state)
   "Generate WardLisp source code that defines `state` as an alist."
   (format nil "(define state '((:my-pos ~A ~A) (:enemy-pos ~A ~A) (:my-score . ~A) (:enemy-score . ~A) (:turn . ~A) (:max-turns . ~A)))"
@@ -245,45 +225,51 @@ If move is invalid (wall/OOB), returns original position."
             ;; Get bot action from user code
             (let* ((state-source (state->wardlisp-source state))
                    (full-code (format nil "~A~%~A~%(decide-action state)"
-                                      user-code state-source))
-                   (result (eval-program full-code :limits *arena-limits*)))
-              (incf total-fuel (execution-result-fuel-used result))
-              (when (execution-result-error result)
-                (return-from simulate-arena
-                  (make-arena-result
-                   :frames (nreverse frames)
-                   :bot-score (arena-state-bot-score state)
-                   :enemy-score (arena-state-enemy-score state)
-                   :fuel-used total-fuel
-                   :error (format nil "Turn ~D: ~A"
-                                  (arena-state-turn state)
-                                  (execution-result-error result)))))
-              (let ((bot-action (parse-action (execution-result-value result)))
-                    (enemy-action (enemy-decide-action
-                                   (arena-state-enemy-pos state)
-                                   (arena-state-grid state))))
-                ;; Apply bot movement
-                (unless (eq bot-action :pickup)
-                  (setf (arena-state-bot-pos state)
-                        (apply-move (arena-state-grid state)
-                                    (arena-state-bot-pos state) bot-action)))
-                ;; Apply enemy movement
-                (unless (eq enemy-action :pickup)
-                  (setf (arena-state-enemy-pos state)
-                        (apply-move (arena-state-grid state)
-                                    (arena-state-enemy-pos state) enemy-action)))
-                ;; Bot pickup first (priority)
-                (when (eq bot-action :pickup)
-                  (when (try-pickup (arena-state-grid state)
-                                    (arena-state-bot-pos state))
-                    (incf (arena-state-bot-score state))))
-                ;; Enemy pickup second
-                (when (eq enemy-action :pickup)
-                  (when (try-pickup (arena-state-grid state)
-                                    (arena-state-enemy-pos state))
-                    (incf (arena-state-enemy-score state))))
-                ;; Record frame
-                (push (copy-state state) frames))))
+                                      user-code state-source)))
+              (multiple-value-bind (result metrics)
+                  (evaluate full-code
+                            :fuel *arena-fuel*
+                            :max-cons *arena-max-cons*
+                            :max-depth *arena-max-depth*
+                            :max-output *arena-max-output*
+                            :timeout *arena-timeout*)
+                (incf total-fuel (or (getf metrics :steps-used) 0))
+                (when (getf metrics :error-message)
+                  (return-from simulate-arena
+                    (make-arena-result
+                     :frames (nreverse frames)
+                     :bot-score (arena-state-bot-score state)
+                     :enemy-score (arena-state-enemy-score state)
+                     :fuel-used total-fuel
+                     :error (format nil "Turn ~D: ~A"
+                                    (arena-state-turn state)
+                                    (getf metrics :error-message)))))
+                (let ((bot-action (parse-action result))
+                      (enemy-action (enemy-decide-action
+                                     (arena-state-enemy-pos state)
+                                     (arena-state-grid state))))
+                  ;; Apply bot movement
+                  (unless (eq bot-action :pickup)
+                    (setf (arena-state-bot-pos state)
+                          (apply-move (arena-state-grid state)
+                                      (arena-state-bot-pos state) bot-action)))
+                  ;; Apply enemy movement
+                  (unless (eq enemy-action :pickup)
+                    (setf (arena-state-enemy-pos state)
+                          (apply-move (arena-state-grid state)
+                                      (arena-state-enemy-pos state) enemy-action)))
+                  ;; Bot pickup first (priority)
+                  (when (eq bot-action :pickup)
+                    (when (try-pickup (arena-state-grid state)
+                                      (arena-state-bot-pos state))
+                      (incf (arena-state-bot-score state))))
+                  ;; Enemy pickup second
+                  (when (eq enemy-action :pickup)
+                    (when (try-pickup (arena-state-grid state)
+                                      (arena-state-enemy-pos state))
+                      (incf (arena-state-enemy-score state))))
+                  ;; Record frame
+                  (push (copy-state state) frames)))))
           ;; Simulation complete
           (make-arena-result
            :frames (nreverse frames)
