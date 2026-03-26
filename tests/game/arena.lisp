@@ -21,6 +21,13 @@
 
 (in-package #:recurya/tests/game/arena)
 
+(defparameter *alist-ref-def*
+  "(define (alist-ref key alist)
+     (cond ((null? alist) nil)
+           ((equal? key (car (car alist))) (cdr (car alist)))
+           (t (alist-ref key (cdr alist)))))"
+  "WardLisp alist-ref definition to prepend to test code that needs it.")
+
 (defun simple-arena ()
   "A minimal 3x3 arena for testing."
   (let ((grid (make-grid 3 3)))
@@ -45,8 +52,9 @@
     ;; Bot at (0,0), moves down to (1,0), then right would hit wall at (1,1)
     (let* ((arena (simple-arena))
            (result (simulate-arena
-                    "(define (decide-action state)
+                    (format nil "~A~%(define (decide-action state)
                        (if (= (alist-ref :turn state) 1) :down :right))"
+                            *alist-ref-def*)
                     arena))
            (frame2 (third (arena-result-frames result))))
       ;; After turn 2: moved down to (1,0), then tried right to (1,1) wall → stays at (1,0)
@@ -57,9 +65,10 @@
     ;; Bot at (0,0), resource at (0,2). Move right twice, then pickup.
     (let* ((arena (simple-arena))
            (result (simulate-arena
-                    "(define (decide-action state)
+                    (format nil "~A~%(define (decide-action state)
                        (let ((t (alist-ref :turn state)))
                          (if (<= t 2) :right :pickup)))"
+                            *alist-ref-def*)
                     arena)))
       (ok (>= (arena-result-bot-score result) 1)))))
 

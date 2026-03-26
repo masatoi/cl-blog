@@ -2,9 +2,6 @@
 
 (defpackage #:recurya/tests/game/puzzle
   (:use #:cl #:rove)
-  (:import-from #:recurya/wardlisp/types
-                #:wardlisp-true
-                #:wardlisp-false)
   (:import-from #:recurya/game/puzzle
                 #:make-puzzle
                 #:make-test-case
