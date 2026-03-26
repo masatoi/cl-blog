@@ -27,6 +27,9 @@
                 #:test-result-error)
   (:import-from #:wardlisp
                 #:print-value)
+  (:import-from #:recurya/web/ui/editor
+                #:editor-head-tags
+                #:editor-textarea)
   (:export #:render
            #:render-result))
 
@@ -48,11 +51,6 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
         border-radius: 0 8px 8px 0; color: #fbbf24; font-size: 0.9rem;
         margin-bottom: 1.5rem; }
 .editor-area { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; }
-.editor-area textarea { width: 100%; min-height: 200px; font-family: 'SF Mono', 'Fira Code', monospace;
-                        font-size: 0.95rem; background: #1e293b; color: #e2e8f0;
-                        border: 1px solid #334155; border-radius: 8px; padding: 1rem;
-                        resize: vertical; line-height: 1.5; tab-size: 2; }
-.editor-area textarea:focus { outline: 2px solid #38bdf8; border-color: #38bdf8; }
 .btn-run { background: #2563eb; color: #fff; border: none; padding: 0.65rem 1.5rem;
            border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; }
 .btn-run:hover { background: #1d4ed8; }
@@ -89,7 +87,8 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
         (:script :src "https://unpkg.com/htmx.org@2.0.4"
          :integrity "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
          :crossorigin "anonymous")
-        (:style (:raw *styles*)))
+        (:style (:raw *styles*))
+        (:raw (editor-head-tags)))
        (:body
         (:main
          (:div :class "breadcrumb"
@@ -107,10 +106,9 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
              (format nil "~A  ; ~A" (test-case-input tc) (test-case-description tc)))))
          ;; Editor
          (:form :class "editor-area"
-          (:textarea :name "code" :placeholder "Write your solution here..."
-                     :autofocus t
-                     :spellcheck "false"
-                     (format nil "; ~A~%~%" (puzzle-signature puzzle)))
+          (:raw (editor-textarea "code"
+                                 (format nil "; ~A~%~%" (puzzle-signature puzzle))
+                                 :placeholder "Write your solution here..."))
           (:button :class "btn-run" :type "button"
                    :hx-post (format nil "/wardlisp/puzzle/~A/run" id)
                    :hx-include "closest form"

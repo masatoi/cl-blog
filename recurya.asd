@@ -61,6 +61,7 @@
                "recurya/web/routes"
                ;; WardLisp UI
                "recurya/web/ui/wardlisp-home"
+               "recurya/web/ui/editor"
                "recurya/web/ui/puzzle"
                "recurya/web/ui/arena"
                "recurya/web/ui/reference"

@@ -47,7 +47,7 @@
   padding: 0.5rem 0;
 }
 .cm-content {
-  padding: 0.5rem 0;
+  padding: 0 0.5rem;
   caret-color: #38bdf8;
 }"
   "CSS overrides for CodeMirror to match the site dark theme.")
