@@ -19,12 +19,13 @@
 (defparameter *importmap*
   "{
   \"imports\": {
-    \"@codemirror/view\": \"https://esm.sh/@codemirror/view@6.36.5\",
+    \"@lezer/highlight\": \"https://esm.sh/@lezer/highlight@1.2.1\",
     \"@codemirror/state\": \"https://esm.sh/@codemirror/state@6.5.2\",
-    \"@codemirror/basic-setup\": \"https://esm.sh/@codemirror/basic-setup@0.20.0?external=@codemirror/view,@codemirror/state\",
-    \"@codemirror/language\": \"https://esm.sh/@codemirror/language@6.10.8?external=@codemirror/view,@codemirror/state\",
+    \"@codemirror/view\": \"https://esm.sh/@codemirror/view@6.36.5?external=@codemirror/state\",
+    \"@codemirror/language\": \"https://esm.sh/@codemirror/language@6.10.8?external=@codemirror/view,@codemirror/state,@lezer/highlight\",
+    \"@codemirror/basic-setup\": \"https://esm.sh/@codemirror/basic-setup@0.20.0?external=@codemirror/view,@codemirror/state,@codemirror/language,@lezer/highlight\",
     \"@codemirror/legacy-modes/mode/scheme\": \"https://esm.sh/@codemirror/legacy-modes@6.5.1/mode/scheme?external=@codemirror/language\",
-    \"@codemirror/theme-one-dark\": \"https://esm.sh/@codemirror/theme-one-dark@6.1.2?external=@codemirror/view,@codemirror/state\"
+    \"@codemirror/theme-one-dark\": \"https://esm.sh/@codemirror/theme-one-dark@6.1.2?external=@codemirror/view,@codemirror/state,@codemirror/language,@lezer/highlight\"
   }
 }"
   "Import map JSON pinning CodeMirror 6 packages to esm.sh CDN URLs.")
@@ -49,6 +50,10 @@
 .cm-content {
   padding: 0 0.5rem;
   caret-color: #38bdf8;
+}
+.cm-cursor, .cm-dropCursor {
+  border-left-width: 0.55em !important;
+  border-color: rgba(56, 189, 248, 0.7) !important;
 }"
   "CSS overrides for CodeMirror to match the site dark theme.")
 

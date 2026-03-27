@@ -64,6 +64,9 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
         (:a :href "/wardlisp/arena"
             :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
             "Bot Arena")
+        (:a :href "/wardlisp/playground"
+            :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
+            "Playground")
         (:a :href "/wardlisp/reference"
             :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
             "Language Reference")))))))

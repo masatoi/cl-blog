@@ -64,6 +64,7 @@
                "recurya/web/ui/editor"
                "recurya/web/ui/puzzle"
                "recurya/web/ui/arena"
+               "recurya/web/ui/playground"
                "recurya/web/ui/reference"
                "recurya/web/routes-wardlisp"
                "recurya/web/server")

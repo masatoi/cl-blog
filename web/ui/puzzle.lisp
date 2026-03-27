@@ -72,6 +72,11 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
 .test-row:last-child { border-bottom: none; }
 .test-icon { font-size: 1rem; }
 .test-detail { font-family: monospace; color: #94a3b8; font-size: 0.85rem; }
+.eval-output { background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+               padding: 0.75rem 1rem; margin-bottom: 1rem; }
+.eval-output__label { color: #64748b; font-size: 0.8rem; margin-bottom: 0.3rem; }
+.eval-output__value { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.95rem;
+                      color: #4ade80; white-space: pre-wrap; }
 .metrics { margin-top: 1rem; color: #64748b; font-size: 0.85rem; }
 ")
 
@@ -118,40 +123,47 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
          ;; Result area (populated by HTMX)
          (:div :id "result-panel")))))))
 
-(defun render-result (result)
-  "Render the puzzle result as an HTMX fragment."
+(defun render-result (result &key eval-output eval-error)
+  "Render the puzzle result as an HTMX fragment.
+EVAL-OUTPUT is the printed result of evaluating the user code standalone.
+EVAL-ERROR is any error message from standalone evaluation."
   (let ((passed (puzzle-result-passed result))
         (total (puzzle-result-total result))
         (error-msg (puzzle-result-error result)))
     (with-html-string
       (:div :class "result"
-       ;; Error display
-       (when error-msg
-         (:div :class "result-error" error-msg))
-       ;; Score header
-       (:div :class (if (and (= passed total) (null error-msg))
-                        "result-header result-pass"
-                        "result-header result-fail")
-        (if error-msg
-            "Error"
-            (format nil "~D / ~D passed" passed total)))
-       ;; Individual test results
-       (unless error-msg
-         (dolist (tr (puzzle-result-test-results result))
-           (:div :class "test-row"
-            (:span :class "test-icon"
-                   (if (test-result-passed-p tr) "&#x2714;" "&#x2718;"))
-            (:span (test-result-description tr))
-            (unless (test-result-passed-p tr)
-              (if (test-result-error tr)
-                  (:span :class "test-detail"
-                         (format nil " error: ~A" (test-result-error tr)))
-                  (:span :class "test-detail"
-                         (format nil " expected ~A, got ~A"
-                                 (if (stringp (test-result-expected tr))
-                                     (test-result-expected tr)
-                                     (print-value (test-result-expected tr)))
-                                 (print-value (test-result-actual tr)))))))))
-       ;; Metrics
+       ;; Show standalone evaluation result
+       (when (or eval-output eval-error)
+         (:div :class "eval-output"
+          (:div :class "eval-output__label" "Output")
+          (if eval-error
+              (:div :class "result-error" eval-error)
+              (:div :class "eval-output__value" eval-output))))
+       ;; Test results header (always show pass/fail count)
+       (:div :class
+        (if (and (= passed total) (zerop (puzzle-result-failed result)))
+            "result-header result-pass"
+            "result-header result-fail")
+        (format nil "~D / ~D passed" passed total))
+       ;; Individual test rows (always show)
+       (dolist (tr (puzzle-result-test-results result))
+         (:div :class "test-row"
+          (:span :class (if (test-result-passed-p tr)
+                           "test-icon result-pass"
+                           "test-icon result-fail")
+           (:raw (if (test-result-passed-p tr)
+                     "&#x2714;"
+                     "&#x2718;")))
+          (:span (test-result-description tr))
+          (unless (test-result-passed-p tr)
+            (if (test-result-error tr)
+                (:span :class "test-detail"
+                 (format nil " error: ~A" (test-result-error tr)))
+                (:span :class "test-detail"
+                 (format nil " expected ~A, got ~A"
+                         (if (stringp (test-result-expected tr))
+                             (test-result-expected tr)
+                             (print-value (test-result-expected tr)))
+                         (print-value (test-result-actual tr))))))))
        (:div :class "metrics"
         (format nil "Fuel: ~D" (puzzle-result-fuel-used result)))))))

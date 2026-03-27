@@ -20,6 +20,10 @@
                 #:default-scenario)
   (:import-from #:recurya/web/ui/arena)
   (:import-from #:recurya/web/ui/reference)
+  (:import-from #:recurya/web/ui/playground)
+  (:import-from #:wardlisp
+                #:evaluate
+                #:print-value)
   (:export #:setup-wardlisp-routes))
 
 (in-package #:recurya/web/routes-wardlisp)
@@ -62,9 +66,25 @@
          (code (get-param params "code"))
          (puzzle (get-puzzle id)))
     (if puzzle
-        (let ((result (run-puzzle puzzle (or code ""))))
-          (html-response (recurya/web/ui/puzzle:render-result result)))
-        (html-response "<div class=\"error\">Puzzle not found</div>" :status 404))))
+        (let ((puzzle-result (run-puzzle puzzle (or code ""))))
+          ;; Evaluate user code standalone to show its output
+          (multiple-value-bind (eval-result eval-metrics)
+              (handler-case
+                  (evaluate (or code "")
+                            :fuel 100000 :max-depth 200
+                            :max-cons 10000 :max-output 10000
+                            :max-integer 100000000000 :timeout 5)
+                (error (e)
+                  (values nil (list :error-message (format nil "~A" e)))))
+            (let ((eval-error (getf eval-metrics :error-message))
+                  (eval-output (when eval-result (print-value eval-result))))
+              (html-response
+               (recurya/web/ui/puzzle:render-result
+                puzzle-result
+                :eval-output eval-output
+                :eval-error eval-error)))))
+        (html-response "<div class=\"error\">Puzzle not found</div>"
+                       :status 404))))
 
 (defun arena-page-handler (params)
   "GET /wardlisp/arena - Arena page with code editor."
@@ -83,6 +103,16 @@
   (html-response (recurya/web/ui/reference:render)))
 
 ;;; --- Dynamic dispatch ---
+
+(defun playground-handler (params)
+  "GET /wardlisp/playground - Free-form code evaluation page."
+  (declare (ignore params))
+  (html-response (recurya/web/ui/playground:render)))
+
+(defun playground-run-handler (params)
+  "POST /wardlisp/playground/run - Evaluate user code (HTMX fragment)."
+  (let ((code (get-param params "code")))
+    (html-response (recurya/web/ui/playground:render-result (or code "")))))
 
 (defun make-dynamic-handler (handler-symbol)
   "Create a handler that looks up the function by symbol at call time."
@@ -105,4 +135,8 @@
         (make-dynamic-handler 'arena-run-handler))
   (setf (ningle/app:route app "/wardlisp/reference")
         (make-dynamic-handler 'reference-page-handler))
+  (setf (ningle/app:route app "/wardlisp/playground")
+        (make-dynamic-handler 'playground-handler))
+  (setf (ningle/app:route app "/wardlisp/playground/run" :method :post)
+        (make-dynamic-handler 'playground-run-handler))
   app)
