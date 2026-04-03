@@ -77,12 +77,14 @@
                 (error (e)
                   (values nil (list :error-message (format nil "~A" e)))))
             (let ((eval-error (getf eval-metrics :error-message))
-                  (eval-output (print-value eval-result)))
+                  (eval-output (print-value eval-result))
+                  (print-output (getf eval-metrics :output)))
               (html-response
                (recurya/web/ui/puzzle:render-result
                 puzzle-result
                 :eval-output eval-output
-                :eval-error eval-error)))))
+                :eval-error eval-error
+                :print-output print-output)))))
         (html-response "<div class=\"error\">Puzzle not found</div>"
                        :status 404))))
 

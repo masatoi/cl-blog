@@ -12,10 +12,10 @@
   (make-puzzle
    :id :adjacent
    :title "adjacent?"
-   :description "Write (adjacent? p1 p2) that returns #t if two (row col) points
+   :description "Write (adjacent? p1 p2) that returns t if two (row col) points
 are horizontally or vertically adjacent (Manhattan distance = 1)."
    :signature "(adjacent? p1 p2)"
-   :hint "Use abs and arithmetic on car/cdr of each point."
+   :hint "Compute row/col differences with car/cdr. Define your own abs helper or use if to handle negative values."
    :difficulty 1
    :test-cases
    (list

@@ -16,6 +16,7 @@
            #:arena-state-enemy-score
            #:arena-state-turn
            #:arena-state-max-turns
+           #:arena-state-output
            #:simulate-arena
            #:arena-result
            #:arena-result-frames
@@ -39,7 +40,8 @@
   (bot-score 0 :type fixnum)
   (enemy-score 0 :type fixnum)
   (turn 0 :type fixnum)
-  (max-turns 20 :type fixnum))
+  (max-turns 20 :type fixnum)
+  (output nil))
 
 (defstruct arena-result
   "Result of a complete arena simulation."
@@ -206,7 +208,8 @@ All values are accessed via (alist-ref 'key state) using cadr pattern."
    :bot-score (arena-state-bot-score state)
    :enemy-score (arena-state-enemy-score state)
    :turn (arena-state-turn state)
-   :max-turns (arena-state-max-turns state)))
+   :max-turns (arena-state-max-turns state)
+   :output (arena-state-output state)))
 
 (defun parse-action (value)
   "Convert a WardLisp value to an action keyword. Returns :wait for invalid.
@@ -242,6 +245,9 @@ to CL keywords for the arena engine."
                             :max-output *arena-max-output*
                             :timeout *arena-timeout*)
                 (incf total-fuel (or (getf metrics :steps-used) 0))
+            (let ((output (getf metrics :output)))
+              (when (and output (plusp (length output)))
+                (setf (arena-state-output state) output)))
                 (when (getf metrics :error-message)
                   (return-from simulate-arena
                     (make-arena-result

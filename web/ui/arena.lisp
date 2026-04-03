@@ -16,7 +16,9 @@
                 #:arena-result-bot-score
                 #:arena-result-enemy-score
                 #:arena-result-fuel-used
-                #:arena-result-error)
+                #:arena-result-error
+                #:arena-state-output
+                #:state->wardlisp-source)
   (:import-from #:recurya/web/ui/editor
                 #:editor-head-tags
                 #:editor-textarea)
@@ -65,7 +67,17 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
 .result-error { color: #f87171; background: #2d1b1b; padding: 0.75rem 1rem;
                 border-radius: 8px; font-family: monospace; font-size: 0.9rem;
                 margin-bottom: 1rem; white-space: pre-wrap; }
-.metrics { color: #64748b; font-size: 0.85rem; text-align: center; margin-top: 0.5rem; }")
+.metrics { color: #64748b; font-size: 0.85rem; text-align: center; margin-top: 0.5rem; }
+.state-display { background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+                 padding: 0.5rem 1rem; margin: 0.5rem auto; max-width: 600px;
+                 font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.8rem;
+                 color: #94a3b8; word-break: break-all; white-space: pre-wrap; }
+.state-label { color: #64748b; font-size: 0.75rem; margin-bottom: 0.25rem; }
+.frame-output { background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+                padding: 0.5rem 1rem; margin: 0.5rem auto; max-width: 600px; }
+.frame-output__label { color: #64748b; font-size: 0.75rem; margin-bottom: 0.25rem; }
+.frame-output__value { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.85rem;
+                       color: #4ade80; white-space: pre-wrap; }")
 
 (defun cell-class (grid row col bot-pos enemy-pos)
   "Determine CSS class for a grid cell."
@@ -160,16 +172,26 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
                (format nil "Enemy: ~D" (arena-result-enemy-score result))))
        ;; Turn controls
        (:div :class "turn-controls"
-        (:button :onclick "prevFrame()" "&lt; Prev")
+        (:button :onclick "prevFrame()" (:raw "&laquo; Prev"))
+        (:button :onclick "resetFrames()" (:raw "&#x23EE;"))
+        (:button :onclick "playFrames()" :id "btn-play" (:raw "&#x25B6;"))
+        (:button :onclick "stopFrames()" (:raw "&#x25A0;"))
         (:span :class "turn-info" :id "turn-display" "Turn 0")
-        (:button :onclick "nextFrame()" "Next &gt;")
-        (:button :onclick "playFrames()" "Play"))
+        (:button :onclick "nextFrame()" (:raw "Next &raquo;")))
        ;; Frames (hidden, toggled by JS)
        (loop for frame in frames
              for i from 0
              do (:div :class (if (zerop i) "frame active" "frame")
                       :data-frame (format nil "~D" i)
-                 (:raw (render-grid frame))))
+                 (:raw (render-grid frame))
+                 (let ((output (arena-state-output frame)))
+                   (when output
+                     (:div :class "frame-output"
+                      (:div :class "frame-output__label" "Output")
+                      (:div :class "frame-output__value" output))))
+                 (:div :class "state-display"
+                  (:div :class "state-label" "state")
+                  (state->wardlisp-source frame))))
        ;; Metrics
        (:div :class "metrics"
         (format nil "Total fuel: ~D | Frames: ~D"
@@ -194,10 +216,17 @@ function nextFrame() {
 function prevFrame() {
   if (currentFrame > 0) { currentFrame--; showFrame(currentFrame); }
 }
-function playFrames() {
-  if (playing) { clearInterval(playTimer); playing = false; return; }
-  playing = true;
+function stopFrames() {
+  if (playing) { clearInterval(playTimer); playing = false; }
+}
+function resetFrames() {
+  stopFrames();
   currentFrame = 0; showFrame(0);
+}
+function playFrames() {
+  if (playing) { stopFrames(); return; }
+  playing = true;
+  if (currentFrame >= totalFrames - 1) { currentFrame = 0; showFrame(0); }
   playTimer = setInterval(function() {
     if (currentFrame >= totalFrames - 1) { clearInterval(playTimer); playing = false; return; }
     currentFrame++; showFrame(currentFrame);

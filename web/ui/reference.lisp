@@ -56,9 +56,11 @@ td code { font-size: 0.85rem; }
        (:table
         (:tr (:th "Type") (:th "Examples") (:th "Notes"))
         (:tr (:td "Integer") (:td (:code "42") ", " (:code "-7") ", " (:code "0")) (:td "Whole numbers"))
+        (:tr (:td "Float") (:td (:code "3.14") ", " (:code "-0.5") ", " (:code "1e3")) (:td "Double-precision floating point"))
         (:tr (:td "Boolean") (:td (:code "t") ", " (:code "nil")) (:td "True and false"))
         (:tr (:td "Symbol") (:td (:code "'up") ", " (:code "'foo")) (:td "Named values (quote to use as data)"))
-        (:tr (:td "List") (:td (:code "'(1 2 3)")) (:td "Cons cells ending in nil"))
+        (:tr (:td "Pair") (:td (:code "(cons 1 2)") " => " (:code "(1 . 2)")) (:td "Two-element pair (car/cdr)"))
+        (:tr (:td "List") (:td (:code "'(1 2 3)")) (:td "Pairs ending in nil"))
         (:tr (:td "Nil") (:td (:code "nil")) (:td "Empty list, false value"))
         (:tr (:td "Function") (:td (:code "(lambda (x) x)")) (:td "Closures with lexical scope")))
 
@@ -78,7 +80,10 @@ td code { font-size: 0.85rem; }
         (:div :class "entry-desc" "Conditional. Only nil is falsy."))
        (:div :class "entry"
         (:div :class "entry-sig" "(let ((var val) ...) body...)")
-        (:div :class "entry-desc" "Local bindings evaluated in order."))
+        (:div :class "entry-desc" "Parallel bindings. All values evaluated before binding."))
+       (:div :class "entry"
+        (:div :class "entry-sig" "(let* ((var val) ...) body...)")
+        (:div :class "entry-desc" "Sequential bindings. Each binding sees previous ones."))
        (:div :class "entry"
         (:div :class "entry-sig" "(begin expr...)")
         (:div :class "entry-desc" "Evaluate expressions in sequence, return last."))
@@ -101,12 +106,13 @@ td code { font-size: 0.85rem; }
        ;; Arithmetic
        (:h2 "Built-in Functions")
        (:h3 "Arithmetic")
-       (:pre (:code "(+ 1 2 3)    ; => 6
-(- 10 3)      ; => 7
-(* 2 3 4)     ; => 24
-(div 10 3)    ; => 3  (integer division)
-(mod 7 3)     ; => 1
-(abs -5)      ; => 5"))
+       (:pre (:code "(+ 1 2 3)       ; => 6
+(- 10 3)         ; => 7
+(* 2 3 4)        ; => 24
+(/ 6 3)          ; => 2   (exact: integer)
+(/ 7 2)          ; => 3.5 (inexact: float)
+(quotient 10 3)  ; => 3   (integer division)
+(mod 7 3)        ; => 1"))
 
        ;; Comparison
        (:h3 "Comparison")
@@ -114,44 +120,43 @@ td code { font-size: 0.85rem; }
 (< 1 2)       ; => t
 (> 5 3)       ; => t
 (<= 3 3)      ; => t
-(>= 4 4)      ; => t
-(equal? x y)  ; deep equality
-(not nil)     ; => t"))
+(>= 4 4)      ; => t"))
 
        ;; Lists
        (:h3 "List Operations")
        (:pre (:code "(cons 1 '(2 3))      ; => (1 2 3)
+(cons 1 2)            ; => (1 . 2)
 (car '(1 2 3))        ; => 1
 (cdr '(1 2 3))        ; => (2 3)
 (list 1 2 3)          ; => (1 2 3)
 (null? '())           ; => t
-(pair? '(1 2))        ; => t
+(atom? 42)            ; => t  (non-pair)
 (length '(1 2 3))     ; => 3
 (append '(1 2) '(3))  ; => (1 2 3)"))
 
        ;; Type Predicates
        (:h3 "Type Predicates")
-       (:pre (:code "(number? 42)    ; => t
-(boolean? t)    ; => t
-(symbol? 'up)   ; => t
-(list? '(1))    ; => t
-(atom? 42)      ; => t
-(eq? x y)       ; reference equality"))
+       (:pre (:code "(null? x)       ; => t if x is nil
+(atom? x)       ; => t if x is not a pair
+(integer? 42)   ; => t
+(number? 3.14)  ; => t  (integer or float)
+(not nil)       ; => t
+(eq? x y)       ; shallow equality
+(equal? x y)    ; deep structural equality"))
 
        ;; Utility
        (:h3 "Utility")
-       (:pre (:code "(print 42)      ; prints to output
-(equal? x y)    ; deep structural equality"))
+       (:pre (:code "(print 42)      ; prints to output, returns value"))
 
        ;; Resource Limits
        (:h2 "Resource Limits")
        (:p "All executions are sandboxed with these limits:")
        (:table :class "limit-table"
         (:tr (:th "Resource") (:th "Limit") (:th "Description"))
-        (:tr (:td "Fuel") (:td "10,000 steps") (:td "Maximum evaluation steps"))
-        (:tr (:td "Cons") (:td "5,000 cells") (:td "Maximum list allocations"))
-        (:tr (:td "Depth") (:td "100 levels") (:td "Maximum recursion depth"))
-        (:tr (:td "Output") (:td "4,096 bytes") (:td "Maximum printed output"))
+        (:tr (:td "Fuel") (:td "100,000 steps") (:td "Maximum evaluation steps"))
+        (:tr (:td "Cons") (:td "10,000 cells") (:td "Maximum list allocations"))
+        (:tr (:td "Depth") (:td "200 levels") (:td "Maximum recursion depth"))
+        (:tr (:td "Output") (:td "10,000 chars") (:td "Maximum printed output"))
         (:tr (:td "Timeout") (:td "5 seconds") (:td "Wall-clock time limit")))
 
        ;; Examples

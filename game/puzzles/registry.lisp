@@ -13,7 +13,7 @@
 
 (in-package #:recurya/game/puzzles/registry)
 
-(defvar *puzzles*
+(defparameter *puzzles*
   (list (make-adjacent-puzzle)
         (make-contains-puzzle)
         (make-nearest-point-puzzle)

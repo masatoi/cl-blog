@@ -36,6 +36,11 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
                 border-radius: 8px; font-family: monospace; font-size: 0.9rem;
                 white-space: pre-wrap; }
 .metrics { margin-top: 1rem; color: #64748b; font-size: 0.85rem; }
+.print-output { background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+                padding: 0.75rem 1rem; margin-bottom: 1rem; }
+.print-output__label { color: #64748b; font-size: 0.8rem; margin-bottom: 0.3rem; }
+.print-output__value { font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.95rem;
+                       color: #fbbf24; white-space: pre-wrap; }
 ")
 
 (defun render ()
@@ -80,14 +85,24 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
                    :max-integer 100000000000
                    :timeout 5)
         (let ((fuel-used (getf metrics :steps-used))
+              (cons-used (getf metrics :cons-allocated))
+              (depth-reached (getf metrics :max-depth-reached))
+              (print-output (getf metrics :output))
               (error-msg (getf metrics :error-message)))
           (with-html-string
             (:div :class "result"
              (when error-msg
                (:div :class "result-error" error-msg))
+             (when (and print-output (plusp (length print-output)))
+               (:div :class "print-output"
+                (:div :class "print-output__label" "Print Output")
+                (:div :class "print-output__value" print-output)))
              (:div :class "result-value" (print-value result))
              (:div :class "metrics"
-              (format nil "Fuel used: ~D" (or fuel-used 0)))))))
+              (format nil "Fuel: ~D | Cons: ~D | Depth: ~D"
+                      (or fuel-used 0)
+                      (or cons-used 0)
+                      (or depth-reached 0)))))))
     (error (e)
       (with-html-string
         (:div :class "result"

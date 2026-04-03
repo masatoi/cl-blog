@@ -12,10 +12,10 @@
   (make-puzzle
    :id :contains
    :title "contains?"
-   :description "Write (contains? lst item) that returns #t if item is in the list, #f otherwise.
+   :description "Write (contains? lst item) that returns t if item is in the list, nil otherwise.
 Use recursion with car/cdr."
    :signature "(contains? lst item)"
-   :hint "Base case: empty list returns #f. Recursive: check car, else search cdr."
+   :hint "Base case: empty list returns nil. Recursive: check car, else search cdr."
    :difficulty 1
    :test-cases
    (list

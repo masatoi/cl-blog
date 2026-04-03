@@ -28,6 +28,14 @@ recurya/
 @prompts/common-lisp-expert.md
 @prompts/repl-driven-development.md
 
+## Special precautions when working with Lisp files
+
+All Lisp operations go through cl-mcp tools as defined in `repl-driven-development.md`. This applies to **Claude Code's built-in tools as well** — do not use Read, Edit, Write, Grep, or Glob for `.lisp` / `.asd` files. Use `clgrep-search`, `lisp-read-file`, `lisp-edit-form`, `lisp-patch-form`, `repl-eval`, `load-system`, `run-tests` instead.
+
+**Allowed shell commands**: `git`, `gh`, `mallet`, and user-requested commands only.
+
+**First-time setup**: Call `fs-set-project-root` with `{"path": "."}` before file operations.
+
 ## Core Architecture
 
 ### Web Stack

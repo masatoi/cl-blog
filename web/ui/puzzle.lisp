@@ -19,6 +19,8 @@
                 #:puzzle-result-total
                 #:puzzle-result-test-results
                 #:puzzle-result-fuel-used
+                #:puzzle-result-cons-used
+                #:puzzle-result-depth-reached
                 #:puzzle-result-error
                 #:test-result-passed-p
                 #:test-result-expected
@@ -123,19 +125,26 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
          ;; Result area (populated by HTMX)
          (:div :id "result-panel")))))))
 
-(defun render-result (result &key eval-output eval-error)
+(defun render-result (result &key eval-output eval-error print-output)
   "Render the puzzle result as an HTMX fragment.
 EVAL-OUTPUT is the printed result of evaluating the user code standalone.
-EVAL-ERROR is any error message from standalone evaluation."
+EVAL-ERROR is any error message from standalone evaluation.
+PRINT-OUTPUT is the stdout from (print ...) calls during evaluation."
   (let ((passed (puzzle-result-passed result))
         (total (puzzle-result-total result))
         (error-msg (puzzle-result-error result)))
     (with-html-string
       (:div :class "result"
+       ;; Show print output if any
+       (when (and print-output (plusp (length print-output)))
+         (:div :class "eval-output"
+          (:div :class "eval-output__label" "Print Output")
+          (:div :class "eval-output__value"
+           :style "color: #fbbf24;" print-output)))
        ;; Show standalone evaluation result
        (when (or eval-output eval-error)
          (:div :class "eval-output"
-          (:div :class "eval-output__label" "Output")
+          (:div :class "eval-output__label" "Result")
           (if eval-error
               (:div :class "result-error" eval-error)
               (:div :class "eval-output__value" eval-output))))
@@ -166,4 +175,7 @@ EVAL-ERROR is any error message from standalone evaluation."
                              (print-value (test-result-expected tr)))
                          (print-value (test-result-actual tr))))))))
        (:div :class "metrics"
-        (format nil "Fuel: ~D" (puzzle-result-fuel-used result)))))))
+        (format nil "Fuel: ~D | Cons: ~D | Depth: ~D"
+                (puzzle-result-fuel-used result)
+                (puzzle-result-cons-used result)
+                (puzzle-result-depth-reached result)))))))
