@@ -7,6 +7,7 @@
   (:import-from #:recurya/game/puzzles/nearest-point #:make-nearest-point-puzzle)
   (:import-from #:recurya/game/puzzles/safe-moves #:make-safe-moves-puzzle)
   (:import-from #:recurya/game/puzzles/choose-action #:make-choose-action-puzzle)
+  (:import-from #:recurya/game/puzzles/sqrt2-newton #:make-sqrt2-newton-puzzle)
   (:import-from #:recurya/game/puzzle #:puzzle-id)
   (:export #:get-puzzle
            #:all-puzzles))
@@ -18,7 +19,8 @@
         (make-contains-puzzle)
         (make-nearest-point-puzzle)
         (make-safe-moves-puzzle)
-        (make-choose-action-puzzle))
+        (make-choose-action-puzzle)
+        (make-sqrt2-newton-puzzle))
   "All available puzzles, in display order.")
 
 (defun get-puzzle (id)

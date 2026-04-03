@@ -19,16 +19,25 @@
 (defparameter *importmap*
   "{
   \"imports\": {
-    \"@lezer/highlight\": \"https://esm.sh/@lezer/highlight@1.2.1\",
-    \"@codemirror/state\": \"https://esm.sh/@codemirror/state@6.5.2\",
-    \"@codemirror/view\": \"https://esm.sh/@codemirror/view@6.36.5?external=@codemirror/state\",
-    \"@codemirror/language\": \"https://esm.sh/@codemirror/language@6.10.8?external=@codemirror/view,@codemirror/state,@lezer/highlight\",
-    \"@codemirror/basic-setup\": \"https://esm.sh/@codemirror/basic-setup@0.20.0?external=@codemirror/view,@codemirror/state,@codemirror/language,@lezer/highlight\",
-    \"@codemirror/legacy-modes/mode/scheme\": \"https://esm.sh/@codemirror/legacy-modes@6.5.1/mode/scheme?external=@codemirror/language\",
-    \"@codemirror/theme-one-dark\": \"https://esm.sh/@codemirror/theme-one-dark@6.1.2?external=@codemirror/view,@codemirror/state,@codemirror/language,@lezer/highlight\"
+    \"@lezer/highlight\": \"https://esm.sh/*@lezer/highlight@1.2.1\",
+    \"@codemirror/state\": \"https://esm.sh/*@codemirror/state@6.5.2\",
+    \"@codemirror/view\": \"https://esm.sh/*@codemirror/view@6.36.5\",
+    \"@codemirror/language\": \"https://esm.sh/*@codemirror/language@6.10.8\",
+    \"@codemirror/commands\": \"https://esm.sh/*@codemirror/commands@6.8.1\",
+    \"@codemirror/search\": \"https://esm.sh/*@codemirror/search@6.5.10\",
+    \"@codemirror/autocomplete\": \"https://esm.sh/*@codemirror/autocomplete@6.18.6\",
+    \"@codemirror/lint\": \"https://esm.sh/*@codemirror/lint@6.8.5\",
+    \"@codemirror/basic-setup\": \"https://esm.sh/*@codemirror/basic-setup@0.20.0\",
+    \"@codemirror/legacy-modes/mode/scheme\": \"https://esm.sh/*@codemirror/legacy-modes@6.5.1/mode/scheme\",
+    \"@codemirror/theme-one-dark\": \"https://esm.sh/*@codemirror/theme-one-dark@6.1.2\",
+    \"style-mod\": \"https://esm.sh/*style-mod@4.1.2\",
+    \"w3c-keyname\": \"https://esm.sh/*w3c-keyname@2.2.8\",
+    \"@marijn/find-cluster-break\": \"https://esm.sh/*@marijn/find-cluster-break@1.0.2\",
+    \"@lezer/common\": \"https://esm.sh/*@lezer/common@1.2.3\",
+    \"crelt\": \"https://esm.sh/*crelt@1.0.6\"
   }
 }"
-  "Import map JSON pinning CodeMirror 6 packages to esm.sh CDN URLs.")
+  "Import map JSON pinning CodeMirror 6 packages to esm.sh CDN with bundle mode (*).")
 
 (defparameter *editor-styles*
   ".cm-editor {
@@ -60,7 +69,8 @@
 (defun editor-head-tags ()
   "Return HTML string with importmap and style tags for CodeMirror 6.
 
-Include this in the <head> of any page that uses the editor component."
+Include this in the <head> of any page that uses the editor component.
+Uses esm.sh bundle mode (*) so each package is self-contained."
   (with-html-string
     (:script :type "importmap" (:raw *importmap*))
     (:style (:raw *editor-styles*))))
@@ -70,23 +80,19 @@ Include this in the <head> of any page that uses the editor component."
 
 NAME is the form field name for the hidden textarea.
 INITIAL-VALUE is the starting content of the editor.
-PLACEHOLDER, when non-empty, sets an aria-placeholder attribute on the editor."
+PLACEHOLDER, when non-empty, sets an aria-placeholder attribute on the editor.
+Uses esm.sh bundle mode (*) for fast single-request loading."
   (let ((escaped-value (escape-string initial-value))
         (escaped-placeholder (escape-string placeholder))
-        (has-placeholder (and placeholder (stringp placeholder)
-                             (> (length placeholder) 0))))
+        (has-placeholder
+         (and placeholder (stringp placeholder) (> (length placeholder) 0))))
     (with-html-string
-      ;; Hidden textarea for form submission
-      (:textarea :id "editor-source"
-                 :name name
-                 :style "display:none"
-                 (:raw escaped-value))
-      ;; CodeMirror mount point
+      (:textarea :id "editor-source" :name name :style "display:none"
+       (:raw escaped-value))
       (:div :id "editor-mount")
-      ;; Initialization script
       (:script :type "module"
-        (:raw
-         (format nil "
+       (:raw
+        (format nil "
 try {
   const { EditorView } = await import('@codemirror/view');
   const { EditorState } = await import('@codemirror/state');

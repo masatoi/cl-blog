@@ -25,12 +25,13 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
                text-decoration: none; color: #e2e8f0; display: block;
                border: 1px solid #334155; transition: border-color 0.15s; }
 .puzzle-card:hover { border-color: #38bdf8; }
-.puzzle-card__title { font-size: 1.15rem; font-weight: 700; margin: 0 0 0.5rem;
-                      font-family: monospace; color: #38bdf8; }
-.puzzle-card__desc { color: #94a3b8; font-size: 0.95rem; margin: 0; }
+.puzzle-card__title { font-size: 1.25rem; font-weight: 700; margin: 0 0 0.25rem;
+                      font-family: 'SF Mono', 'Fira Code', monospace; color: #f8fafc; }
+.puzzle-card__desc { color: #64748b; font-size: 0.85rem; margin: 0;
+                     line-height: 1.4; white-space: pre-line; }
+.puzzle-card__meta { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.75rem; }
 .puzzle-card__diff { display: inline-block; background: #334155; color: #94a3b8;
-                     padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.8rem;
-                     margin-top: 0.75rem; }")
+                     padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; }")
 
 (defun difficulty-label (n)
   (cond ((<= n 1) "Easy")
@@ -55,11 +56,11 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
           (:li
            (:a :class "puzzle-card"
                :href (format nil "/wardlisp/puzzle/~(~A~)" (puzzle-id p))
-            (:h2 :class "puzzle-card__title"
-                 (format nil "(~A)" (puzzle-title p)))
+            (:h2 :class "puzzle-card__title" (puzzle-title p))
             (:p :class "puzzle-card__desc" (puzzle-description p))
-            (:span :class "puzzle-card__diff"
-                   (difficulty-label (puzzle-difficulty p)))))))
+            (:div :class "puzzle-card__meta"
+             (:span :class "puzzle-card__diff"
+                    (difficulty-label (puzzle-difficulty p))))))))
        (:div :style "margin-top: 2.5rem; display: flex; gap: 1rem; justify-content: center;"
         (:a :href "/wardlisp/arena"
             :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"

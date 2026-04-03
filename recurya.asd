@@ -29,6 +29,7 @@
                "recurya/game/puzzles/nearest-point"
                "recurya/game/puzzles/safe-moves"
                "recurya/game/puzzles/choose-action"
+               "recurya/game/puzzles/sqrt2-newton"
                "recurya/game/puzzles/registry"
                ;; Arena
                "recurya/game/arena"
