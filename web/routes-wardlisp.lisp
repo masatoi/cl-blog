@@ -77,7 +77,7 @@
                 (error (e)
                   (values nil (list :error-message (format nil "~A" e)))))
             (let ((eval-error (getf eval-metrics :error-message))
-                  (eval-output (when eval-result (print-value eval-result))))
+                  (eval-output (print-value eval-result)))
               (html-response
                (recurya/web/ui/puzzle:render-result
                 puzzle-result

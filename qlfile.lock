@@ -69,7 +69,7 @@
 ("wardlisp" .
  (:class qlot/source/git:source-git
   :initargs (:remote-url "https://github.com/masatoi/wardlisp")
-  :version "git-cb4b5bc46983e864e57c935b024aac85a3ef5441"))
+  :version "git-43928b24b21d47519cc3a0418cf06a27b6331f49"))
 ("ningle" .
  (:class qlot/source/git:source-git
   :initargs (:remote-url "https://github.com/fukamachi/ningle")
