@@ -1,4 +1,9 @@
-import { cellsToBody } from './cell-editor.js';
+import {
+  cellsToBody,
+  serverCellToState,
+  stateCellToServer,
+  kindOptionsFor,
+} from './cell-editor.js';
 import assert from 'node:assert';
 
 // Fixtures use the canonical server `data-cells` shape (kebab keys such as
@@ -60,3 +65,65 @@ assert.strictEqual(cellsToBody([]), '');
 }
 
 console.log('ok: additional cases (empty list, scene, non-empty input, multiple test-cases)');
+
+// serverCellToState / stateCellToServer / cellsToBody round trip: a
+// representative mix of cell kinds (prose, code-eval, code-exercise with
+// multiple test-cases, code-solution, scene) taken through the internal
+// editor state shape and back out should serialize identically to feeding
+// the original server-shaped cells straight into cellsToBody. This is the
+// pure (DOM-free) half of the browser submit-time conversion.
+{
+  const serverCells = [
+    { 'cell-id': 'c1', kind: 'prose', body: 'Hello.', description: null, 'test-cases': [] },
+    { 'cell-id': '', kind: 'code-eval', body: '(+ 1 2)', description: '', 'test-cases': [] },
+    {
+      'cell-id': '',
+      kind: 'code-exercise',
+      body: '; ?',
+      description: 'sum',
+      'test-cases': [
+        { description: 'sum', input: '', expected: '3' },
+        { description: 'basic', input: '(zero? 0)', expected: 't' },
+      ],
+    },
+    {
+      'cell-id': '',
+      kind: 'code-solution',
+      body: '(define (sq x) (* x x))',
+      description: 'sq',
+      'test-cases': [],
+    },
+    { 'cell-id': '', kind: 'scene', body: 'A scene body.', description: null, 'test-cases': [] },
+  ];
+
+  const roundTripped = serverCells.map(serverCellToState).map(stateCellToServer);
+  assert.strictEqual(cellsToBody(roundTripped), cellsToBody(serverCells));
+
+  // cell-id survives the round trip (kept in state even though cellsToBody
+  // itself never reads it).
+  assert.strictEqual(roundTripped[0]['cell-id'], 'c1');
+}
+
+console.log('ok: serverCellToState/stateCellToServer round trip matches cellsToBody');
+
+// kindOptionsFor: `scene` is preserved as an option only when the cell is
+// already a scene cell; otherwise exactly the four editable kinds are offered
+// (scene is never a fresh choice).
+{
+  assert.deepStrictEqual(kindOptionsFor({ kind: 'scene' }), [
+    'prose',
+    'code-eval',
+    'code-exercise',
+    'code-solution',
+    'scene',
+  ]);
+  assert.deepStrictEqual(kindOptionsFor({ kind: 'prose' }), [
+    'prose',
+    'code-eval',
+    'code-exercise',
+    'code-solution',
+  ]);
+  assert.ok(!kindOptionsFor({ kind: 'code-eval' }).includes('scene'));
+}
+
+console.log('ok: kindOptionsFor preserves scene only for existing scene cells');
