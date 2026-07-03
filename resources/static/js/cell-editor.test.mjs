@@ -127,3 +127,66 @@ console.log('ok: serverCellToState/stateCellToServer round trip matches cellsToB
 }
 
 console.log('ok: kindOptionsFor preserves scene only for existing scene cells');
+
+// Lisp <-> JS fence parity (Task 5): the JS `cellsToBody` output must match the
+// server's Lisp `recurya/game/notebook-parser:cells->body-md` byte-for-byte for
+// a representative mix of every cell kind and every test-case variant (desc +
+// single-line expected, bare `===expect===`, and the two-line input/output
+// form). `LISP_BODY_MD` below is NOT hand-derived: it is the exact string
+// returned by evaluating the following in the running image (JSON-encoded so
+// newlines transfer unambiguously), then pasted here verbatim:
+//
+//   (recurya/utils/common:json->string
+//    (recurya/game/notebook-parser:cells->body-md
+//     (list
+//      (recurya/game/notebook:make-cell :id "" :kind :prose
+//        :body (format nil "Intro paragraph.~%Second line with **bold**.")
+//        :description "" :test-cases nil)
+//      (recurya/game/notebook:make-cell :id "" :kind :code-eval
+//        :body "(+ 1 2)" :description "" :test-cases nil)
+//      (recurya/game/notebook:make-cell :id "" :kind :code-exercise
+//        :body "; fill me in" :description "double it"
+//        :test-cases (list
+//         (recurya/game/puzzle:make-test-case :input "" :expected "4" :description "even")
+//         (recurya/game/puzzle:make-test-case :input "" :expected "0" :description "")
+//         (recurya/game/puzzle:make-test-case :input "(f 3)" :expected "6" :description "positive")))
+//      (recurya/game/notebook:make-cell :id "" :kind :code-solution
+//        :body "(define (double x) (* x 2))" :description "double soln" :test-cases nil)
+//      (recurya/game/notebook:make-cell :id "" :kind :scene
+//        :body "A quiet room." :description "" :test-cases nil))))
+{
+  const LISP_BODY_MD =
+    '===prose===\nIntro paragraph.\nSecond line with **bold**.\n\n' +
+    '===eval===\n(+ 1 2)\n\n' +
+    '===exercise: double it===\n; fill me in\n\n' +
+    '===expect: even===\n4\n\n' +
+    '===expect===\n0\n\n' +
+    '===expect: positive===\ninput: (f 3)\noutput: 6\n\n' +
+    '===solution: double soln===\n(define (double x) (* x 2))\n\n' +
+    '===scene===\nA quiet room.';
+
+  // Same cells in the canonical server `data-cells` shape the browser reads.
+  const parityCells = [
+    { 'cell-id': '', kind: 'prose',
+      body: 'Intro paragraph.\nSecond line with **bold**.',
+      description: '', 'test-cases': [] },
+    { 'cell-id': '', kind: 'code-eval', body: '(+ 1 2)',
+      description: '', 'test-cases': [] },
+    { 'cell-id': '', kind: 'code-exercise', body: '; fill me in',
+      description: 'double it',
+      'test-cases': [
+        { input: '', expected: '4', description: 'even' },
+        { input: '', expected: '0', description: '' },
+        { input: '(f 3)', expected: '6', description: 'positive' },
+      ] },
+    { 'cell-id': '', kind: 'code-solution',
+      body: '(define (double x) (* x 2))',
+      description: 'double soln', 'test-cases': [] },
+    { 'cell-id': '', kind: 'scene', body: 'A quiet room.',
+      description: '', 'test-cases': [] },
+  ];
+
+  assert.strictEqual(cellsToBody(parityCells), LISP_BODY_MD);
+}
+
+console.log('ok: JS cellsToBody matches Lisp cells->body-md (fence parity)');
