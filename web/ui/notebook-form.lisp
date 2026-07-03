@@ -9,6 +9,8 @@
                 #:page-shell)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-input)
+  (:import-from #:recurya/web/ui/editor
+                #:editor-head-tags)
   (:export #:render))
 
 (in-package #:recurya/web/ui/notebook-form)
@@ -94,6 +96,10 @@ data-cells attribute for the client-side cell editor to consume."
     (page-shell :title (format nil "recurya - ~A" page-title)
                 :styles page-styles
                 :user user
+                :head-extras (editor-head-tags)
+                :body-scripts
+                (with-html-string
+                  (:script :type "module" :src "/static/js/cell-editor.js"))
                 :body-content
                 (with-html-string
                   (:div :class "card"

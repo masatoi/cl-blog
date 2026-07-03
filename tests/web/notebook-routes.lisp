@@ -332,6 +332,21 @@ hi"
           (ok (search "prose" body) "cells JSON mentions prose kind")
           (ok (search "code-eval" body) "cells JSON mentions eval kind"))))))
 
+(deftest notebook-edit-form-loads-codemirror-and-editor-js
+  (with-test-db
+    (let* ((user (mk-user))
+           (dao (get-user-by-id (getf user :id)))
+           (nb (create-notebook! :title "N" :slug "n"
+                :body-md (format nil "===prose===~%hi")
+                :cells nil :status "draft" :visibility "private" :author dao))
+           (id (princ-to-string (notebook-id nb))))
+      (with-mock-session (make-session :user user)
+        (let ((body (first (response-body
+                            (notebook-edit-handler (list (cons :id id)))))))
+          (ok (search "codemirror" body) "loads CodeMirror importmap")
+          (ok (search "/static/js/cell-editor.js" body) "loads cell-editor.js")
+          (ok (search "cell-editor-root" body) "has editor mount point"))))))
+
 (deftest update-handler-403-for-non-owner
   (with-test-db
     (let* ((owner (mk-user))
