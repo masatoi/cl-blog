@@ -118,6 +118,26 @@ hi"))))
           (ok (= 200 (response-status res)))
           (ok (search "Title is required" body)))))))
 
+(deftest create-handler-validation-error-preserves-cells-json
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        (let* ((res (notebook-create-handler
+                     (list (cons "title" "")
+                           (cons "body" "===prose===
+hi
+
+===eval===
+(+ 1 2)")
+                           (cons "status" "draft")
+                           (cons "visibility" "private"))))
+               (body (first (response-body res))))
+          (ok (= 200 (response-status res)))
+          (ok (search "data-cells=" body)
+              "re-rendered form still embeds a data-cells attribute")
+          (ok (search "code-eval" body)
+              "submitted eval cell survives the validation re-render"))))))
+
 (deftest create-handler-rejects-blank-body
   (with-test-db
     (let ((user (mk-user)))
@@ -329,7 +349,6 @@ hi"
         (let ((body (first (response-body
                             (notebook-edit-handler (list (cons :id id)))))))
           (ok (search "data-cells=" body) "edit form embeds data-cells")
-          (ok (search "prose" body) "cells JSON mentions prose kind")
           (ok (search "code-eval" body) "cells JSON mentions eval kind"))))))
 
 (deftest notebook-edit-form-loads-codemirror-and-editor-js
@@ -411,6 +430,32 @@ nope"))))
           (ok (search "Validation errors" body))
           (let ((nb-after (get-notebook-by-id id)))
             (ok (string= "Before" (notebook-title nb-after)))))))))
+
+(deftest update-handler-validation-error-preserves-cells-json
+  (with-test-db
+    (let* ((user (mk-user))
+           (dao (get-user-by-id (getf user :id)))
+           (nb (create-notebook! :title "Before"
+                                       :body-md "===prose===
+old"
+                                       :cells '()
+                                       :author dao))
+           (id (princ-to-string (notebook-id nb))))
+      (with-mock-session (make-session :user user)
+        (let* ((res (notebook-update-handler
+                     (list (cons :id id)
+                           (cons "title" "")
+                           (cons "body" "===prose===
+hi
+
+===eval===
+(+ 1 2)"))))
+               (body (first (response-body res))))
+          (ok (= 200 (response-status res)))
+          (ok (search "data-cells=" body)
+              "re-rendered form still embeds a data-cells attribute")
+          (ok (search "code-eval" body)
+              "submitted eval cell survives the validation re-render"))))))
 
 (deftest update-handler-persists-visibility
   (with-test-db

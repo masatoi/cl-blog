@@ -386,6 +386,21 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
         :updated-at (notebook-updated-at nb)
         :author-id (notebook-author-id nb)))
 
+(defun cells->cells-json (cells)
+  "Serialize parsed notebook CELLS to a data-cells JSON string.
+Returns \"[]\" when CELLS is empty or JSON encoding yields nothing."
+  (or (json->string (mapcar #'cell->jsonb-form cells)) "[]"))
+
+(defun body->cells-json (body)
+  "Best-effort serialize BODY's parsed cells to a data-cells JSON string.
+Returns \"[]\" for empty/blank BODY or when parsing yields no cells. Any
+parse errors are dropped: this is only used to re-seed the cell editor with
+the user's submitted content on a validation re-render where a different
+error (e.g. a missing title) is the one surfaced to the user."
+  (if (or (null body) (equal body ""))
+      "[]"
+      (cells->cells-json (parse-notebook-body body))))
+
 (defun notebooks-handler (params)
   "Handle GET /dashboard/notebooks - admin notebook list (own notebooks)."
   (let ((user (get-current-user)))
@@ -437,6 +452,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
                :notebook (list :title title :slug slug :summary summary
                                :body-md body :status status
                                :visibility visibility)
+               :cells-json (body->cells-json body)
                :errors '((:line nil :message "Title is required.")))))
             ((or (null body) (equal body ""))
              (html-response
@@ -445,6 +461,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
                :notebook (list :title title :slug slug :summary summary
                                :body-md body :status status
                                :visibility visibility)
+               :cells-json (body->cells-json body)
                :errors '((:line nil :message "Body is required.")))))
             (t
              (multiple-value-bind (cells parse-errors)
@@ -457,6 +474,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
                     :notebook (list :title title :slug slug :summary summary
                                     :body-md body :status status
                                     :visibility visibility)
+                    :cells-json (cells->cells-json cells)
                     :errors parse-errors)))
                  (t
                   (let* ((slug-val (if (and slug (string/= slug "")) slug nil))
@@ -488,13 +506,10 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
                          (princ-to-string (getf user :id))))
              (html-response "Forbidden" :status 403))
             (t
-             (let* ((cells (parse-notebook-body (notebook-body-md nb)))
-                    (cells-json (or (json->string (mapcar #'cell->jsonb-form cells))
-                                    "[]")))
-               (html-response
-                (recurya/web/ui/notebook-form:render
-                 :user user :notebook (notebook->plist nb)
-                 :cells-json cells-json)))))))))
+             (html-response
+              (recurya/web/ui/notebook-form:render
+               :user user :notebook (notebook->plist nb)
+               :cells-json (body->cells-json (notebook-body-md nb))))))))))
 
 (defun notebook-update-handler (params)
   "Handle POST /dashboard/notebooks/:id - update an existing notebook (owner only).
@@ -534,6 +549,7 @@ description) match."
                     :notebook (list :id id :title title :slug slug
                                     :summary summary :body-md body
                                     :status status :visibility visibility)
+                    :cells-json (body->cells-json body)
                     :errors '((:line nil :message "Title is required.")))))
                  ((or (null body) (equal body ""))
                   (html-response
@@ -542,6 +558,7 @@ description) match."
                     :notebook (list :id id :title title :slug slug
                                     :summary summary :body-md body
                                     :status status :visibility visibility)
+                    :cells-json (body->cells-json body)
                     :errors '((:line nil :message "Body is required.")))))
                  (t
                   (let ((existing-cells
@@ -560,6 +577,7 @@ description) match."
                                            :summary summary :body-md body
                                            :status status
                                            :visibility visibility)
+                           :cells-json (cells->cells-json cells)
                            :errors parse-errors)))
                         (t
                          (let* ((slug-val
