@@ -110,12 +110,19 @@ all visitors and account-related affordances gated on USER:
 
   Always:        Home (/), Notebooks (/notebooks), Courses (/courses)
   Logged-in:     Dashboard (/dashboard) + avatar dropdown with
+                 My Notebooks (/dashboard/notebooks),
+                 My Courses (/dashboard/courses),
                  Account settings (/account) and Log out (POST /logout)
   Anonymous:     Login (/login)
 
+The dropdown links to both dashboard sections so the course management
+UI (/dashboard/courses) is reachable from every page; the bare
+Dashboard nav link still lands on the notebook list.
+
 The CSRF form block is emitted up-front so the logout form can pull
 its token via hx-include without a separate fetch."
-  (with-html-string (:raw (csrf-form-block))
+  (with-html-string
+    (:raw (csrf-form-block))
     (:header :class "app-header"
      (:div :class "app-header__inner"
       (:div :class "app-header__left"
@@ -126,21 +133,26 @@ its token via hx-include without a separate fetch."
         (when user
           (:a :class "app-header__link" :href "/dashboard" "Dashboard"))))
       (cond
-        (user
-         (let ((display (get-user-display user))
-               (initial (get-user-initial user)))
-           (:details :class "app-header__menu" :data-testid "app-header-menu"
-            (:summary :class "app-header__summary"
-             (:span :class "app-header__avatar" initial)
-             (:span :class "app-header__label" display)
-             (:span :class "app-header__chevron" "v"))
-            (:div :class "app-header__panel"
-             (:a :class "app-header__action" :href "/account" "Account settings")
-             (:form :method "post" :action "/logout" (:raw (csrf-input))
-              (:button :type "submit" :class "app-header__action" "Log out"))))))
-        (t
-         (:span :class "app-header__auth-badge" "未ログイン")
-         (:a :class "app-header__link" :href "/login" "ログイン")))))))
+       (user
+        (let ((display (get-user-display user))
+              (initial (get-user-initial user)))
+          (:details :class "app-header__menu" :data-testid "app-header-menu"
+           (:summary :class "app-header__summary"
+            (:span :class "app-header__avatar" initial)
+            (:span :class "app-header__label" display)
+            (:span :class "app-header__chevron" "v"))
+           (:div :class "app-header__panel"
+            (:a :class "app-header__action" :href "/dashboard/notebooks"
+             "My Notebooks")
+            (:a :class "app-header__action" :href "/dashboard/courses"
+             "My Courses")
+            (:a :class "app-header__action" :href "/account"
+             "Account settings")
+            (:form :method "post" :action "/logout" (:raw (csrf-input))
+             (:button :type "submit" :class "app-header__action"
+              "Log out"))))))
+       (t (:span :class "app-header__auth-badge" "未ログイン")
+        (:a :class "app-header__link" :href "/login" "ログイン")))))))
 
 (defun page-shell (&key title styles user body-content head-extras body-scripts)
   "Generate a complete HTML page shell.

@@ -370,6 +370,18 @@
              (ok (null (recurya/web/routes::admin-email-p nil))))
         (setf (uiop:getenv "ADMIN_OAUTH_EMAIL") (or saved ""))))))
 
+(deftest header-logged-in-links-to-dashboard-notebooks-and-courses
+  (testing "The logged-in header's user menu links to both My Notebooks
+(/dashboard/notebooks) and My Courses (/dashboard/courses), so the course
+management UI is reachable from every page — not only /dashboard/notebooks."
+    (let ((user (list :id "u1" :name "Tester" :handle "tester")))
+      (with-mock-session (make-session :user user)
+        (let ((body (recurya/web/ui/layout:header user)))
+          (ok (search "/dashboard/notebooks" body)
+              "My Notebooks link present in the logged-in header")
+          (ok (search "/dashboard/courses" body)
+              "My Courses link present in the logged-in header"))))))
+
 ;;; ---------------------------------------------------------------------------
 ;;; HTMX Confirmation Modal Tests
 ;;; ---------------------------------------------------------------------------
