@@ -316,6 +316,22 @@ hi"
             (ok (search "value=public selected" segment)
                 "the public option is marked selected")))))))
 
+(deftest notebook-edit-form-embeds-cells-json
+  (with-test-db
+    (let* ((user (mk-user))
+           (dao (get-user-by-id (getf user :id)))
+           (nb (create-notebook!
+                :title "N" :slug "n"
+                :body-md (format nil "===prose===~%hello~%~%===eval===~%(+ 1 2)")
+                :cells nil :status "draft" :visibility "private" :author dao))
+           (id (princ-to-string (notebook-id nb))))
+      (with-mock-session (make-session :user user)
+        (let ((body (first (response-body
+                            (notebook-edit-handler (list (cons :id id)))))))
+          (ok (search "data-cells=" body) "edit form embeds data-cells")
+          (ok (search "prose" body) "cells JSON mentions prose kind")
+          (ok (search "code-eval" body) "cells JSON mentions eval kind"))))))
+
 (deftest update-handler-403-for-non-owner
   (with-test-db
     (let* ((owner (mk-user))

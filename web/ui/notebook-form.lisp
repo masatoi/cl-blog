@@ -69,12 +69,15 @@ Markdown text — **bold**, *italic*, `code`, links.
 input: (foo 1 2)
 output: 3")
 
-(defun render (&key user notebook message errors)
+(defun render (&key user notebook message errors (cells-json "[]"))
   "Render the notebook create/edit form as an HTML string.
 
 NOTEBOOK is a plist with :id :title :slug :summary :body-md :status when
 editing. When NOTEBOOK is NIL, renders a new-notebook form. ERRORS is
-a list of plists like (:line N :message \"...\")."
+a list of plists like (:line N :message \"...\"). CELLS-JSON is a JSON
+string (array of cell objects, as produced by
+`recurya/game/notebook-jsonb:cell->jsonb-form') embedded via a
+data-cells attribute for the client-side cell editor to consume."
   (let* ((editing-p (not (null notebook)))
          (nb-id      (getf notebook :id))
          (nb-title   (or (getf notebook :title) ""))
@@ -127,6 +130,7 @@ a list of plists like (:line N :message \"...\")."
                           :class "summary-field" :maxlength "500"
                           :placeholder "Short summary (max 500 chars)"
                           nb-summary))
+                      (:div :id "cell-editor-root" :data-cells cells-json)
                       (:div :class "form-group"
                         (:label :for "body" "Body (Markdown + cell fences)")
                         (:textarea :id "body" :name "body"

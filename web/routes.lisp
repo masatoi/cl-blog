@@ -412,7 +412,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
     (if (null user)
         (redirect "/login")
         (html-response
-         (recurya/web/ui/notebook-form:render :user user)))))
+         (recurya/web/ui/notebook-form:render :user user :cells-json "[]")))))
 
 (defun notebook-create-handler (params)
   "Handle POST /dashboard/notebooks - create a new notebook."
@@ -488,9 +488,13 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
                          (princ-to-string (getf user :id))))
              (html-response "Forbidden" :status 403))
             (t
-             (html-response
-              (recurya/web/ui/notebook-form:render
-               :user user :notebook (notebook->plist nb)))))))))
+             (let* ((cells (parse-notebook-body (notebook-body-md nb)))
+                    (cells-json (or (json->string (mapcar #'cell->jsonb-form cells))
+                                    "[]")))
+               (html-response
+                (recurya/web/ui/notebook-form:render
+                 :user user :notebook (notebook->plist nb)
+                 :cells-json cells-json)))))))))
 
 (defun notebook-update-handler (params)
   "Handle POST /dashboard/notebooks/:id - update an existing notebook (owner only).
