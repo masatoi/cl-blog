@@ -24,6 +24,8 @@
    #:start!
    #:stop!
    #:datasource
+   #:build-connection-spec
+   #:with-database
    #:with-transaction
    ;; Constants
    #:*active-job-statuses*
@@ -76,11 +78,16 @@ that the dataset is currently being processed.")
   "Get environment variable with optional default value."
   (or (uiop:getenv name) default))
 
-(defun build-connection-spec ()
-  "Build Mito connection spec from environment variables."
+(defun build-connection-spec (&key database-name)
+  "Build a Mito connection spec from environment variables.
+
+DATABASE-NAME, when non-NIL, overrides POSTGRES_DB — used to target the
+dedicated test database or the maintenance \"postgres\" database without
+changing the environment. All other fields (host, port, user, password)
+come from the same environment the app uses."
   (let ((host (get-env "POSTGRES_HOST" "localhost"))
         (port (parse-integer (get-env "POSTGRES_PORT" "5432")))
-        (db (get-env "POSTGRES_DB" "recurya"))
+        (db (or database-name (get-env "POSTGRES_DB" "recurya")))
         (user (get-env "POSTGRES_USER" "postgres"))
         (password (get-env "POSTGRES_PASSWORD" "postgres")))
     (list :postgres
@@ -165,6 +172,28 @@ Returns:
   The value(s) returned by the last form in BODY."
   `(dbi.driver:with-transaction (datasource)
      ,@body))
+
+(defmacro with-database ((spec) &body body)
+  "Run BODY with a fresh database connection built from SPEC, bound
+dynamically (thread-locally) so it never disturbs the global toplevel
+connection used by a co-hosted server.
+
+SPEC is a Mito connection spec as returned by BUILD-CONNECTION-SPEC. The
+connection is opened before BODY, bound to both *DATASOURCE* and Mito's
+connection special for the extent of BODY, and always disconnected on
+exit.
+
+Because those are special variables, the binding is thread-local: other
+threads (e.g. an HTTP server sharing this Lisp image) keep using the
+global toplevel connection. This is what lets the test suite target a
+separate database without hijacking the running web server's connection."
+  (let ((conn (gensym "CONN")))
+    `(let ((,conn (apply #'dbi:connect ,spec)))
+       (unwind-protect
+            (let ((*datasource* ,conn)
+                  (mito.connection:*connection* ,conn))
+              ,@body)
+         (dbi:disconnect ,conn)))))
 
 ;;; ============================================================
 ;;; Value Conversion Utilities
