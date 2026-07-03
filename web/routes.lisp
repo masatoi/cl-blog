@@ -624,7 +624,11 @@ field is the number of notebooks attached to the course via course_notebook."
          (recurya/web/ui/course-form:render :user user)))))
 
 (defun course-create-handler (params)
-  "Handle POST /dashboard/courses - create a new course."
+  "Handle POST /dashboard/courses - create a new course.
+
+On success redirects to the new course's edit page (not the course list)
+so the author can immediately attach notebooks — the attach UI lives on
+the edit page."
   (let ((user (get-current-user)))
     (if (null user)
         (redirect "/login")
@@ -634,29 +638,40 @@ field is the number of notebooks attached to the course via course_notebook."
                (status (get-param params "status"))
                (visibility-raw (get-param params "visibility"))
                (visibility
-                 (if (member visibility-raw '("private" "unlisted" "public") :test #'equal)
-                     visibility-raw
-                     "private")))
+                (if (member visibility-raw '("private" "unlisted" "public")
+                            :test #'equal)
+                    visibility-raw
+                    "private")))
           (cond
-            ((or (null title) (equal title ""))
-             (html-response
-              (recurya/web/ui/course-form:render
-               :user user
-               :course (list :title title :slug slug :summary summary
-                             :status status :visibility visibility)
-               :errors '((:line nil :message "Title is required.")))))
-            (t
-             (let* ((slug-val (if (and slug (string/= slug "")) slug nil))
-                    (summary-val (if (and summary (string/= summary "")) summary nil))
-                    (published-at
-                      (when (equal status "published") (local-time:now))))
-               (create-course!
-                :title title :slug slug-val :summary summary-val
-                :status (or status "draft")
-                :visibility visibility
-                :published-at published-at
-                :author (get-session-user-object))
-               (redirect "/dashboard/courses"))))))))
+           ((or (null title) (equal title ""))
+            (html-response
+             (recurya/web/ui/course-form:render :user user :course
+                                                (list :title title :slug slug
+                                                      :summary summary :status
+                                                      status :visibility
+                                                      visibility)
+                                                :errors
+                                                '((:line nil :message
+                                                   "Title is required.")))))
+           (t
+            (let* ((slug-val
+                    (if (and slug (string/= slug ""))
+                        slug
+                        nil))
+                   (summary-val
+                    (if (and summary (string/= summary ""))
+                        summary
+                        nil))
+                   (published-at
+                    (when (equal status "published") (local-time:now)))
+                   (created
+                    (create-course! :title title :slug slug-val :summary
+                                    summary-val :status (or status "draft")
+                                    :visibility visibility :published-at
+                                    published-at :author
+                                    (get-session-user-object))))
+              (redirect (format nil "/dashboard/courses/~A/edit"
+                                (course-id created))))))))))
 
 (defun course-notebook-row->plist (cn)
   "Convert a COURSE-NOTEBOOK DAO into a plist
@@ -673,18 +688,24 @@ field is the number of notebooks attached to the course via course_notebook."
           :position (course-notebook-position cn))))
 
 (defun course-eligible-notebooks (user-id attached-notebook-ids)
-  "Return plists (:id :title) of USER-ID's published notebooks that are
-not already attached. ATTACHED-NOTEBOOK-IDS is a list of UUID strings."
+  "Return plists (:id :title) of USER-ID's own notebooks that are not
+already attached, regardless of status or visibility.
+ATTACHED-NOTEBOOK-IDS is a list of UUID strings.
+
+Candidates intentionally include drafts and private/unlisted notebooks:
+authors assemble their own courses from their whole library, and public
+course pages independently filter attached notebooks through
+RECURYA/UTILS/ACCESS-CONTROL:PUBLICLY-LISTABLE-NOTEBOOK-P (and per-notebook
+views through CAN-VIEW-NOTEBOOK-P), so a non-public notebook attached here
+never leaks to anonymous viewers."
   (let* ((own
-          (list-notebooks :status "published" :visibility "public"
-                               :author-id user-id
-                               :limit 1000))
+          (list-notebooks :author-id user-id :limit 1000))
          (attached-set
           (mapcar (lambda (x) (princ-to-string x)) attached-notebook-ids)))
     (loop for nb in own
           for nb-id = (princ-to-string (notebook-id nb))
           unless (member nb-id attached-set :test #'string=)
-            collect (list :id nb-id :title (notebook-title nb)))))
+          collect (list :id nb-id :title (notebook-title nb)))))
 
 (defun course-edit-handler (params)
   "Handle GET /dashboard/courses/:id/edit - show edit form for an existing course
@@ -1326,28 +1347,39 @@ The :author-handle is needed so the course page can render
   "Render the public course page for COURSE-ROW with access control.
 
 Returns a Clack response list. Returns 404 when COURSE-ROW is NIL or
-the viewer cannot view it."
+the viewer cannot view it.
+
+Attached notebooks are filtered by COURSE-MEMBER-VISIBLE-P for the
+current viewer: the owner previewing their own course sees all of their
+own notebooks (drafts/private/unlisted included), while anonymous and
+non-owner visitors see only publicly-listable (published + public)
+members. Unlisted and private members stay hidden from non-owners,
+consistent with anonymous course listings; the earlier
+PUBLICLY-LISTABLE-NOTEBOOK-P filter also hid the owner's own non-public
+notebooks even from the owner."
   (let ((user (get-current-user)))
     (cond
-      ((null course-row)
-       (html-response (recurya/web/ui/errors:not-found) :status 404))
-      ((not (recurya/utils/access-control:can-view-course-p user course-row))
-       (html-response (recurya/web/ui/errors:not-found) :status 404))
-      (t
-       (let* ((rows (remove-if-not
-                     (lambda (cn)
-                       (let ((nb (course-notebook-notebook cn)))
-                         (and nb
-                              (recurya/utils/access-control:publicly-listable-notebook-p nb))))
-                     (list-course-notebooks (course-id course-row))))
-              (notebooks (mapcar #'course-notebook-row->public-plist rows)))
-         (html-response
-          (recurya/web/ui/course:render
-           :course (course->plist course-row)
-           :notebooks notebooks
-           :user user
-           :passed-by-notebook nil
-           :noindex (not (string= (course-visibility course-row) "public")))))))))
+     ((null course-row)
+      (html-response (recurya/web/ui/errors:not-found) :status 404))
+     ((not (recurya/utils/access-control:can-view-course-p user course-row))
+      (html-response (recurya/web/ui/errors:not-found) :status 404))
+     (t
+      (let* ((rows
+              (remove-if-not
+               (lambda (cn)
+                 (let ((nb (course-notebook-notebook cn)))
+                   (and nb
+                        (recurya/utils/access-control:course-member-visible-p
+                         user nb))))
+               (list-course-notebooks (course-id course-row))))
+             (notebooks (mapcar #'course-notebook-row->public-plist rows)))
+        (html-response
+         (recurya/web/ui/course:render :course (course->plist course-row)
+                                       :notebooks notebooks :user user
+                                       :passed-by-notebook nil :noindex
+                                       (not
+                                        (string= (course-visibility course-row)
+                                                 "public")))))))))
 
 (defun public-course-by-handle-handler (params)
   "Handle GET /c/@:handle/:slug - public single course page resolved by

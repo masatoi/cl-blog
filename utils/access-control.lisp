@@ -12,6 +12,7 @@
                 #:course-author-id)
   (:export #:can-view-notebook-p
            #:can-view-course-p
+           #:course-member-visible-p
            #:publicly-listable-notebook-p
            #:publicly-listable-course-p))
 
@@ -75,3 +76,17 @@ visibility \"public\" or \"unlisted\"."
   (and course
        (string= "published" (course-status course))
        (string= "public" (course-visibility course))))
+
+(defun course-member-visible-p (user notebook)
+  "Return T when NOTEBOOK should be shown as a member of a course that
+USER is currently viewing.
+
+The course owner previewing their own course sees all of their own
+notebooks — drafts, private, and unlisted included — so they can review
+the whole course before publishing. Everyone else (anonymous or a
+non-owner) sees only publicly-listable notebooks (published + public);
+unlisted members stay hidden from non-owners, consistent with anonymous
+course and notebook listings. Private notebooks never leak to non-owners."
+  (and notebook
+       (or (owner-of-notebook-p user notebook)
+           (publicly-listable-notebook-p notebook))))

@@ -150,21 +150,24 @@ HX-Request header is included so htmx-request-p returns T."
           (ok (= 200 (response-status res)))
           (ok (search "Title is required" body)))))))
 
-(deftest course-create-handler-persists-and-redirects
-  (with-test-db
-    (let ((user (mk-user)))
-      (with-mock-session (make-session :user user)
-        (let* ((params '(("title" . "My Course")
-                         ("slug" . "")
-                         ("summary" . "Hello")
-                         ("status" . "draft")))
-               (res (course-create-handler params)))
-          (ok (= 302 (response-status res)))
-          (ok (string= "/dashboard/courses" (response-location res)))
-          (let ((c (get-course-by-slug "my-course")))
-            (ok c)
-            (ok (string= "My Course" (course-title c)))
-            (ok (string= "draft" (course-status c)))))))))
+(deftest course-create-handler-persists-and-redirects-to-edit
+ (with-test-db
+  (let ((user (mk-user)))
+    (with-mock-session (make-session :user user)
+     (let* ((params
+             '(("title" . "My Course") ("slug" . "") ("summary" . "Hello")
+               ("status" . "draft")))
+            (res (course-create-handler params)))
+       (ok (= 302 (response-status res)))
+       (let ((c (get-course-by-slug "my-course")))
+         (ok c)
+         (ok (string= "My Course" (course-title c)))
+         (ok (string= "draft" (course-status c)))
+         ;; Case B: creating a course lands on its edit page so the author
+         ;; can immediately attach notebooks, rather than the course list
+         ;; where the attach UI is unreachable.
+         (ok (string= (format nil "/dashboard/courses/~A/edit" (course-id c))
+                      (response-location res)))))))))
 
 (deftest course-create-handler-published-sets-published-at
   (with-test-db
@@ -274,28 +277,37 @@ HX-Request header is included so htmx-request-p returns T."
             (ok segment)
             (ok (search "value=public selected" segment))))))))
 
-(deftest course-edit-handler-eligible-list-excludes-private-notebook
+(deftest course-edit-handler-eligible-list-includes-private-and-draft
+  ;; Case A: the Add-notebook dropdown must surface ALL of the owner's
+  ;; own not-yet-attached notebooks (published+public, published+private,
+  ;; and drafts), not just published+public ones. Public course pages
+  ;; independently filter attached notebooks by
+  ;; PUBLICLY-LISTABLE-NOTEBOOK-P, so a non-public notebook attached here
+  ;; never leaks to anonymous viewers.
   (with-test-db
     (let* ((user (mk-user))
            (dao (get-user-by-id (getf user :id)))
            (c (create-course! :title "Mine" :author dao))
            (id (princ-to-string (course-id c))))
-      (create-notebook!
-       :title "EligPub"
-       :body-md (format nil "===prose===~%hi")
-       :cells nil :status "published" :visibility "public"
-       :published-at (local-time:now) :author dao)
-      (create-notebook!
-       :title "EligPriv"
-       :body-md (format nil "===prose===~%shh")
-       :cells nil :status "published" :visibility "private"
-       :published-at (local-time:now) :author dao)
+      (create-notebook! :title "EligPub"
+                        :body-md (format nil "===prose===~%hi")
+                        :cells nil :status "published" :visibility "public"
+                        :published-at (local-time:now) :author dao)
+      (create-notebook! :title "EligPriv"
+                        :body-md (format nil "===prose===~%shh")
+                        :cells nil :status "published" :visibility "private"
+                        :published-at (local-time:now) :author dao)
+      (create-notebook! :title "EligDraft"
+                        :body-md (format nil "===prose===~%wip")
+                        :cells nil :status "draft" :visibility "private"
+                        :author dao)
       (with-mock-session (make-session :user user)
         (let* ((res (course-edit-handler (list (cons :id id))))
                (body (first (response-body res))))
           (ok (= 200 (response-status res)))
           (ok (search "EligPub" body))
-          (ng (search "EligPriv" body)))))))
+          (ok (search "EligPriv" body))
+          (ok (search "EligDraft" body)))))))
 
 ;;; --- update ---
 
@@ -863,6 +875,73 @@ where the lists are aligned with the attached positions."
             (ok pc)
             (ok (and pa pb (< pa pb)))
             (ok (and pb pc (< pb pc)))))))))
+
+(deftest public-course-owner-sees-own-private-attached-notebook
+  ;; Case-A follow-up bug: an owner previewing their OWN course must see
+  ;; attached notebooks they can view — including their own
+  ;; published+private ones. The public course page must filter attached
+  ;; notebooks by CAN-VIEW-NOTEBOOK-P (viewer-aware, matching the
+  ;; per-notebook page guard), not by PUBLICLY-LISTABLE-NOTEBOOK-P.
+  (with-test-db
+    (let* ((author (mk-user))
+           (dao (get-user-by-id (getf author :id)))
+           (handle (recurya/db/users:users-handle dao))
+           (course (create-course! :title "OwnerPriv"
+                                   :status "published"
+                                   :visibility "private"
+                                   :published-at (local-time:now)
+                                   :author dao))
+           (course-uuid (course-id course))
+           (slug (course-slug course))
+           (nb (create-notebook!
+                :title "PrivNote"
+                :body-md (format nil "===prose===~%hi")
+                :cells nil :status "published" :visibility "private"
+                :published-at (local-time:now) :author dao)))
+      (add-notebook-to-course! course-uuid (notebook-id nb) :position 0)
+      (with-mock-session (make-session :user author)
+        (let* ((res (public-course-by-handle-handler
+                     (list (cons :captures (list handle slug)))))
+               (body (first (response-body res))))
+          (ok (= 200 (response-status res)))
+          (ok (search "PrivNote" body))
+          (ng (search "No notebooks attached" body)))))))
+
+(deftest public-course-anon-cannot-see-private-attached-notebook
+  ;; Safety net for case A: an anonymous visitor of a PUBLIC course must
+  ;; NOT see a published+private notebook attached to it. CAN-VIEW-NOTEBOOK-P
+  ;; denies private to non-owners, so private notebooks never leak even
+  ;; though they can now be attached to a course.
+  (with-test-db
+    (let* ((author (mk-user))
+           (dao (get-user-by-id (getf author :id)))
+           (handle (recurya/db/users:users-handle dao))
+           (course (create-course! :title "PubCourse"
+                                   :status "published"
+                                   :visibility "public"
+                                   :published-at (local-time:now)
+                                   :author dao))
+           (course-uuid (course-id course))
+           (slug (course-slug course))
+           (pub-nb (create-notebook!
+                    :title "PubNote"
+                    :body-md (format nil "===prose===~%p")
+                    :cells nil :status "published" :visibility "public"
+                    :published-at (local-time:now) :author dao))
+           (priv-nb (create-notebook!
+                     :title "SecretNote"
+                     :body-md (format nil "===prose===~%s")
+                     :cells nil :status "published" :visibility "private"
+                     :published-at (local-time:now) :author dao)))
+      (add-notebook-to-course! course-uuid (notebook-id pub-nb) :position 0)
+      (add-notebook-to-course! course-uuid (notebook-id priv-nb) :position 1)
+      (with-mock-session (make-session)
+        (let* ((res (public-course-by-handle-handler
+                     (list (cons :captures (list handle slug)))))
+               (body (first (response-body res))))
+          (ok (= 200 (response-status res)))
+          (ok (search "PubNote" body))
+          (ng (search "SecretNote" body)))))))
 
 (deftest courses-public-handler-shows-published-only
   (with-test-db

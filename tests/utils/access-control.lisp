@@ -19,6 +19,7 @@
   (:import-from #:recurya/utils/access-control
                 #:can-view-notebook-p
                 #:can-view-course-p
+                #:course-member-visible-p
                 #:publicly-listable-notebook-p
                 #:publicly-listable-course-p))
 
@@ -277,3 +278,54 @@ hi"
                            :status "published"
                            :visibility "unlisted")))
         (ng (publicly-listable-course-p c))))))
+
+(deftest course-member-visible-owner-sees-all-own
+  (testing "the course owner sees ALL their own notebooks as course
+members — published+public/private/unlisted and drafts — for preview"
+    (with-test-db
+      (let* ((owner-dao (create-test-user :email-prefix "owner"))
+             (owner (mk-user-plist owner-dao))
+             (pub-pub (mk-notebook owner-dao
+                                   :status "published" :visibility "public"))
+             (pub-priv (mk-notebook owner-dao
+                                    :status "published" :visibility "private"))
+             (pub-unl (mk-notebook owner-dao
+                                   :status "published" :visibility "unlisted"))
+             (draft-priv (mk-notebook owner-dao
+                                      :status "draft" :visibility "private")))
+        (ok (course-member-visible-p owner pub-pub)    "owner sees published+public")
+        (ok (course-member-visible-p owner pub-priv)   "owner sees published+private")
+        (ok (course-member-visible-p owner pub-unl)    "owner sees published+unlisted")
+        (ok (course-member-visible-p owner draft-priv) "owner sees own draft")))))
+
+(deftest course-member-visible-nonowner-sees-public-only
+  (testing "non-owners and anonymous viewers see only published+public
+course members; unlisted, private, and drafts stay hidden"
+    (with-test-db
+      (let* ((owner-dao (create-test-user :email-prefix "owner"))
+             (other-dao (create-test-user :email-prefix "other"))
+             (other (mk-user-plist other-dao))
+             (pub-pub (mk-notebook owner-dao
+                                   :status "published" :visibility "public"))
+             (pub-priv (mk-notebook owner-dao
+                                    :status "published" :visibility "private"))
+             (pub-unl (mk-notebook owner-dao
+                                   :status "published" :visibility "unlisted"))
+             (draft-pub (mk-notebook owner-dao
+                                     :status "draft" :visibility "public")))
+        (ok      (course-member-visible-p other pub-pub)   "other sees published+public")
+        (ok (not (course-member-visible-p other pub-priv)) "other blocked from private")
+        (ok (not (course-member-visible-p other pub-unl))  "other blocked from unlisted")
+        (ok (not (course-member-visible-p other draft-pub)) "other blocked from draft")
+        (ok      (course-member-visible-p nil pub-pub)   "anon sees published+public")
+        (ok (not (course-member-visible-p nil pub-priv)) "anon blocked from private")
+        (ok (not (course-member-visible-p nil pub-unl))  "anon blocked from unlisted")
+        (ok (not (course-member-visible-p nil draft-pub)) "anon blocked from draft")))))
+
+(deftest course-member-visible-nil-notebook
+  (testing "nil notebook is never a visible course member"
+    (with-test-db
+      (let* ((owner-dao (create-test-user :email-prefix "owner"))
+             (owner (mk-user-plist owner-dao)))
+        (ng (course-member-visible-p owner nil))
+        (ng (course-member-visible-p nil nil))))))
