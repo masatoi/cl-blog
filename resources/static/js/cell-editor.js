@@ -623,7 +623,14 @@ async function initCellEditor() {
     renderAll(editorState);
 
     if (bodyField) {
+      // The cell editor is now the source of truth; `#body` becomes a hidden
+      // carrier populated on submit. Drop its `required` so the browser's
+      // constraint validation doesn't block submit on the (initially empty)
+      // hidden field before the submit handler below can fill it — otherwise a
+      // brand-new notebook (empty `#body`) could never be created. The server
+      // still validates that the assembled body is non-empty.
       bodyField.style.display = 'none';
+      bodyField.removeAttribute('required');
     }
 
     const form = bodyField ? bodyField.closest('form.nb-form') : root.closest('form.nb-form');
@@ -658,7 +665,11 @@ async function initCellEditor() {
     }
     root.style.display = 'none';
     if (bodyField) {
+      // Fallback: the plain textarea is the editing surface again, so restore
+      // its `required` constraint (it may have been dropped if we got as far as
+      // handing off to the cell editor before failing).
       bodyField.style.display = '';
+      bodyField.setAttribute('required', 'required');
     }
   }
 }
