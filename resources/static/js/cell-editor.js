@@ -351,6 +351,32 @@ function buildTitleInput(cell) {
 }
 
 /**
+ * Build the "reveal only after passing" checkbox for a `code-solution` cell,
+ * bound to `cell.gated`. Shown only for `code-solution` cells (see
+ * `buildCellItemDom`); toggling it flips `cell.gated`, which
+ * `stateCellToServer` / `renderCellHeader` use to emit the
+ * `===solution-locked:===` fence variant instead of `===solution:===`.
+ *
+ * @param {object} cell
+ * @returns {HTMLLabelElement}
+ */
+function buildGatedCheckbox(cell) {
+  const label = document.createElement('label');
+  label.className = 'cell-editor-field cell-editor-gated';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = cell.gated === true;
+  input.addEventListener('change', () => {
+    cell.gated = input.checked;
+  });
+  label.appendChild(input);
+  label.appendChild(
+    document.createTextNode(' 正解後のみ表示（直前の演習に正解するまで解答を隠す）')
+  );
+  return label;
+}
+
+/**
  * A small CodeMirror 6 `StreamParser` config for Markdown highlighting.
  *
  * This deliberately does NOT pull in `@codemirror/lang-markdown` (whose Lezer
@@ -651,8 +677,8 @@ function buildCellControls(editorState, index) {
 
 /**
  * Build the full DOM subtree for one cell: header (kind select, optional
- * title, move/delete controls), the CodeMirror mount, and (for
- * `code-exercise`) the test-cases section.
+ * title, optional `code-solution` gated checkbox, move/delete controls), the
+ * CodeMirror mount, and (for `code-exercise`) the test-cases section.
  *
  * @param {object} editorState
  * @param {object} cell
@@ -669,6 +695,9 @@ function buildCellItemDom(editorState, cell, index) {
   header.appendChild(buildKindSelect(editorState, cell));
   if (cell.kind === 'code-exercise' || cell.kind === 'code-solution') {
     header.appendChild(buildTitleInput(cell));
+  }
+  if (cell.kind === 'code-solution') {
+    header.appendChild(buildGatedCheckbox(cell));
   }
   header.appendChild(buildCellControls(editorState, index));
   item.appendChild(header);
