@@ -336,3 +336,18 @@ console.log('ok: gated solutions encode ===solution-locked:=== and round-trip th
     '===exercise===\npara1\n\npara2\n===code===\n(fill)\n\n===expect===\n3');
 }
 console.log('ok: exercise serializes to the ===exercise===/===code=== block form');
+
+// A solution header is a single line: a multi-line description (e.g. carried
+// over when a multi-line exercise is switched to a solution) must be folded to
+// one line so it cannot break re-parsing and silently drop the cell.
+{
+  assert.strictEqual(
+    cellsToBody([{ 'cell-id': '', kind: 'code-solution', body: '(x)',
+                   description: 'line1\nline2', 'test-cases': [], gated: false }]),
+    '===solution: line1 line2===\n(x)');
+  assert.strictEqual(
+    cellsToBody([{ 'cell-id': '', kind: 'code-solution', body: '(x)',
+                   description: 'a\nb', 'test-cases': [], gated: true }]),
+    '===solution-locked: a b===\n(x)');
+}
+console.log('ok: solution header folds a multi-line description to one line');

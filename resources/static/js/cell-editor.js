@@ -63,10 +63,16 @@ function renderCellHeader(cell) {
       return '===scene===';
     case 'code-exercise':
       return `===exercise: ${description}===`;
-    case 'code-solution':
+    case 'code-solution': {
+      // A solution header is a single line, so fold any newlines in the
+      // description (e.g. carried over when a multi-line exercise is switched
+      // to a solution) to spaces — otherwise the header would span lines and
+      // fail to re-parse, silently dropping the cell.
+      const oneLine = description.replace(/\n/g, ' ');
       return cell.gated
-        ? `===solution-locked: ${description}===`
-        : `===solution: ${description}===`;
+        ? `===solution-locked: ${oneLine}===`
+        : `===solution: ${oneLine}===`;
+    }
     default:
       throw new Error(`cellsToBody: unknown cell kind "${kind}"`);
   }
