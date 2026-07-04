@@ -643,6 +643,14 @@ async function initCellEditor() {
       bodyField.removeAttribute('required');
     }
 
+    // The fence-syntax cheatsheet only helps when editing raw fence markdown in
+    // the plain textarea. With the cell editor active it is redundant, so hide
+    // it here (success path only) — the no-JS / fallback path leaves it visible.
+    const cheatsheet = document.querySelector('.cheatsheet');
+    if (cheatsheet) {
+      cheatsheet.style.display = 'none';
+    }
+
     const form = bodyField ? bodyField.closest('form.nb-form') : root.closest('form.nb-form');
     if (form) {
       form.addEventListener('submit', (event) => {
