@@ -43,11 +43,11 @@
   "Scanner for `===exercise: <description>===' fence headers.")
 
 (defparameter +solution-header-regex+
-  (cl-ppcre:create-scanner "^===solution: (.+)===$")
+  (cl-ppcre:create-scanner "^===solution: (.*)===$")
   "Scanner for `===solution: <description>===' fence headers.")
 
 (defparameter +solution-locked-header-regex+
-  (cl-ppcre:create-scanner "^===solution-locked: (.+)===$")
+  (cl-ppcre:create-scanner "^===solution-locked: (.*)===$")
   "Scanner for `===solution-locked: <description>===' fence headers, marking a
    gated solution (revealed only after the preceding exercise is passed).")
 

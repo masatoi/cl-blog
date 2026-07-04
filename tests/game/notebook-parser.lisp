@@ -272,3 +272,22 @@ Intro.
       (ok (eq t (cell-gated-p sol-locked)) "gated solution stays gated")
       (ok sol-plain "plain solution present")
       (ok (null (cell-gated-p sol-plain)) "plain solution stays non-gated"))))
+
+(deftest solution-empty-description-parses-and-round-trips
+  (testing "a solution with an empty description (===solution: ===) parses and
+round-trips; its description is optional (unlike an exercise's)"
+    ;; plain solution, empty description
+    (let ((c (first (parse-notebook-body (format nil "===solution: ===~%(x)")))))
+      (ok (eq :code-solution (cell-kind c)))
+      (ok (null (cell-gated-p c)))
+      (ok (string= "" (or (cell-description c) "")))
+      (ok (string= "(x)" (cell-body c)))
+      ;; round-trip: serialize the empty-desc solution and reparse
+      (let ((c2 (first (parse-notebook-body (cells->body-md (list c))))))
+        (ok (eq :code-solution (cell-kind c2)))
+        (ok (string= "" (or (cell-description c2) "")))))
+    ;; locked solution, empty description
+    (let ((c (first (parse-notebook-body (format nil "===solution-locked: ===~%(y)")))))
+      (ok (eq :code-solution (cell-kind c)))
+      (ok (eq t (cell-gated-p c)))
+      (ok (string= "" (or (cell-description c) ""))))))
