@@ -1157,6 +1157,123 @@ hi"
             (ok (search "href=\"/notebooks\"" body))
             (ok (search "1.1.1 Expressions" body))))))))
 
+(deftest notebook-page-sidebar-links-preserve-course-context
+  (testing "sidebar entries for other notebooks in the course keep the
+?course=<slug> query string, so clicking one stays inside the course view
+instead of dropping to the stand-alone notebook page."
+    (with-test-db
+      (let* ((author (mk-user))
+             (dao (get-user-by-id (getf author :id)))
+             (handle (users-handle dao))
+             (course (create-course! :title "SICP"
+                                     :slug "sicp"
+                                     :status "published"
+                                     :visibility "public"
+                                     :published-at (local-time:now)
+                                     :author dao))
+             (nb1 (create-notebook!
+                   :title "First" :slug "first"
+                   :body-md "===prose===
+a"
+                   :cells nil :status "published"
+                   :visibility "public"
+                   :published-at (local-time:now) :author dao))
+             (nb2 (create-notebook!
+                   :title "Middle" :slug "middle"
+                   :body-md "===prose===
+b"
+                   :cells nil :status "published"
+                   :visibility "public"
+                   :published-at (local-time:now) :author dao))
+             (nb3 (create-notebook!
+                   :title "Last" :slug "last"
+                   :body-md "===prose===
+c"
+                   :cells nil :status "published"
+                   :visibility "public"
+                   :published-at (local-time:now) :author dao)))
+        (add-notebook-to-course! (course-id course) (notebook-id nb1)
+                                 :position 0)
+        (add-notebook-to-course! (course-id course) (notebook-id nb2)
+                                 :position 1)
+        (add-notebook-to-course! (course-id course) (notebook-id nb3)
+                                 :position 2)
+        (with-mock-session (make-session)
+          ;; View the FIRST notebook: its prev/next only reaches "middle",
+          ;; so a course-scoped link to "last" can only come from the
+          ;; sidebar -- isolating the sidebar link from prev/next.
+          (let* ((res (public-notebook-by-handle-handler
+                       `((:captures . (,handle "first"))
+                         ("course" . "sicp"))))
+                 (body (first (response-body res))))
+            (ok (= 200 (response-status res)))
+            (ok (search (format nil "/@~A/last?course=sicp" handle) body)
+                "sidebar link to a non-adjacent notebook keeps ?course=")
+            (ng (search (format nil "href=\"/@~A/last\"" handle) body)
+                "no course-less bare sidebar link that drops the course view")))))))
+
+(deftest notebook-page-sidebar-marks-current-notebook-active
+  (testing "the sidebar entry for the notebook currently being viewed is
+marked 'sb-link active'; exactly one entry is active and it is the current
+notebook."
+    (with-test-db
+      (let* ((author (mk-user))
+             (dao (get-user-by-id (getf author :id)))
+             (handle (users-handle dao))
+             (course (create-course! :title "SICP"
+                                     :slug "sicp"
+                                     :status "published"
+                                     :visibility "public"
+                                     :published-at (local-time:now)
+                                     :author dao))
+             (nb1 (create-notebook!
+                   :title "First" :slug "first"
+                   :body-md "===prose===
+a"
+                   :cells nil :status "published"
+                   :visibility "public"
+                   :published-at (local-time:now) :author dao))
+             (nb2 (create-notebook!
+                   :title "Middle" :slug "middle"
+                   :body-md "===prose===
+b"
+                   :cells nil :status "published"
+                   :visibility "public"
+                   :published-at (local-time:now) :author dao))
+             (nb3 (create-notebook!
+                   :title "Last" :slug "last"
+                   :body-md "===prose===
+c"
+                   :cells nil :status "published"
+                   :visibility "public"
+                   :published-at (local-time:now) :author dao)))
+        (add-notebook-to-course! (course-id course) (notebook-id nb1)
+                                 :position 0)
+        (add-notebook-to-course! (course-id course) (notebook-id nb2)
+                                 :position 1)
+        (add-notebook-to-course! (course-id course) (notebook-id nb3)
+                                 :position 2)
+        (with-mock-session (make-session)
+          (let* ((res (public-notebook-by-handle-handler
+                       `((:captures . (,handle "middle"))
+                         ("course" . "sicp"))))
+                 (body (first (response-body res))))
+            (flet ((count-occurrences (needle hay)
+                     (loop with n = 0 with start = 0
+                           for pos = (search needle hay :start2 start)
+                           while pos
+                           do (incf n) (setf start (+ pos (length needle)))
+                           finally (return n))))
+              (ok (= 200 (response-status res)))
+              (ok (= 1 (count-occurrences "sb-link active" body))
+                  "exactly one sidebar entry is marked active")
+              (let ((pos (search "sb-link active" body)))
+                (ok (and pos
+                         (search "/middle?course=sicp"
+                                 (subseq body pos
+                                         (min (length body) (+ pos 200)))))
+                    "the active entry is the current (middle) notebook")))))))))
+
 (deftest notebook-page-with-course-shows-prev-next
   (testing "middle notebook in course gets prev=first, next=last URLs
 preserving the ?course=<slug> query string."
@@ -1245,9 +1362,14 @@ b"
             (ok (= 200 (response-status res)))
             (ok (search (format nil "/@~A/second?course=sicp" handle)
                         body))
-            (ng (search (format nil "/@~A/first?course=sicp" handle)
-                        body)
-                "the current page does not link to itself as prev")))))))
+            ;; The sidebar lists every notebook (including the current one)
+            ;; with ?course=, so the presence of the self URL no longer
+            ;; distinguishes a prev nav link. Assert on the nav labels
+            ;; directly: the first notebook has a Next nav but no Previous.
+            (ok (search "Next →" body)
+                "the first notebook renders a next nav link")
+            (ng (search "← Previous" body)
+                "the first notebook in a course renders no previous nav link")))))))
 
 (deftest notebook-page-with-course-no-next-at-last
   (testing "last notebook in course renders prev URL but no next URL."
@@ -1287,9 +1409,14 @@ b"
             (ok (= 200 (response-status res)))
             (ok (search (format nil "/@~A/first?course=sicp" handle)
                         body))
-            (ng (search (format nil "/@~A/second?course=sicp" handle)
-                        body)
-                "the current page does not link to itself as next")))))))
+            ;; The sidebar lists every notebook (including the current one)
+            ;; with ?course=, so the presence of the self URL no longer
+            ;; distinguishes a next nav link. Assert on the nav labels
+            ;; directly: the last notebook has a Previous nav but no Next.
+            (ok (search "← Previous" body)
+                "the last notebook renders a previous nav link")
+            (ng (search "Next →" body)
+                "the last notebook in a course renders no next nav link")))))))
 
 (deftest notebook-page-with-invalid-course-falls-back-no-context
   (testing "?course=<unknown-slug> falls back to no-course-context render

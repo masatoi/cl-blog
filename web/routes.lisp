@@ -1296,6 +1296,7 @@ viewer cannot view it."
                 :course-title (course-title course-row)
                 :course-slug cs
                 :course-handle course-handle
+                :current-slug current-slug
                 :breadcrumb breadcrumb
                 :course-prev-url prev-url
                 :course-next-url next-url

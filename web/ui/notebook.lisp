@@ -166,8 +166,11 @@ COURSE-TITLE, COURSE-SLUG, and COURSE-HANDLE, when all non-nil, render
 a course header link pointing at /c/@<handle>/<slug>. NOTEBOOKS is a
 list of plists with keys :slug :title :author-handle (and optionally
 :position) in the desired display order. Each list item links to
-/@<author-handle>/<slug> when the notebook's :author-handle is present;
-notebooks without an :author-handle render the title as plain text.
+/@<author-handle>/<slug>, with ?course=<course-slug> appended when
+COURSE-SLUG is non-nil so that clicking a sidebar entry keeps the reader
+inside the course view (matching the course page and prev/next links)
+instead of dropping to the stand-alone notebook page. Notebooks without
+an :author-handle render the title as plain text.
 CURRENT-ID is the slug (or url id) of the active notebook used to mark
 the matching entry as 'sb-link active'."
   (with-html
@@ -184,8 +187,11 @@ the matching entry as 'sb-link active'."
                          (author-handle (getf nb :author-handle)))
                      (:li
                       (if (and slug author-handle)
-                          (:a :href (format nil "/@~A/~A"
-                                            author-handle slug)
+                          (:a :href (if course-slug
+                                        (format nil "/@~A/~A?course=~A"
+                                                author-handle slug course-slug)
+                                        (format nil "/@~A/~A"
+                                                author-handle slug))
                               :class (if (and current-id
                                               (string= slug current-id))
                                          "sb-link active"
@@ -338,6 +344,7 @@ a :pass so the solution unlocks instantly."
                     (sidebar-notebooks nil) run-cell-base
                     course-title course-slug course-handle
                     breadcrumb course-prev-url course-next-url
+                    current-slug
                     noindex)
   "Render the full notebook page as a complete HTML document.
 USER is the logged-in user plist or nil.
@@ -353,6 +360,8 @@ SIDEBAR-NOTEBOOKS controls the left TOC:
     render-course-sidebar. COURSE-TITLE and COURSE-SLUG, when both are
     supplied, add a course header link at the top of the sidebar.
 COURSE-TITLE / COURSE-SLUG are used only when SIDEBAR-NOTEBOOKS is a list.
+CURRENT-SLUG, when SIDEBAR-NOTEBOOKS is a list, is the slug of the
+notebook being viewed; its matching sidebar entry is marked active.
 RUN-CELL-BASE is the URL prefix for run-cell HTMX endpoints. Defaults
 to the SICP route /wardlisp/learn/<id> when omitted.
 BREADCRUMB, when non-nil, is a list of plists overriding the default
@@ -395,7 +404,7 @@ notebooks within the same course."
                        (render-course-sidebar course-title course-slug
                                               course-handle
                                               sidebar-notebooks
-                                              (notebook-url-id notebook))))
+                                              current-slug)))
                     (:main
                      (cond
                        (breadcrumb
