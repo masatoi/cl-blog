@@ -21,7 +21,7 @@ const cells = [
 const expected =
   '===prose===\nIntro.\n\n' +
   '===eval===\n(+ 1 2)\n\n' +
-  '===exercise: sum===\n; ?\n\n===expect: sum===\n3\n\n' +
+  '===exercise===\nsum\n===code===\n; ?\n\n===expect: sum===\n3\n\n' +
   '===solution: sq===\n(define (sq x) (* x x))';
 assert.strictEqual(cellsToBody(cells), expected);
 console.log('ok');
@@ -47,7 +47,7 @@ assert.strictEqual(cellsToBody([]), '');
       'test-cases': [{ description: 'basic', input: '(zero? 0)', expected: 't' }] },
   ];
   const inputExpected =
-    '===exercise: add===\n(+ a b)\n\n===expect: basic===\ninput: (zero? 0)\noutput: t';
+    '===exercise===\nadd\n===code===\n(+ a b)\n\n===expect: basic===\ninput: (zero? 0)\noutput: t';
   assert.strictEqual(cellsToBody(inputCells), inputExpected);
 }
 
@@ -61,7 +61,7 @@ assert.strictEqual(cellsToBody([]), '');
       ] },
   ];
   const multiExpected =
-    '===exercise: double===\n(* x 2)\n\n===expect===\n4\n\n===expect: neg===\ninput: -1\noutput: -2';
+    '===exercise===\ndouble\n===code===\n(* x 2)\n\n===expect===\n4\n\n===expect: neg===\ninput: -1\noutput: -2';
   assert.strictEqual(cellsToBody(multiCells), multiExpected);
 }
 
@@ -133,9 +133,12 @@ console.log('ok: kindOptionsFor preserves scene only for existing scene cells');
 // server's Lisp `recurya/game/notebook-parser:cells->body-md` byte-for-byte for
 // a representative mix of every cell kind and every test-case variant (desc +
 // single-line expected, bare `===expect===`, and the two-line input/output
-// form). `LISP_BODY_MD` below is NOT hand-derived: it is the exact string
-// returned by evaluating the following in the running image (JSON-encoded so
-// newlines transfer unambiguously), then pasted here verbatim:
+// form). `LISP_BODY_MD` below was originally the exact string returned by
+// evaluating the following in the running image (JSON-encoded so newlines
+// transfer unambiguously); the `code-exercise` fence has since been updated
+// to the new `===exercise===\n<desc>\n===code===\n<body>` block form (Task 3,
+// matching the Lisp side's own move to that format) — every other line is
+// unchanged from that original REPL output:
 //
 //   (recurya/utils/common:json->string
 //    (recurya/game/notebook-parser:cells->body-md
@@ -159,7 +162,7 @@ console.log('ok: kindOptionsFor preserves scene only for existing scene cells');
   const LISP_BODY_MD =
     '===prose===\nIntro paragraph.\nSecond line with **bold**.\n\n' +
     '===eval===\n(+ 1 2)\n\n' +
-    '===exercise: double it===\n; fill me in\n\n' +
+    '===exercise===\ndouble it\n===code===\n; fill me in\n\n' +
     '===expect: even===\n4\n\n' +
     '===expect===\n0\n\n' +
     '===expect: positive===\ninput: (f 3)\noutput: 6\n\n' +
@@ -211,7 +214,7 @@ console.log('ok: JS cellsToBody matches Lisp cells->body-md (fence parity)');
   const exerciseFalse = {
     'cell-id': '', kind: 'code-exercise', body: '; x', description: 'd', 'test-cases': false,
   };
-  assert.strictEqual(cellsToBody([exerciseFalse]), '===exercise: d===\n; x');
+  assert.strictEqual(cellsToBody([exerciseFalse]), '===exercise===\nd\n===code===\n; x');
 }
 
 console.log('ok: tolerates test-cases:false (Lisp nil->false) without falling back');
@@ -319,3 +322,17 @@ console.log('ok: markdown StreamParser tokenizes headings/emphasis/code/links/qu
   assert.strictEqual(st2.gated, false, 'missing gated => false');
 }
 console.log('ok: gated solutions encode ===solution-locked:=== and round-trip through state');
+
+// Exercise cells serialize to the ===exercise===/===code=== block form with a
+// multi-line Markdown description, matching Lisp cells->body-md byte-for-byte.
+{
+  const md = cellsToBody([{
+    'cell-id': '', kind: 'code-exercise',
+    description: 'para1\n\npara2', body: '(fill)',
+    'test-cases': [{ input: '', expected: '3', description: '' }],
+  }]);
+  assert.strictEqual(
+    md,
+    '===exercise===\npara1\n\npara2\n===code===\n(fill)\n\n===expect===\n3');
+}
+console.log('ok: exercise serializes to the ===exercise===/===code=== block form');

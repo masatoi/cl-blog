@@ -36,10 +36,17 @@ function renderTestCase(testCase) {
 }
 
 /**
- * Render the header line for a cell, given its kind and (for
- * exercise/solution cells) description. A `code-solution` cell with a truthy
- * `gated` flag renders the `===solution-locked:===` fence variant (a gated
- * solution, hidden until unlocked) instead of the plain `===solution:===`.
+ * Render the header line for a cell, given its kind and (for a `code-solution`
+ * cell) description. A `code-solution` cell with a truthy `gated` flag renders
+ * the `===solution-locked:===` fence variant (a gated solution, hidden until
+ * unlocked) instead of the plain `===solution:===`.
+ *
+ * Note: `code-exercise` cells are NOT built through this header — they use the
+ * multi-line `===exercise===`/`===code===` block form, which `renderCell`
+ * assembles directly (a description can itself span multiple lines/paragraphs
+ * of Markdown, so it cannot be folded into a single `===exercise: ...===`
+ * header line). The `code-exercise` case below is unreachable in practice but
+ * kept as a defensive fallback.
  *
  * @param {{kind: string, description?: string, gated?: boolean}} cell
  * @returns {string}
@@ -67,16 +74,24 @@ function renderCellHeader(cell) {
 
 /**
  * Render a single server-shaped cell object to its fence-format text (no
- * leading/trailing cell separators).
+ * leading/trailing cell separators). `code-exercise` cells render as the
+ * `===exercise===\n<description>\n===code===\n<body>` block form (the
+ * description may itself be multi-line Markdown), matching Lisp
+ * `cells->body-md`; every other kind uses `renderCellHeader`'s single-line
+ * header followed by the body.
  *
  * @param {{kind: string, body?: string, description?: string, "test-cases"?: Array, gated?: boolean}} cell
  * @returns {string}
  */
 function renderCell(cell) {
   const body = cell.body ?? '';
-  const header = renderCellHeader(cell);
-
-  let rendered = `${header}\n${body}`;
+  let rendered;
+  if (cell.kind === 'code-exercise') {
+    const description = cell.description ?? '';
+    rendered = `===exercise===\n${description}\n===code===\n${body}`;
+  } else {
+    rendered = `${renderCellHeader(cell)}\n${body}`;
+  }
 
   if (cell.kind === 'code-exercise') {
     // Tolerate the Lisp nil -> JSON `false` quirk for an empty test-case list
