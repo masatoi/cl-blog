@@ -452,7 +452,10 @@ notebooks within the same course."
                 (:code (or (getf tr :actual) "<error>")))))))
 
 (defun render-cell-result (result)
-  "Render one cell's result as an HTMX fragment (no html/head wrappers)."
+  "Render one cell's result as an HTMX fragment (no html/head wrappers).
+Appends a subtle metrics line reporting the computational resources the
+run consumed (fuel/steps, cons, depth) whenever the result carries
+metrics, mirroring the WardLisp playground."
   (with-html-string
     ;; Normalize :limit-exceeded to :error for rendering: both surface to
     ;; the user as an error message, and Spinneret's HTML walker mangles
@@ -483,4 +486,11 @@ notebooks within the same course."
                        "💡 上のセル「リセット」ボタンで初期コードに戻せます。"
                        "💡 上のセルを編集している場合、「リセット」ボタンで初期コードに戻せます。")))))))
     (let ((out (notebook-cell-result-print-output result)))
-      (when (and out (plusp (length out))) (:pre :class "print-output" out)))))
+      (when (and out (plusp (length out))) (:pre :class "print-output" out)))
+    (let ((m (notebook-cell-result-metrics result)))
+      (when m
+        (:div :class "metrics"
+              (format nil "Fuel: ~D | Cons: ~D | Depth: ~D"
+                      (or (getf m :steps-used) 0)
+                      (or (getf m :cons-allocated) 0)
+                      (or (getf m :max-depth-reached) 0)))))))

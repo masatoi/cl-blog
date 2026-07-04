@@ -1569,6 +1569,38 @@ hi
                         ("codes[]" . "(+ 1 2)")))))
             (ok (= 200 (response-status res)))))))))
 
+(deftest by-handle-cell-run-shows-resource-metrics
+  (testing "the cell-run result fragment reports the computational resources
+the run consumed: fuel (steps), cons, and depth."
+    (with-test-db
+      (let* ((dao (create-test-user :email-prefix "metrics"
+                                    :handle "metrics-7b"))
+             (body "===prose===
+hi
+
+===eval===
+(+ 1 2)")
+             (cells (mapcar #'recurya/web/routes::cell->jsonb-form
+                            (recurya/game/notebook-parser:parse-notebook-body
+                             body))))
+        (create-notebook! :title "Metrics" :slug "metrics-nb" :body-md body
+                          :cells cells :author dao
+                          :status "published" :visibility "public"
+                          :published-at (local-time:now))
+        (with-mock-session (make-session)
+          (let* ((res (public-notebook-cell-run-by-handle-handler
+                       `((:captures . ("metrics-7b" "metrics-nb" "1"))
+                         ("codes[]" . "")
+                         ("codes[]" . "(+ 1 2)"))))
+                 (frag (first (response-body res))))
+            (ok (= 200 (response-status res)))
+            (ok (search "Fuel:" frag)
+                "metrics line reports fuel consumed")
+            (ok (search "Cons:" frag)
+                "metrics line reports cons allocated")
+            (ok (search "Depth:" frag)
+                "metrics line reports call-stack depth reached")))))))
+
 (deftest by-handle-cell-run-404-unknown-handle
   (with-test-db
     (with-mock-session (make-session)
