@@ -8,7 +8,8 @@
                 #:cell-kind
                 #:cell-body
                 #:cell-description
-                #:cell-test-cases)
+                #:cell-test-cases
+                #:cell-gated-p)
   (:import-from #:recurya/game/puzzle
                 #:make-test-case
                 #:test-case-input
@@ -382,7 +383,10 @@
       (:code-eval     (write-string "===eval===" stream))
       (:scene         (write-string "===scene===" stream))
       (:code-exercise (format stream "===exercise: ~A===" desc))
-      (:code-solution (format stream "===solution: ~A===" desc)))
+      (:code-solution
+       (if (cell-gated-p cell)
+           (format stream "===solution-locked: ~A===" desc)
+           (format stream "===solution: ~A===" desc))))
     (write-char #\Newline stream)
     (write-string body stream)
     (when (eq kind :code-exercise)
@@ -423,6 +427,8 @@
                         followed, for each test-case, by
                           `===expect[: <description>]===\\n<expect-body>'
      :code-solution  -> `===solution: <description>===\\n<body>'
+                        (or `===solution-locked: <description>===\\n<body>'
+                        when CELL-GATED-P is true)
 
    Test-case body uses two-line `input: <i>\\noutput: <o>' form when
    TEST-CASE-INPUT is non-empty; otherwise the single-line expected

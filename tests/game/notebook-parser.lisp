@@ -243,3 +243,32 @@ Intro.
       (ok (null (cell-gated-p sol-plain)) "plain solution after is not gated (no forward leak)")
       (ok (null (cell-gated-p prose)) "prose after is not gated")
       (ok (null (cell-gated-p exercise)) "exercise before is not gated"))))
+
+(deftest cells->body-md-writes-solution-locked
+  (testing "a gated solution serializes with the -locked header"
+    (let ((cells (list (make-cell :kind :code-solution :description "ans"
+                                  :body "(define x 1)" :gated-p t))))
+      (ok (string= (format nil "===solution-locked: ans===~%(define x 1)")
+                   (cells->body-md cells))))))
+
+(deftest cells->body-md-writes-plain-solution
+  (testing "a non-gated solution serializes with the plain header"
+    (let ((cells (list (make-cell :kind :code-solution :description "ans"
+                                  :body "(define x 1)" :gated-p nil))))
+      (ok (string= (format nil "===solution: ans===~%(define x 1)")
+                   (cells->body-md cells))))))
+
+(deftest solution-gated-round-trips
+  (testing "parse -> serialize -> parse preserves gated for both variants"
+    (let* ((body (format nil "===exercise: q===~%; ?~%~%===expect===~%1~%~%===solution-locked: a===~%(+ 1 0)~%~%===solution: b===~%(+ 2 0)"))
+           (cells (parse-notebook-body body))
+           (round (parse-notebook-body (cells->body-md cells)))
+           (sol-locked (find-if (lambda (c) (and (eq :code-solution (cell-kind c))
+                                                 (string= "a" (cell-description c))))
+                                round))
+           (sol-plain (find-if (lambda (c) (and (eq :code-solution (cell-kind c))
+                                                (string= "b" (cell-description c))))
+                               round)))
+      (ok (eq t (cell-gated-p sol-locked)) "gated solution stays gated")
+      (ok sol-plain "plain solution present")
+      (ok (null (cell-gated-p sol-plain)) "plain solution stays non-gated"))))
