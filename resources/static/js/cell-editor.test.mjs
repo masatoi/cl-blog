@@ -297,3 +297,25 @@ console.log('ok: tolerates test-cases:false (Lisp nil->false) without falling ba
 }
 
 console.log('ok: markdown StreamParser tokenizes headings/emphasis/code/links/quotes/lists/fences');
+
+// Gated solutions: `gated` is a boolean carried through state and encoded as
+// the ===solution-locked:=== fence variant.
+{
+  assert.strictEqual(
+    cellsToBody([{ 'cell-id': '', kind: 'code-solution', body: '(x)',
+                   description: 'a', 'test-cases': [], gated: true }]),
+    '===solution-locked: a===\n(x)');
+  assert.strictEqual(
+    cellsToBody([{ 'cell-id': '', kind: 'code-solution', body: '(x)',
+                   description: 'a', 'test-cases': [], gated: false }]),
+    '===solution: a===\n(x)');
+
+  const st = serverCellToState({ 'cell-id': '', kind: 'code-solution', body: '(x)',
+                                 description: 'a', 'test-cases': [], gated: true });
+  assert.strictEqual(st.gated, true);
+  assert.strictEqual(stateCellToServer(st).gated, true);
+  const st2 = serverCellToState({ 'cell-id': '', kind: 'code-solution', body: '(x)',
+                                  description: 'a', 'test-cases': [] });
+  assert.strictEqual(st2.gated, false, 'missing gated => false');
+}
+console.log('ok: gated solutions encode ===solution-locked:=== and round-trip through state');

@@ -37,13 +37,16 @@ function renderTestCase(testCase) {
 
 /**
  * Render the header line for a cell, given its kind and (for
- * exercise/solution cells) description.
+ * exercise/solution cells) description. A `code-solution` cell with a truthy
+ * `gated` flag renders the `===solution-locked:===` fence variant (a gated
+ * solution, hidden until unlocked) instead of the plain `===solution:===`.
  *
- * @param {string} kind
- * @param {string} description
+ * @param {{kind: string, description?: string, gated?: boolean}} cell
  * @returns {string}
  */
-function renderCellHeader(kind, description) {
+function renderCellHeader(cell) {
+  const kind = cell.kind;
+  const description = cell.description ?? '';
   switch (kind) {
     case 'prose':
       return '===prose===';
@@ -54,7 +57,9 @@ function renderCellHeader(kind, description) {
     case 'code-exercise':
       return `===exercise: ${description}===`;
     case 'code-solution':
-      return `===solution: ${description}===`;
+      return cell.gated
+        ? `===solution-locked: ${description}===`
+        : `===solution: ${description}===`;
     default:
       throw new Error(`cellsToBody: unknown cell kind "${kind}"`);
   }
@@ -64,13 +69,12 @@ function renderCellHeader(kind, description) {
  * Render a single server-shaped cell object to its fence-format text (no
  * leading/trailing cell separators).
  *
- * @param {{kind: string, body?: string, description?: string, "test-cases"?: Array}} cell
+ * @param {{kind: string, body?: string, description?: string, "test-cases"?: Array, gated?: boolean}} cell
  * @returns {string}
  */
 function renderCell(cell) {
   const body = cell.body ?? '';
-  const description = cell.description ?? '';
-  const header = renderCellHeader(cell.kind, description);
+  const header = renderCellHeader(cell);
 
   let rendered = `${header}\n${body}`;
 
@@ -93,7 +97,7 @@ function renderCell(cell) {
  * the fence-format markdown body string used by notebook lessons, matching the
  * Lisp `cells->body-md` byte-for-byte.
  *
- * @param {Array<{kind: string, body?: string, description?: string, "test-cases"?: Array}>} cells
+ * @param {Array<{kind: string, body?: string, description?: string, "test-cases"?: Array, gated?: boolean}>} cells
  * @returns {string}
  */
 export function cellsToBody(cells) {
@@ -139,8 +143,8 @@ const KIND_LABELS = {
  * read from `data-cells`) into the internal editor state shape used by the
  * UI. Pure and DOM-free.
  *
- * @param {{"cell-id"?: string, kind: string, body?: string, description?: string, "test-cases"?: Array}} serverCell
- * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array<{input: string, expected: string, description: string}>, view: null}}
+ * @param {{"cell-id"?: string, kind: string, body?: string, description?: string, "test-cases"?: Array, gated?: boolean}} serverCell
+ * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array<{input: string, expected: string, description: string}>, gated: boolean, view: null}}
  */
 export function serverCellToState(serverCell) {
   // The server serializes an empty test-case list as JSON `false` (the Lisp
@@ -164,6 +168,7 @@ export function serverCellToState(serverCell) {
       expected: tc.expected ?? '',
       description: tc.description ?? '',
     })),
+    gated: serverCell.gated === true,
     view: null,
   };
 }
@@ -174,8 +179,8 @@ export function serverCellToState(serverCell) {
  * `cells->body-md` fence format). Pure and DOM-free: reads only plain data
  * fields off `stateCell`, never `stateCell.view`.
  *
- * @param {{cellId?: string, kind: string, body?: string, description?: string, testCases?: Array<{input?: string, expected?: string, description?: string}>}} stateCell
- * @returns {{"cell-id": string, kind: string, body: string, description: string, "test-cases": Array}}
+ * @param {{cellId?: string, kind: string, body?: string, description?: string, testCases?: Array<{input?: string, expected?: string, description?: string}>, gated?: boolean}} stateCell
+ * @returns {{"cell-id": string, kind: string, body: string, description: string, "test-cases": Array, gated: boolean}}
  */
 export function stateCellToServer(stateCell) {
   return {
@@ -188,6 +193,7 @@ export function stateCellToServer(stateCell) {
       expected: tc.expected ?? '',
       description: tc.description ?? '',
     })),
+    gated: stateCell.gated === true,
   };
 }
 
@@ -198,10 +204,10 @@ export function stateCellToServer(stateCell) {
  * new cell from the toolbar.
  *
  * @param {string} kind
- * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array, view: null}}
+ * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array, gated: boolean, view: null}}
  */
 function emptyCell(kind) {
-  return { cellId: '', kind, body: '', description: '', testCases: [], view: null };
+  return { cellId: '', kind, body: '', description: '', testCases: [], gated: false, view: null };
 }
 
 /**
