@@ -1095,3 +1095,28 @@ hi" :cells nil :author dao
             (ng (search "UnlistedMember" body) "unlisted member is hidden")
             (ng (search "/@cm-7b/unl-member" body)
                 "no link to the unlisted member")))))))
+
+(deftest public-course-page-shows-owner-their-private-member
+  (testing "the course owner sees their own attached private notebook on the
+course page (a public viewer would not); the page filter is viewer-aware."
+    (with-test-db
+      (let* ((user (mk-user))
+             (dao (get-user-by-id (getf user :id)))
+             (handle (users-handle dao))
+             (course (create-course! :title "Priv Course" :slug "priv-course"
+                                     :status "published" :visibility "private"
+                                     :published-at (local-time:now) :author dao))
+             (nb (create-notebook! :title "PrivMember"
+                                   :body-md (format nil "===prose===~%hi")
+                                   :cells nil :author dao :status "published"
+                                   :visibility "private"
+                                   :published-at (local-time:now))))
+        (add-notebook-to-course! (course-id course) (notebook-id nb) :position 0)
+        (with-mock-session (make-session :user user)
+          (let* ((res (public-course-by-handle-handler
+                       (list (cons :captures (list handle (course-slug course))))))
+                 (body (first (response-body res))))
+            (ok (= 200 (response-status res))
+                "owner may view their own private course")
+            (ok (search "PrivMember" body)
+                "owner sees their attached published+private notebook")))))))

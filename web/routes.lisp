@@ -1358,9 +1358,8 @@ the viewer cannot view it."
       (t
        (let* ((rows (remove-if-not
                      (lambda (cn)
-                       (let ((nb (course-notebook-notebook cn)))
-                         (and nb
-                              (recurya/utils/access-control:publicly-listable-notebook-p nb))))
+                       (recurya/utils/access-control:course-member-listable-for-p
+                        user (course-notebook-notebook cn)))
                      (list-course-notebooks (course-id course-row))))
               (notebooks (mapcar #'course-notebook-row->public-plist rows)))
          (html-response

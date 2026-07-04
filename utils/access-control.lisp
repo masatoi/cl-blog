@@ -13,7 +13,8 @@
   (:export #:can-view-notebook-p
            #:can-view-course-p
            #:publicly-listable-notebook-p
-           #:publicly-listable-course-p))
+           #:publicly-listable-course-p
+           #:course-member-listable-for-p))
 
 (in-package #:recurya/utils/access-control)
 
@@ -75,3 +76,15 @@ visibility \"public\" or \"unlisted\"."
   (and course
        (string= "published" (course-status course))
        (string= "public" (course-visibility course))))
+
+(defun course-member-listable-for-p (user notebook)
+  "Return T when NOTEBOOK, attached to a course, should be shown to USER on
+that course's page.
+
+The course owner sees every notebook they attached (including their own
+private or unlisted ones), so a private course of private notebooks reads
+correctly for its owner. Anyone else sees only publicly-listable members,
+keeping unlisted/private notebooks out of the public course listing."
+  (and notebook
+       (or (owner-of-notebook-p user notebook)
+           (publicly-listable-notebook-p notebook))))
