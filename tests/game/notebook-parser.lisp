@@ -291,3 +291,40 @@ round-trips; its description is optional (unlike an exercise's)"
       (ok (eq :code-solution (cell-kind c)))
       (ok (eq t (cell-gated-p c)))
       (ok (string= "" (or (cell-description c) ""))))))
+
+(deftest parse-exercise-new-form-splits-desc-and-code
+  (testing "===exercise===/===code=== splits a multi-line description from code"
+    (let ((c (first (parse-notebook-body
+                     (format nil "===exercise===~%line1~%line2~%===code===~%(fill)~%~%===expect===~%3")))))
+      (ok (eq :code-exercise (cell-kind c)))
+      (ok (string= (format nil "line1~%line2") (cell-description c)))
+      (ok (string= "(fill)" (cell-body c)))
+      (ok (= 1 (length (cell-test-cases c)))))))
+
+(deftest parse-exercise-old-form-still-works
+  (testing "the old ===exercise: desc=== header form still parses (backward compat)"
+    (let ((c (first (parse-notebook-body
+                     (format nil "===exercise: sum===~%(fill)~%~%===expect===~%3")))))
+      (ok (eq :code-exercise (cell-kind c)))
+      (ok (string= "sum" (cell-description c)))
+      (ok (string= "(fill)" (cell-body c))))))
+
+(deftest parse-exercise-empty-desc-allowed-with-code
+  (testing "bare ===exercise=== + ===code=== with an empty description is allowed"
+    (let ((c (first (parse-notebook-body
+                     (format nil "===exercise===~%===code===~%(fill)")))))
+      (ok (eq :code-exercise (cell-kind c)))
+      (ok (string= "" (cell-description c)))
+      (ok (string= "(fill)" (cell-body c))))))
+
+(deftest parse-exercise-malformed-emits-errors
+  (testing "malformed exercise forms emit validation errors"
+    (flet ((errs (body)
+             (multiple-value-bind (cells e) (parse-notebook-body body)
+               (declare (ignore cells)) e)))
+      (ok (some (lambda (e) (search "requires a description" (getf e :message)))
+                (errs (format nil "===exercise===~%(fill)"))))
+      (ok (some (lambda (e) (search "already set" (getf e :message)))
+                (errs (format nil "===exercise: d===~%desc~%===code===~%(fill)"))))
+      (ok (some (lambda (e) (search "only valid inside an exercise" (getf e :message)))
+                (errs (format nil "===prose===~%hi~%~%===code===~%x")))))))

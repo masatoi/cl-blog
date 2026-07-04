@@ -56,11 +56,6 @@
   "Scanner for `===expect===' and `===expect: <description>===' fence headers.
    The optional capture group holds the description, or NIL when absent.")
 
-(defparameter +bare-exercise-header-regex+
-  (cl-ppcre:create-scanner "^===exercise===$")
-  "Scanner for `===exercise===' (no description). Triggers a validation
-   error: an exercise header must include a description.")
-
 (defparameter +generic-header-regex+
   (cl-ppcre:create-scanner "^===.+===$")
   "Scanner for any line that looks like a fence header (`===...==='),
@@ -74,7 +69,14 @@
      :prose          for `===prose==='
      :code-eval      for `===eval==='
      :scene          for `===scene==='
-     :code-exercise  for `===exercise: <desc>==='
+     :code-exercise  for `===exercise: <desc>===' and bare `===exercise==='
+                     (DESCRIPTION nil for the bare form; the description
+                      is instead taken from the buffered lines preceding
+                      a following `===code===' delimiter, or is an error
+                      if neither is present)
+     :code-delim     for `===code===', the delimiter that splits an
+                     exercise's multi-line Markdown description from its
+                     code body (sentinel kind: not stored as a cell)
      :code-solution  for `===solution: <desc>==='         (GATED-P nil)
                      and `===solution-locked: <desc>==='   (GATED-P t)
      :expect         for `===expect===' and `===expect: <desc>==='
@@ -86,9 +88,11 @@
    description is present in the header. GATED-P is T only for the
    solution-locked variant; NIL otherwise."
   (cond
-    ((string= line "===prose===") (values :prose nil nil))
-    ((string= line "===eval===")  (values :code-eval nil nil))
-    ((string= line "===scene===") (values :scene nil nil))
+    ((string= line "===prose===")    (values :prose nil nil))
+    ((string= line "===eval===")     (values :code-eval nil nil))
+    ((string= line "===scene===")    (values :scene nil nil))
+    ((string= line "===exercise===") (values :code-exercise nil nil))
+    ((string= line "===code===")     (values :code-delim nil nil))
     (t
      (multiple-value-bind (m groups)
          (cl-ppcre:scan-to-strings +exercise-header-regex+ line)
@@ -186,7 +190,12 @@
    Supported fences:
      ===prose===
      ===eval===
-     ===exercise: <description>===
+     ===exercise===              (bare; description taken from the lines
+                                   up to the following ===code===)
+     ===code===                  (splits an exercise's description from
+                                   its code body; only valid after a bare
+                                   ===exercise===)
+     ===exercise: <description>=== (legacy inline-header form)
      ===expect===
      ===expect: <description>===
 
@@ -202,7 +211,11 @@
 
      * `===expect===' or `===expect: <desc>===' with no preceding
        `===exercise===' cell.
-     * Bare `===exercise===' header without a description.
+     * Bare `===exercise===' with neither a `===code===' block nor a
+       legacy inline description ever supplied.
+     * `===code===' outside of an exercise, or after the exercise's
+       description has already been set (inline header or an earlier
+       `===code===').
      * Unknown fence header (anything that looks like `===...===' but
        does not match a recognised kind).
      * The body contains no cell at all (empty/whitespace-only input,
@@ -227,6 +240,7 @@
         (current-kind nil)
         (current-desc nil)
         (current-gated-p nil)
+        (current-header-line nil)
         (current-buffer (make-array 0 :element-type 'character
                                       :fill-pointer 0 :adjustable t))
         (pending-exercise-cell nil)
@@ -264,25 +278,33 @@
              (close-exercise-body ()
                ;; Convert the currently-collected exercise body+desc into
                ;; a struct held in pending-exercise-cell, ready to receive
-               ;; test-cases from following ===expect=== blocks.
+               ;; test-cases from following ===expect=== blocks. CURRENT-DESC
+               ;; is NIL when a bare ===exercise=== never received a
+               ;; description, either from the old inline-header form or
+               ;; from a ===code=== delimiter splitting off the buffered
+               ;; description lines -- that is a validation error.
                (when (eq current-kind :code-exercise)
-                 (let ((body (buffer-string current-buffer))
-                       (desc (or current-desc "")))
-                   (multiple-value-bind (matched-id new-remaining)
-                       (take-matching-cell-id :code-exercise body desc
-                                              remaining-existing)
-                     (setf remaining-existing new-remaining)
-                     (setf pending-exercise-cell
-                           (make-cell :id (or matched-id
-                                              (princ-to-string (uuid:make-v4-uuid)))
-                                      :kind :code-exercise
-                                      :body body
-                                      :description desc
-                                      :test-cases nil))))
+                 (if (null current-desc)
+                     (push-error current-header-line
+                                 "===exercise=== requires a description or a ===code=== block")
+                     (let ((body (buffer-string current-buffer))
+                           (desc current-desc))
+                       (multiple-value-bind (matched-id new-remaining)
+                           (take-matching-cell-id :code-exercise body desc
+                                                  remaining-existing)
+                         (setf remaining-existing new-remaining)
+                         (setf pending-exercise-cell
+                               (make-cell :id (or matched-id
+                                                  (princ-to-string (uuid:make-v4-uuid)))
+                                          :kind :code-exercise
+                                          :body body
+                                          :description desc
+                                          :test-cases nil)))))
                  (setf (fill-pointer current-buffer) 0
                        current-kind nil
                        current-desc nil
-                       current-gated-p nil)))
+                       current-gated-p nil
+                       current-header-line nil)))
              (flush-pending-exercise ()
                (when pending-exercise-cell
                  (push pending-exercise-cell cells)
@@ -306,7 +328,8 @@
                  (setf (fill-pointer current-buffer) 0
                        current-kind nil
                        current-desc nil
-                       current-gated-p nil))))
+                       current-gated-p nil
+                       current-header-line nil))))
       (dolist (line lines)
         (incf line-number)
         (multiple-value-bind (kind desc gated) (parse-fence-header line)
@@ -334,21 +357,34 @@
                 (setf in-expect-p t
                       expect-desc desc
                       (fill-pointer expect-buffer) 0))))
+            ;; ===code=== : split the exercise description from the code stub.
+            ((eq kind :code-delim)
+             (cond
+               ((not (eq current-kind :code-exercise))
+                (push-error line-number
+                            "===code=== is only valid inside an exercise"))
+               ((not (null current-desc))
+                (push-error line-number
+                            "unexpected ===code=== (the description is already set)"))
+               (t
+                (setf current-desc (buffer-string current-buffer)
+                      (fill-pointer current-buffer) 0))))
             ;; Any other recognised header.
             (kind
              ;; First close any open expect block.
              (finalise-expect)
+             ;; If we were collecting an exercise body that never reached
+             ;; ===expect===, close (and validate) it now.
+             (when (eq current-kind :code-exercise)
+               (close-exercise-body))
              ;; Flush the pending exercise (with its accumulated tests).
              (flush-pending-exercise)
              ;; Flush any open prose/eval cell.
              (flush-current)
              (setf current-kind kind
                    current-desc desc
-                   current-gated-p gated))
-            ;; Bare ===exercise=== without description.
-            ((cl-ppcre:scan +bare-exercise-header-regex+ line)
-             (push-error line-number
-                         "===exercise=== requires a description (===exercise: <desc>===)"))
+                   current-gated-p gated
+                   current-header-line line-number))
             ;; Looks like a header but matched nothing known.
             ((cl-ppcre:scan +generic-header-regex+ line)
              (push-error line-number
@@ -360,9 +396,11 @@
                 (append-line-to expect-buffer line))
                (current-kind
                 (append-line-to current-buffer line)))))))
-      ;; EOF cleanup, in order: close expect, flush pending exercise,
-      ;; flush plain cell.
+      ;; EOF cleanup, in order: close expect, close any still-open
+      ;; exercise body, flush pending exercise, flush plain cell.
       (finalise-expect)
+      (when (eq current-kind :code-exercise)
+        (close-exercise-body))
       (flush-pending-exercise)
       (flush-current))
     (let ((final-cells (nreverse cells)))
