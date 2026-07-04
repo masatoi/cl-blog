@@ -3,6 +3,7 @@ import {
   serverCellToState,
   stateCellToServer,
   kindOptionsFor,
+  makeMarkdownStreamParser,
 } from './cell-editor.js';
 import assert from 'node:assert';
 
@@ -214,3 +215,85 @@ console.log('ok: JS cellsToBody matches Lisp cells->body-md (fence parity)');
 }
 
 console.log('ok: tolerates test-cases:false (Lisp nil->false) without falling back');
+
+// Markdown StreamParser (prose highlighting). We can't render CodeMirror in
+// Node, but the tokenizer is a pure StreamParser: exercise its token() against
+// a faithful mock of CodeMirror's StringStream (regex match must be anchored
+// at pos, and every call must advance the stream).
+{
+  class MockStream {
+    constructor(line) {
+      this.string = line;
+      this.pos = 0;
+      this.start = 0;
+    }
+    sol() {
+      return this.pos === 0;
+    }
+    eol() {
+      return this.pos >= this.string.length;
+    }
+    next() {
+      return this.pos < this.string.length ? this.string.charAt(this.pos++) : undefined;
+    }
+    match(pattern, consume) {
+      const m = this.string.slice(this.pos).match(pattern);
+      if (m && m.index > 0) return null;
+      if (m && consume !== false) this.pos += m[0].length;
+      return m;
+    }
+    skipToEnd() {
+      this.pos = this.string.length;
+    }
+  }
+
+  // Non-null tags stub: token() never reads it, but tokenTable is built eagerly.
+  const tagsStub = {
+    heading: 'h', strong: 's', emphasis: 'e', monospace: 'm',
+    link: 'l', quote: 'q', list: 'li', meta: 'me',
+  };
+  const parser = makeMarkdownStreamParser(tagsStub);
+
+  function tokenize(line, state) {
+    const stream = new MockStream(line);
+    const out = [];
+    let guard = 0;
+    while (!stream.eol()) {
+      if (guard++ > 1000) throw new Error('tokenizer did not terminate');
+      stream.start = stream.pos;
+      const style = parser.token(stream, state);
+      if (stream.pos === stream.start) stream.pos++; // must never stall
+      out.push({ text: line.slice(stream.start, stream.pos), style });
+    }
+    return out;
+  }
+  const hasTok = (toks, style, text) =>
+    toks.some((t) => t.style === style && (text === undefined || t.text === text));
+
+  let st = parser.startState();
+  // ATX heading: whole line.
+  assert.ok(hasTok(tokenize('# Title', st), 'md-heading', '# Title'));
+  // Bold / italic / inline code / link.
+  assert.ok(hasTok(tokenize('a **bold** b', parser.startState()), 'md-strong', '**bold**'));
+  assert.ok(hasTok(tokenize('an *em* word', parser.startState()), 'md-emphasis', '*em*'));
+  assert.ok(hasTok(tokenize('use `code` here', parser.startState()), 'md-monospace', '`code`'));
+  assert.ok(hasTok(tokenize('see [x](http://y)', parser.startState()), 'md-link', '[x](http://y)'));
+  // Blockquote and list markers at start of line.
+  assert.strictEqual(tokenize('> quoted', parser.startState())[0].style, 'md-quote');
+  assert.strictEqual(tokenize('- item', parser.startState())[0].style, 'md-list');
+  assert.strictEqual(tokenize('1. item', parser.startState())[0].style, 'md-list');
+  // `**bold**` at start of line is bold, not a list marker.
+  assert.ok(hasTok(tokenize('**b**', parser.startState()), 'md-strong', '**b**'));
+  // Fenced code block spans lines via parser state.
+  const fs = parser.startState();
+  assert.strictEqual(tokenize('```', fs)[0].style, 'md-meta');
+  assert.strictEqual(fs.fenced, true, 'opening fence sets fenced state');
+  assert.strictEqual(tokenize('x = 1', fs)[0].style, 'md-monospace');
+  assert.strictEqual(tokenize('```', fs)[0].style, 'md-meta');
+  assert.strictEqual(fs.fenced, false, 'closing fence clears fenced state');
+  // tokenTable maps token names to the provided tags.
+  assert.strictEqual(parser.tokenTable['md-heading'], 'h');
+  assert.strictEqual(parser.tokenTable['md-strong'], 's');
+}
+
+console.log('ok: markdown StreamParser tokenizes headings/emphasis/code/links/quotes/lists/fences');

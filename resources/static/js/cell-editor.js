@@ -120,9 +120,14 @@ export function cellsToBody(cells) {
  */
 const EDITABLE_KINDS = ['prose', 'code-eval', 'code-exercise', 'code-solution'];
 
-/** Human-readable labels for each cell kind, used in `<select>` options. */
+/**
+ * Human-readable labels for each cell kind, used in `<select>` options. The
+ * `prose` kind is labelled "Markdown" (its body is written in Markdown, à la
+ * Jupyter's Markdown cell); the internal kind string and `===prose===` fence
+ * are unchanged.
+ */
 const KIND_LABELS = {
-  prose: 'Prose',
+  prose: 'Markdown',
   'code-eval': 'Code (eval)',
   'code-exercise': 'Code (exercise)',
   'code-solution': 'Code (solution)',
@@ -205,16 +210,17 @@ function emptyCell(kind) {
  * `web/ui/editor.lisp`); this function only performs the dynamic `import()`
  * calls and bundles the exports the editor needs into one object.
  *
- * @returns {Promise<object>} `{EditorView, EditorState, basicSetup, StreamLanguage, scheme, oneDark}`
+ * @returns {Promise<object>} `{EditorView, EditorState, basicSetup, StreamLanguage, HighlightStyle, syntaxHighlighting, scheme, oneDark, tags}`
  */
 async function loadCodeMirrorModules() {
   const [
     { EditorView },
     { EditorState },
     { basicSetup },
-    { StreamLanguage },
+    { StreamLanguage, HighlightStyle, syntaxHighlighting },
     { scheme },
     { oneDark },
+    { tags },
   ] = await Promise.all([
     import('@codemirror/view'),
     import('@codemirror/state'),
@@ -222,8 +228,19 @@ async function loadCodeMirrorModules() {
     import('@codemirror/language'),
     import('@codemirror/legacy-modes/mode/scheme'),
     import('@codemirror/theme-one-dark'),
+    import('@lezer/highlight'),
   ]);
-  return { EditorView, EditorState, basicSetup, StreamLanguage, scheme, oneDark };
+  return {
+    EditorView,
+    EditorState,
+    basicSetup,
+    StreamLanguage,
+    HighlightStyle,
+    syntaxHighlighting,
+    scheme,
+    oneDark,
+    tags,
+  };
 }
 
 /**
@@ -328,9 +345,137 @@ function buildTitleInput(cell) {
 }
 
 /**
+ * A small CodeMirror 6 `StreamParser` config for Markdown highlighting.
+ *
+ * This deliberately does NOT pull in `@codemirror/lang-markdown` (whose Lezer
+ * dependency tree cascades into lang-html/css/javascript). Instead it is a
+ * lightweight line-oriented tokenizer — same shape as the Scheme legacy mode —
+ * covering the constructs authors actually see: ATX headings, bold, italic,
+ * inline code and fenced code blocks, links/images, blockquotes and list
+ * markers. `TAGS` is `@lezer/highlight`'s `tags`, used to map token names to
+ * highlight tags via `tokenTable`. Pure and DOM-free.
+ *
+ * @param {object} TAGS `@lezer/highlight` tags
+ * @returns {object} a StreamParser config for `StreamLanguage.define`
+ */
+export function makeMarkdownStreamParser(TAGS) {
+  return {
+    name: 'markdown-lite',
+    startState() {
+      return { fenced: false };
+    },
+    token(stream, state) {
+      // Inside a fenced code block: consume whole lines as code until the
+      // closing fence.
+      if (state.fenced) {
+        if (stream.sol() && stream.match(/^\s*(```|~~~)/)) {
+          state.fenced = false;
+          stream.skipToEnd();
+          return 'md-meta';
+        }
+        stream.skipToEnd();
+        return 'md-monospace';
+      }
+      if (stream.sol()) {
+        if (stream.match(/^\s*(```|~~~)/)) {
+          state.fenced = true;
+          stream.skipToEnd();
+          return 'md-meta';
+        }
+        if (stream.match(/^#{1,6}\s.*/)) {
+          return 'md-heading';
+        }
+        if (stream.match(/^\s*>+\s?/)) {
+          return 'md-quote';
+        }
+        if (stream.match(/^\s*(?:[-*+]|\d+\.)\s/)) {
+          return 'md-list';
+        }
+        // Otherwise fall through to scan the rest of the line inline.
+      }
+      if (stream.match(/^`[^`\n]+`/)) {
+        return 'md-monospace';
+      }
+      if (stream.match(/^(\*\*|__)(?=\S)(?:[\s\S]*?\S)\1/)) {
+        return 'md-strong';
+      }
+      if (stream.match(/^(\*|_)(?=\S)(?:[^*_\n]*?\S)\1/)) {
+        return 'md-emphasis';
+      }
+      if (stream.match(/^!?\[[^\]\n]*\]\([^)\n]*\)/)) {
+        return 'md-link';
+      }
+      // No token here: advance one character so the tokenizer always makes
+      // progress.
+      stream.next();
+      return null;
+    },
+    tokenTable: {
+      'md-heading': TAGS.heading,
+      'md-strong': TAGS.strong,
+      'md-emphasis': TAGS.emphasis,
+      'md-monospace': TAGS.monospace,
+      'md-link': TAGS.link,
+      'md-quote': TAGS.quote,
+      'md-list': TAGS.list,
+      'md-meta': TAGS.meta,
+    },
+  };
+}
+
+/**
+ * Build the Markdown language + highlight extensions from loaded CM modules.
+ * A dedicated `HighlightStyle` pins explicit colours (matched to the one-dark
+ * palette) for the Markdown tags so highlighting is visible regardless of what
+ * the base theme happens to cover; placed before `oneDark` so it wins.
+ *
+ * @param {object} cm loaded CodeMirror modules (from `loadCodeMirrorModules`)
+ * @returns {Array} extensions enabling Markdown highlighting
+ */
+function markdownExtensions(cm) {
+  const { StreamLanguage, HighlightStyle, syntaxHighlighting, tags } = cm;
+  const style = HighlightStyle.define([
+    { tag: tags.heading, color: '#e5c07b', fontWeight: 'bold' },
+    { tag: tags.strong, color: '#e5c07b', fontWeight: 'bold' },
+    { tag: tags.emphasis, color: '#c678dd', fontStyle: 'italic' },
+    { tag: tags.monospace, color: '#98c379' },
+    { tag: tags.link, color: '#61afef', textDecoration: 'underline' },
+    { tag: tags.quote, color: '#7f848e', fontStyle: 'italic' },
+    { tag: tags.list, color: '#61afef' },
+    { tag: tags.meta, color: '#7f848e' },
+  ]);
+  return [
+    StreamLanguage.define(makeMarkdownStreamParser(tags)),
+    syntaxHighlighting(style),
+  ];
+}
+
+/**
+ * The CodeMirror extensions for a cell of the given KIND: Scheme highlighting
+ * for the three code kinds, Markdown highlighting for `prose`, and plain text
+ * for `scene` (and any other/legacy kind).
+ *
+ * @param {string} kind
+ * @param {object} cm loaded CodeMirror modules
+ * @returns {Array} the extensions array for `EditorState.create`
+ */
+function editorExtensionsForKind(kind, cm) {
+  const { basicSetup, StreamLanguage, scheme, oneDark } = cm;
+  const isCode =
+    kind === 'code-eval' || kind === 'code-exercise' || kind === 'code-solution';
+  if (isCode) {
+    return [basicSetup, StreamLanguage.define(scheme), oneDark];
+  }
+  if (kind === 'prose') {
+    return [basicSetup, ...markdownExtensions(cm), oneDark];
+  }
+  return [basicSetup, oneDark];
+}
+
+/**
  * Mount a fresh CodeMirror 6 `EditorView` for a cell's body text and store
- * it on `cell.view`. Mode is plain text for `prose`/`scene`, Scheme
- * highlighting for the three code kinds.
+ * it on `cell.view`. Mode is Markdown for `prose`, Scheme for the three code
+ * kinds, and plain text for `scene`.
  *
  * @param {object} editorState
  * @param {object} cell
@@ -340,13 +485,8 @@ function buildEditorMount(editorState, cell) {
   const mount = document.createElement('div');
   mount.className = 'cell-editor-cm-mount';
 
-  const { EditorView, EditorState, basicSetup, StreamLanguage, scheme, oneDark } =
-    editorState.cmModules;
-  const isCode =
-    cell.kind === 'code-eval' || cell.kind === 'code-exercise' || cell.kind === 'code-solution';
-  const extensions = isCode
-    ? [basicSetup, StreamLanguage.define(scheme), oneDark]
-    : [basicSetup, oneDark];
+  const { EditorView, EditorState } = editorState.cmModules;
+  const extensions = editorExtensionsForKind(cell.kind, editorState.cmModules);
 
   const view = new EditorView({
     state: EditorState.create({ doc: cell.body ?? '', extensions }),
