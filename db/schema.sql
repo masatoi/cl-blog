@@ -111,6 +111,13 @@ CREATE TABLE "course_notebook" (
 CREATE UNIQUE INDEX "unique_course_notebook_course_id_notebook_id" ON "course_notebook" ("course_id", "notebook_id");
 CREATE INDEX "key_course_notebook_course_id_position" ON "course_notebook" ("course_id", "position");
 
+-- Lack DBI session store backing table (see web/server.lisp make-session-store).
+-- Not a Mito model; managed by ensure-sessions-table! at server start.
+CREATE TABLE IF NOT EXISTS "sessions" (
+    "id" VARCHAR(255) NOT NULL PRIMARY KEY,
+    "session_data" TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS "schema_migrations" (
     "version" BIGINT PRIMARY KEY,
     "applied_at" TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

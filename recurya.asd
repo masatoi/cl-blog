@@ -21,6 +21,10 @@
                "clack"
                "clack-handler-hunchentoot"
                "lack"
+               ;; DB-backed session store (persists logins across restarts).
+               ;; System name differs from its package
+               ;; (lack/middleware/session/store/dbi).
+               "lack/session/store/dbi"
                "spinneret"
                "ironclad"
                "babel"

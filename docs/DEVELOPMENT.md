@@ -58,6 +58,10 @@ against anything other than the test DB.
 - **Postgres data** lives in the named volume `postgres_data`. It survives
   `docker compose down` / `up` and container restarts. Only `docker compose
   down -v` deletes it.
+- **Login sessions** are stored in the Postgres `sessions` table (Lack's
+  DBI session store, wired in `web/server.lisp`), so you stay logged in
+  across a server/container restart. The table is created automatically at
+  server start (`ensure-sessions-table!`).
 - **Official content** (SICP, novel-lessons courses) is re-seeded idempotently
   at container boot. To restore it on demand (e.g. into a fresh DB), run:
 

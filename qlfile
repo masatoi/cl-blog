@@ -23,6 +23,8 @@ git clack https://github.com/fukamachi/clack
 git lack https://github.com/fukamachi/lack
 ql spinneret :latest
 ql quri :latest
+# Session persistence: Lack's DBI session store serializes with cl-marshal.
+ql marshal :latest
 ql ironclad :latest
 ql babel :latest
 ql hunchentoot :latest

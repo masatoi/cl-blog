@@ -90,6 +90,10 @@
  (:class qlot/source/ql:source-ql
   :initargs (:%version :latest)
   :version "ql-2026-01-01"))
+("marshal" .
+ (:class qlot/source/ql:source-ql
+  :initargs (:%version :latest)
+  :version "ql-2026-01-01"))
 ("ironclad" .
  (:class qlot/source/ql:source-ql
   :initargs (:%version :latest)

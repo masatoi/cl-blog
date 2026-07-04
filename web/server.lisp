@@ -70,13 +70,34 @@ inspection would interfere)."
           (funcall app env)
           (funcall csrf-app env)))))
 
+(defun ensure-sessions-table! ()
+  "Create the DBI session-store backing table if it does not already exist.
+Idempotent; called at server start so the persistent session store has its
+table in every environment (the app does not auto-migrate)."
+  (recurya/db/core:execute!
+   "CREATE TABLE IF NOT EXISTS sessions (
+      id VARCHAR(255) NOT NULL PRIMARY KEY,
+      session_data TEXT NOT NULL)"))
+
+(defun make-session-store ()
+  "Build a DB-backed Lack session store so logins survive server/container
+restarts. Each store operation uses a short-lived connection to the
+application database, which is safe under Hunchentoot's worker threads."
+  (lack/middleware/session/store/dbi:make-dbi-store
+   :connector (lambda ()
+                (recurya/db/core:connect-to-database
+                 (or (uiop:getenv "POSTGRES_DB") "recurya")))
+   :disconnector (lambda (conn) (dbi:disconnect conn))))
+
 (defun build-app ()
   "Build the complete Lack application with middleware."
   (let ((app (make-recurya-app)))
     (setup-routes app)
     ;; Lack middleware stack (outermost listed first):
     ;; 1. :static                  — serves /static/* from resources/static/ on disk
-    ;; 2. :session                 — cookie-based session (provides ningle/context:*session*)
+    ;; 2. :session                 — cookie-keyed, DB-backed session store
+    ;;                               (persists logins across restarts; provides
+    ;;                               ningle/context:*session*)
     ;; 3. #'require-dashboard-auth — Login guard: redirects anonymous requests
     ;;                               to /dashboard or /dashboard/* back to
     ;;                               /login. Reads :lack.session, so must run
@@ -100,7 +121,7 @@ inspection would interfere)."
      (:static :path "/static/"
               :root (asdf:system-relative-pathname
                      :recurya "resources/static/"))
-     :session
+     (:session :store (make-session-store))
      #'require-dashboard-auth
      #'csrf-with-skip
      #'require-real-handle
@@ -121,6 +142,9 @@ inspection would interfere)."
     ;; Load timezone database for local-time
     (local-time:reread-timezone-repository)
     (log:info "Timezone repository loaded")
+
+    ;; Ensure the persistent session store's table exists before serving.
+    (ensure-sessions-table!)
 
     ;; Build and start the application
     (let ((app (build-app)))
