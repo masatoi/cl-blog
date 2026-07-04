@@ -11,6 +11,7 @@
                 #:cell-kind
                 #:cell-body
                 #:cell-test-cases
+                #:cell-gated-p
                 #:run-cell
                 #:notebook-cell-result-status
                 #:notebook-cell-result-value))
@@ -134,3 +135,8 @@
            (r (run-cell nb 0 '("(define (f) (f)) (f)"))))
       (ok (eq :error (recurya/game/notebook:notebook-cell-result-status r)))
       (ok (null (recurya/game/notebook:notebook-cell-result-error-cell-id r))))))
+
+(deftest cell-gated-field
+  (testing "cell has a boolean gated field defaulting to nil"
+    (ok (null (cell-gated-p (make-cell :kind :code-solution))))
+    (ok (eq t (cell-gated-p (make-cell :kind :code-solution :gated-p t))))))

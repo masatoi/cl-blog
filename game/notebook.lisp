@@ -15,7 +15,7 @@
            #:notebook-summary #:notebook-cells
            #:cell #:make-cell
            #:cell-id #:cell-kind #:cell-body
-           #:cell-description #:cell-test-cases
+           #:cell-description #:cell-test-cases #:cell-gated-p
            #:notebook-cell-result #:make-notebook-cell-result
            #:notebook-cell-result-cell-id
            #:notebook-cell-result-kind
@@ -42,13 +42,16 @@
   (cells nil :type list))
 
 (defstruct cell
-  "A single notebook cell. KIND is one of :prose, :code-eval, :code-exercise.
-   BODY is a Spinneret DSL list for :prose cells, or a source string for code cells."
+  "A single notebook cell. KIND is one of :prose, :code-eval, :code-exercise,
+   :code-solution, :scene. BODY is a Spinneret DSL list for :prose cells, or a
+   source string for code cells. GATED-P (only meaningful for :code-solution)
+   hides the solution until the preceding exercise is passed."
   (id nil :type (or null keyword string))
   (kind nil :type keyword)
   body               ; untyped: list for prose, string for code cells
   (description "" :type string)
-  (test-cases nil :type list))
+  (test-cases nil :type list)
+  (gated-p nil :type boolean))
 
 (defstruct notebook-cell-result
   "Result of running one cell."
