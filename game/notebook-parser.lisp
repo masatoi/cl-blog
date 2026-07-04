@@ -45,6 +45,11 @@
   (cl-ppcre:create-scanner "^===solution: (.+)===$")
   "Scanner for `===solution: <description>===' fence headers.")
 
+(defparameter +solution-locked-header-regex+
+  (cl-ppcre:create-scanner "^===solution-locked: (.+)===$")
+  "Scanner for `===solution-locked: <description>===' fence headers, marking a
+   gated solution (revealed only after the preceding exercise is passed).")
+
 (defparameter +expect-header-regex+
   (cl-ppcre:create-scanner "^===expect(?:: (.+))?===$")
   "Scanner for `===expect===' and `===expect: <description>===' fence headers.
@@ -61,42 +66,50 @@
    used to detect unknown headers after specific patterns failed.")
 
 (defun parse-fence-header (line)
-  "If LINE is a fence header line, return (values KIND DESCRIPTION-OR-NIL).
-   Otherwise return (values NIL NIL).
+  "If LINE is a fence header line, return (values KIND DESCRIPTION-OR-NIL GATED-P).
+   Otherwise return (values NIL NIL NIL).
 
    Recognised KINDs:
      :prose          for `===prose==='
      :code-eval      for `===eval==='
+     :scene          for `===scene==='
      :code-exercise  for `===exercise: <desc>==='
-     :code-solution  for `===solution: <desc>==='
+     :code-solution  for `===solution: <desc>==='         (GATED-P nil)
+                     and `===solution-locked: <desc>==='   (GATED-P t)
      :expect         for `===expect===' and `===expect: <desc>==='
                      (sentinel kind: not stored as a cell, used by the
                       state machine in parse-notebook-body to attach a
                       test-case to the pending exercise cell)
 
    DESCRIPTION is the captured description string, or NIL when no
-   description is present in the header."
+   description is present in the header. GATED-P is T only for the
+   solution-locked variant; NIL otherwise."
   (cond
-    ((string= line "===prose===") (values :prose nil))
-    ((string= line "===eval===")  (values :code-eval nil))
-    ((string= line "===scene===") (values :scene nil))
+    ((string= line "===prose===") (values :prose nil nil))
+    ((string= line "===eval===")  (values :code-eval nil nil))
+    ((string= line "===scene===") (values :scene nil nil))
     (t
      (multiple-value-bind (m groups)
          (cl-ppcre:scan-to-strings +exercise-header-regex+ line)
        (when m
          (return-from parse-fence-header
-           (values :code-exercise (aref groups 0)))))
+           (values :code-exercise (aref groups 0) nil))))
+     (multiple-value-bind (m groups)
+         (cl-ppcre:scan-to-strings +solution-locked-header-regex+ line)
+       (when m
+         (return-from parse-fence-header
+           (values :code-solution (aref groups 0) t))))
      (multiple-value-bind (m groups)
          (cl-ppcre:scan-to-strings +solution-header-regex+ line)
        (when m
          (return-from parse-fence-header
-           (values :code-solution (aref groups 0)))))
+           (values :code-solution (aref groups 0) nil))))
      (multiple-value-bind (m groups)
          (cl-ppcre:scan-to-strings +expect-header-regex+ line)
        (when m
          (return-from parse-fence-header
-           (values :expect (aref groups 0)))))
-     (values nil nil))))
+           (values :expect (aref groups 0) nil))))
+     (values nil nil nil))))
 
 (defun parse-expect-block (body description)
   "Parse the buffered text BODY of a single `===expect===' block into a
@@ -212,6 +225,7 @@
         (cells '())
         (current-kind nil)
         (current-desc nil)
+        (current-gated-p nil)
         (current-buffer (make-array 0 :element-type 'character
                                       :fill-pointer 0 :adjustable t))
         (pending-exercise-cell nil)
@@ -266,7 +280,8 @@
                                       :test-cases nil))))
                  (setf (fill-pointer current-buffer) 0
                        current-kind nil
-                       current-desc nil)))
+                       current-desc nil
+                       current-gated-p nil)))
              (flush-pending-exercise ()
                (when pending-exercise-cell
                  (push pending-exercise-cell cells)
@@ -284,14 +299,16 @@
                                               (princ-to-string (uuid:make-v4-uuid)))
                                       :kind current-kind
                                       :body body
-                                      :description desc)
+                                      :description desc
+                                      :gated-p current-gated-p)
                            cells)))
                  (setf (fill-pointer current-buffer) 0
                        current-kind nil
-                       current-desc nil))))
+                       current-desc nil
+                       current-gated-p nil))))
       (dolist (line lines)
         (incf line-number)
-        (multiple-value-bind (kind desc) (parse-fence-header line)
+        (multiple-value-bind (kind desc gated) (parse-fence-header line)
           (cond
             ;; ===expect=== or ===expect: <desc>===
             ((eq kind :expect)
@@ -325,7 +342,8 @@
              ;; Flush any open prose/eval cell.
              (flush-current)
              (setf current-kind kind
-                   current-desc desc))
+                   current-desc desc
+                   current-gated-p gated))
             ;; Bare ===exercise=== without description.
             ((cl-ppcre:scan +bare-exercise-header-regex+ line)
              (push-error line-number

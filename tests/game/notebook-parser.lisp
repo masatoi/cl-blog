@@ -12,7 +12,8 @@
                 #:cell-kind
                 #:cell-body
                 #:cell-description
-                #:cell-test-cases))
+                #:cell-test-cases
+                #:cell-gated-p))
 
 (in-package #:recurya/tests/game/notebook-parser)
 
@@ -208,3 +209,37 @@ Intro.
            (cells2 (parse-notebook-body md)))
       (ok (eq :scene (cell-kind (first cells2))))
       (ok (string= (cell-body (first cells)) (cell-body (first cells2)))))))
+
+(deftest parse-solution-locked-sets-gated
+  (testing "===solution-locked: desc=== yields a gated code-solution cell"
+    (let* ((body (format nil "===solution-locked: ans===~%(define x 1)"))
+           (cells (parse-notebook-body body))
+           (c (first cells)))
+      (ok (eq :code-solution (cell-kind c)))
+      (ok (eq t (cell-gated-p c)))
+      (ok (string= "ans" (cell-description c)))
+      (ok (string= "(define x 1)" (cell-body c))))))
+
+(deftest parse-solution-plain-is-not-gated
+  (testing "===solution: desc=== yields a non-gated code-solution cell"
+    (let* ((body (format nil "===solution: ans===~%(define x 1)"))
+           (c (first (parse-notebook-body body))))
+      (ok (eq :code-solution (cell-kind c)))
+      (ok (null (cell-gated-p c))))))
+
+(deftest gated-does-not-leak-across-cells
+  (testing "gated resets at cell boundaries: only the -locked solution is gated"
+    (let* ((body (format nil "===exercise: q===~%; ?~%~%===expect===~%1~%~%===solution-locked: a===~%(A)~%~%===solution: b===~%(B)~%~%===prose===~%after"))
+           (cells (parse-notebook-body body))
+           (sol-locked (find-if (lambda (c) (and (eq :code-solution (cell-kind c))
+                                                 (string= "a" (cell-description c))))
+                                cells))
+           (sol-plain (find-if (lambda (c) (and (eq :code-solution (cell-kind c))
+                                                (string= "b" (cell-description c))))
+                               cells))
+           (prose (find :prose cells :key #'cell-kind))
+           (exercise (find :code-exercise cells :key #'cell-kind)))
+      (ok (eq t (cell-gated-p sol-locked)) "locked solution is gated")
+      (ok (null (cell-gated-p sol-plain)) "plain solution after is not gated (no forward leak)")
+      (ok (null (cell-gated-p prose)) "prose after is not gated")
+      (ok (null (cell-gated-p exercise)) "exercise before is not gated"))))
