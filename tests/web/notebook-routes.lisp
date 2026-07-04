@@ -961,7 +961,8 @@ hi
             (ng (search "**bold**" html))))))))
 
 (deftest public-page-renders-200-when-body-has-solution-cells
-  (testing "viewer survives notebooks that contain ===solution=== cells (hidden)"
+  (testing "viewer survives notebooks that contain ===solution=== cells; a
+non-gated solution's body is shown in a collapsible details element"
     (with-test-db
       (let* ((owner (mk-user))
              (dao (get-user-by-id (getf owner :id)))
@@ -986,8 +987,32 @@ hi
                                    (list handle "with-solution")))))
                  (html (first (response-body res))))
             (ok (= 200 (response-status res)))
-            (ng (search "(* x x)" html)
-                "solution body must not leak to public viewers")))))))
+            (ok (search "(* x x)" html)
+                "non-gated solution body IS shown to public viewers")))))))
+
+(deftest solution-gated-hidden-until-passed
+  (testing "a gated (===solution-locked===) solution body is absent from the
+reader page until the preceding exercise is passed; a non-gated
+(===solution===) solution is always shown"
+    (with-test-db
+      (let* ((owner (mk-user))
+             (dao (get-user-by-id (getf owner :id)))
+             (handle (users-handle dao))
+             (body (format nil "===exercise: q===~%; ?~%~%===expect===~%1~%~%===solution-locked: ans===~%(SECRET-ANSWER)~%~%===solution: open===~%(OPEN-ANSWER)"))
+             (cells (mapcar #'recurya/web/routes::cell->jsonb-form
+                            (recurya/game/notebook-parser:parse-notebook-body body))))
+        (create-notebook!
+         :title "N" :slug "n" :body-md body
+         :cells cells :author dao :status "published"
+         :visibility "public" :published-at (local-time:now))
+        (with-mock-session (make-session)
+          (let ((page (first (response-body
+                              (public-notebook-by-handle-handler
+                               (list (cons :captures (list handle "n"))))))))
+            (ng (search "SECRET-ANSWER" page)
+                "gated solution body is NOT in the HTML when not passed")
+            (ok (search "OPEN-ANSWER" page)
+                "non-gated solution body IS shown")))))))
 
 (deftest run-cell-404-missing-slug
   (with-test-db

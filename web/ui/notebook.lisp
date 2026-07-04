@@ -14,6 +14,7 @@
                 #:cell-kind
                 #:cell-body
                 #:cell-description
+                #:cell-gated-p
                 #:notebook-cell-result-cell-id
                 #:notebook-cell-result-kind
                 #:notebook-cell-result-status
@@ -47,6 +48,10 @@
   "URL prefix used to build run-cell HTMX endpoints for the cell currently
 being rendered. Set by `render'. The full URL is
 \"<base>/cells/<index>/run\".")
+
+(defparameter *cells* nil
+  "All cells of the notebook currently being rendered, so a solution cell can
+look back for its preceding exercise. Bound in RENDER.")
 
 (defparameter *styles*
   "body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -128,7 +133,17 @@ h1 { font-size: 1.6rem; letter-spacing: -0.02em; color: #f8fafc; }
 .print-output { background:#0f172a; padding:0.5rem;
                 border-radius: 4px; color: #94a3b8;
                 font-family: monospace; font-size: 0.85rem;
-                white-space: pre-wrap; margin-top: 0.5rem; }")
+                white-space: pre-wrap; margin-top: 0.5rem; }
+.cell--solution { }
+.solution-details { background:#111827; border:1px solid #334155;
+                    border-radius:8px; padding:0.5rem 0.75rem; }
+.solution-details > summary { cursor:pointer; color:#38bdf8; font-weight:600;
+                              font-size:0.9rem; }
+.solution-body { margin:0.5rem 0 0 0; color:#e2e8f0;
+                 font-family:'SF Mono',monospace; font-size:0.85rem;
+                 white-space:pre-wrap; }
+.solution-locked { color:#64748b; font-size:0.85rem; padding:0.5rem 0.75rem;
+                   border:1px dashed #334155; border-radius:8px; }")
 
 (defun notebook-url-id (notebook)
   "Lowercase id of the notebook, for use in URLs.
@@ -246,6 +261,37 @@ inline so a bad scene never breaks the page."
         (:div :class "cell cell--prose"
           (:p "（このシーンを表示できません: " (princ-to-string e) "）"))))))
 
+(defun preceding-exercise-passed-p (index)
+  "True when the nearest :code-exercise cell before INDEX in *cells* has been
+passed (its cell-id is in *passed-cells*). NIL when there is no preceding
+exercise."
+  (loop for i from (1- index) downto 0
+        for c = (nth i *cells*)
+        when (eq (cell-kind c) :code-exercise)
+          do (return (and (member (%cell-id->string (cell-id c)) *passed-cells*
+                                   :test #'string=)
+                          t))
+        finally (return nil)))
+
+(defun render-solution-cell (cell index)
+  "Render a :code-solution cell. A non-gated solution is always shown in a
+collapsible <details>. A gated solution shows its body only when its preceding
+exercise is passed; otherwise only a locked placeholder (the body is never
+emitted). Always emits the empty hidden codes[] placeholder for index
+alignment. The container id cell-<index>-solution is the HTMX OOB target."
+  (let* ((unlocked (or (not (cell-gated-p cell))
+                       (preceding-exercise-passed-p index)))
+         (container-id (format nil "cell-~D-solution" index)))
+    (with-html
+      (:div :id container-id :class "cell cell--solution"
+        (if unlocked
+            (:details :class "solution-details"
+              (:summary "解答を見る")
+              (:pre :class "solution-body" (or (cell-body cell) "")))
+            (:div :class "solution-locked"
+              "🔒 直前の演習に正解すると解答が表示されます")))
+      (:input :type "hidden" :class "notebook-code" :name "codes[]" :value ""))))
+
 (defun render-cell (cell index nb-id)
   (declare (ignorable cell index nb-id))
   (ecase (cell-kind cell)
@@ -253,14 +299,7 @@ inline so a bad scene never breaks the page."
     (:scene (render-scene-cell cell index))
     (:code-eval (render-code-cell cell index nb-id nil))
     (:code-exercise (render-code-cell cell index nb-id t))
-    (:code-solution
-     ;; Solution cells hold the canonical answer for grading regression
-     ;; tests; they are intentionally hidden from the public viewer.
-     ;; Keep an empty hidden codes[] entry so the cell index stays
-     ;; aligned with the run-cell handler's codes vector.
-     (with-html
-       (:input :type "hidden" :class "notebook-code"
-               :name "codes[]" :value "")))))
+    (:code-solution (render-solution-cell cell index))))
 
 (defun render (notebook
                &key user saved-codes passed-cells
@@ -295,6 +334,7 @@ notebooks within the same course."
   (let* ((*saved-codes* saved-codes)
          (*passed-cells* passed-cells)
          (*user* user)
+         (*cells* (notebook-cells notebook))
          (*run-cell-base*
           (or run-cell-base
               (format nil "/wardlisp/learn/~A" (notebook-url-id notebook)))))
