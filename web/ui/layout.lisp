@@ -109,7 +109,8 @@ Renders the same top bar for everyone, with discovery links visible to
 all visitors and account-related affordances gated on USER:
 
   Always:        Home (/), Notebooks (/notebooks), Courses (/courses)
-  Logged-in:     Dashboard (/dashboard) + avatar dropdown with
+  Logged-in:     My Notebooks (/dashboard/notebooks), My Courses
+                 (/dashboard/courses) + avatar dropdown with
                  Account settings (/account) and Log out (POST /logout)
   Anonymous:     Login (/login)
 
@@ -124,7 +125,11 @@ its token via hx-include without a separate fetch."
         (:a :class "app-header__link" :href "/notebooks" "Notebooks")
         (:a :class "app-header__link" :href "/courses" "Courses")
         (when user
-          (:a :class "app-header__link" :href "/dashboard" "Dashboard"))))
+          (:a :class "app-header__link" :href "/dashboard/notebooks"
+           "My Notebooks"))
+        (when user
+          (:a :class "app-header__link" :href "/dashboard/courses"
+           "My Courses"))))
       (cond
         (user
          (let ((display (get-user-display user))
