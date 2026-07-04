@@ -159,7 +159,7 @@ const KIND_LABELS = {
  * UI. Pure and DOM-free.
  *
  * @param {{"cell-id"?: string, kind: string, body?: string, description?: string, "test-cases"?: Array, gated?: boolean}} serverCell
- * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array<{input: string, expected: string, description: string}>, gated: boolean, view: null}}
+ * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array<{input: string, expected: string, description: string}>, gated: boolean, view: null, descView: null}}
  */
 export function serverCellToState(serverCell) {
   // The server serializes an empty test-case list as JSON `false` (the Lisp
@@ -185,6 +185,7 @@ export function serverCellToState(serverCell) {
     })),
     gated: serverCell.gated === true,
     view: null,
+    descView: null,
   };
 }
 
@@ -219,10 +220,19 @@ export function stateCellToServer(stateCell) {
  * new cell from the toolbar.
  *
  * @param {string} kind
- * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array, gated: boolean, view: null}}
+ * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array, gated: boolean, view: null, descView: null}}
  */
 function emptyCell(kind) {
-  return { cellId: '', kind, body: '', description: '', testCases: [], gated: false, view: null };
+  return {
+    cellId: '',
+    kind,
+    body: '',
+    description: '',
+    testCases: [],
+    gated: false,
+    view: null,
+    descView: null,
+  };
 }
 
 /**
@@ -278,9 +288,10 @@ export function kindOptionsFor(cell) {
 }
 
 /**
- * Read the current text out of every cell's live CodeMirror view (if any)
- * back into that cell's `body`, without destroying the views. Used before
- * assembling the submit payload, where views must stay mounted.
+ * Read the current text out of every cell's live CodeMirror view(s) (if any)
+ * back into that cell's `body` (and, for a `code-exercise` cell's
+ * description editor, `description`), without destroying the views. Used
+ * before assembling the submit payload, where views must stay mounted.
  *
  * @param {object} editorState
  */
@@ -289,21 +300,28 @@ function syncAllViewsToState(editorState) {
     if (cell.view) {
       cell.body = cell.view.state.doc.toString();
     }
+    if (cell.descView) {
+      cell.description = cell.descView.state.doc.toString();
+    }
   }
 }
 
 /**
- * Destroy every cell's live CodeMirror view (if any) and clear the
- * reference. Used before a full re-render so old views are never leaked or
- * left orphaned in a detached DOM subtree.
+ * Destroy every cell's live CodeMirror view(s) (if any) and clear the
+ * reference(s). Used before a full re-render so old views are never leaked
+ * or left orphaned in a detached DOM subtree.
  *
- * @param {Array<{view: (object|null)}>} cells
+ * @param {Array<{view: (object|null), descView: (object|null)}>} cells
  */
 function destroyAllViews(cells) {
   for (const cell of cells) {
     if (cell.view) {
       cell.view.destroy();
       cell.view = null;
+    }
+    if (cell.descView) {
+      cell.descView.destroy();
+      cell.descView = null;
     }
   }
 }
@@ -358,7 +376,7 @@ function buildKindSelect(editorState, cell) {
   return select;
 }
 
-/** Title input, shown only for `code-exercise` / `code-solution` cells. */
+/** Title input, shown only for `code-solution` cells. */
 function buildTitleInput(cell) {
   return buildLabeledTextInput('Title', cell.description, (value) => {
     cell.description = value;
@@ -545,6 +563,40 @@ function buildEditorMount(editorState, cell) {
 }
 
 /**
+ * Mount a Markdown-highlighted CodeMirror editor for a `code-exercise`
+ * cell's description (the problem statement), storing the view on
+ * `cell.descView`. Reuses the same Markdown extensions as a `prose` cell's
+ * body editor (see `editorExtensionsForKind`), since the description is
+ * itself free-form Markdown that can span multiple lines/paragraphs.
+ *
+ * @param {object} editorState
+ * @param {object} cell
+ * @returns {HTMLDivElement} the field wrapper containing the label and CM view
+ */
+function buildDescriptionEditor(editorState, cell) {
+  const wrap = document.createElement('div');
+  wrap.className = 'cell-editor-field cell-editor-desc';
+  const label = document.createElement('div');
+  label.className = 'cell-editor-desc-label';
+  label.textContent = 'Description (Markdown)';
+  wrap.appendChild(label);
+
+  const mount = document.createElement('div');
+  mount.className = 'cell-editor-cm-mount';
+  wrap.appendChild(mount);
+
+  const { EditorView, EditorState } = editorState.cmModules;
+  const extensions = editorExtensionsForKind('prose', editorState.cmModules);
+  const view = new EditorView({
+    state: EditorState.create({ doc: cell.description ?? '', extensions }),
+    parent: mount,
+  });
+  cell.descView = view;
+
+  return wrap;
+}
+
+/**
  * Build one test-case row (input / expected / description fields + a
  * delete button) for a `code-exercise` cell.
  *
@@ -650,6 +702,10 @@ function deleteCell(editorState, index) {
     removed.view.destroy();
     removed.view = null;
   }
+  if (removed && removed.descView) {
+    removed.descView.destroy();
+    removed.descView = null;
+  }
   if (cells.length === 0) {
     cells.push(emptyCell('prose'));
   }
@@ -692,8 +748,9 @@ function buildCellControls(editorState, index) {
 
 /**
  * Build the full DOM subtree for one cell: header (kind select, optional
- * title, optional `code-solution` gated checkbox, move/delete controls), the
- * CodeMirror mount, and (for `code-exercise`) the test-cases section.
+ * `code-solution` title + gated checkbox, move/delete controls), a
+ * Markdown-highlighted description editor for `code-exercise` cells, the
+ * body CodeMirror mount, and (for `code-exercise`) the test-cases section.
  *
  * @param {object} editorState
  * @param {object} cell
@@ -708,14 +765,16 @@ function buildCellItemDom(editorState, cell, index) {
   const header = document.createElement('div');
   header.className = 'cell-editor-item-header';
   header.appendChild(buildKindSelect(editorState, cell));
-  if (cell.kind === 'code-exercise' || cell.kind === 'code-solution') {
-    header.appendChild(buildTitleInput(cell));
-  }
   if (cell.kind === 'code-solution') {
+    header.appendChild(buildTitleInput(cell));
     header.appendChild(buildGatedCheckbox(cell));
   }
   header.appendChild(buildCellControls(editorState, index));
   item.appendChild(header);
+
+  if (cell.kind === 'code-exercise') {
+    item.appendChild(buildDescriptionEditor(editorState, cell));
+  }
 
   item.appendChild(buildEditorMount(editorState, cell));
 
