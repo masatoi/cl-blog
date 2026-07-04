@@ -328,3 +328,20 @@ round-trips; its description is optional (unlike an exercise's)"
                 (errs (format nil "===exercise: d===~%desc~%===code===~%(fill)"))))
       (ok (some (lambda (e) (search "only valid inside an exercise" (getf e :message)))
                 (errs (format nil "===prose===~%hi~%~%===code===~%x")))))))
+
+(deftest exercise-multiline-desc-serializes-and-round-trips
+  (testing "an exercise serializes to the ===exercise===/===code=== block form and round-trips"
+    (let* ((cells (list (make-cell :kind :code-exercise
+                                   :description (format nil "para1~%~%para2")
+                                   :body "(fill)"
+                                   :test-cases (list (recurya/game/puzzle:make-test-case
+                                                       :input "" :expected "3"
+                                                       :description "")))))
+           (md (cells->body-md cells)))
+      (ok (search "===exercise===" md))
+      (ok (search "===code===" md))
+      (ng (search "===exercise: " md) "no old-style header desc")
+      (let ((c2 (first (parse-notebook-body md))))
+        (ok (string= (format nil "para1~%~%para2") (cell-description c2)))
+        (ok (string= "(fill)" (cell-body c2)))
+        (ok (= 1 (length (cell-test-cases c2))))))))

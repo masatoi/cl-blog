@@ -420,7 +420,7 @@
       (:prose         (write-string "===prose===" stream))
       (:code-eval     (write-string "===eval===" stream))
       (:scene         (write-string "===scene===" stream))
-      (:code-exercise (format stream "===exercise: ~A===" desc))
+      (:code-exercise (format stream "===exercise===~%~A~%===code===" desc))
       (:code-solution
        (if (cell-gated-p cell)
            (format stream "===solution-locked: ~A===" desc)
@@ -461,7 +461,7 @@
    Output format per cell kind:
      :prose          -> `===prose===\\n<body>'
      :code-eval      -> `===eval===\\n<body>'
-     :code-exercise  -> `===exercise: <description>===\\n<body>'
+     :code-exercise  -> `===exercise===\\n<description>\\n===code===\\n<body>'
                         followed, for each test-case, by
                           `===expect[: <description>]===\\n<expect-body>'
      :code-solution  -> `===solution: <description>===\\n<body>'
