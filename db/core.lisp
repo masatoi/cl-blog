@@ -25,6 +25,9 @@
    #:stop!
    #:datasource
    #:with-transaction
+   #:connect-to-database
+   #:with-connection
+   #:current-database
    ;; Constants
    #:*active-job-statuses*
    ;; Value conversion utilities
@@ -165,6 +168,41 @@ Returns:
   The value(s) returned by the last form in BODY."
   `(dbi.driver:with-transaction (datasource)
      ,@body))
+
+(defun connect-to-database (db-name)
+  "Open a fresh cl-dbi connection to DB-NAME using the standard credentials
+(host/port/user/password from the environment), WITHOUT touching the
+top-level *DATASOURCE* / Mito *CONNECTION*. Returns the raw connection;
+close it with DBI:DISCONNECT.
+
+Intended for utilities that must talk to a database other than the running
+application's (e.g. the test harness targeting a dedicated test database, or
+a one-off maintenance connection)."
+  (let ((args (cdr (build-connection-spec))))  ; drop the :postgres driver key
+    (dbi:connect :postgres
+                 :database-name db-name
+                 :host (getf args :host)
+                 :port (getf args :port)
+                 :username (getf args :username)
+                 :password (getf args :password))))
+
+(defmacro with-connection ((conn) &body body)
+  "Evaluate BODY with the top-level connection specials (*DATASOURCE* and
+Mito's *CONNECTION*) dynamically bound to CONN. Lets code target a separate
+database for the dynamic extent of BODY without disturbing the running
+application's top-level connection. CONN is a cl-dbi connection, e.g. from
+CONNECT-TO-DATABASE."
+  `(let ((*datasource* ,conn)
+         (*connection* ,conn))
+     ,@body))
+
+(defun current-database ()
+  "Return the name (string) of the database the active connection is attached
+to, via SELECT current_database()."
+  (let ((row (execute-one "SELECT current_database()")))
+    ;; ROW is a (column value) plist; take the single value regardless of the
+    ;; driver's column-key casing.
+    (second row)))
 
 ;;; ============================================================
 ;;; Value Conversion Utilities

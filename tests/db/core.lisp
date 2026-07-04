@@ -10,7 +10,15 @@
                 #:clj->json-str
                 #:json-str->clj
                 #:maybe-instant
-                #:format-timestamp-for-db))
+                #:format-timestamp-for-db
+                #:connect-to-database
+                #:with-connection
+                #:current-database)
+  (:import-from #:recurya/tests/support/db
+                #:with-test-db
+                #:cleanup-all-test-data
+                #:test-database-name
+                #:test-database-p))
 
 (in-package #:recurya/tests/db/core)
 
@@ -184,3 +192,30 @@
            (result (format-timestamp-for-db ts)))
       ;; Should have zero-padded month, day, hour, minute, second
       (ok (search "2024-03-05 02:03:05" result)))))
+
+(deftest test-database-p-recognizes-only-the-test-db
+  (testing "test-database-p accepts the dedicated test DB and rejects others"
+    (ok (test-database-p (test-database-name)))
+    (ng (test-database-p "recurya")
+        "the development database is never treated as a test database")
+    (ng (test-database-p "postgres"))
+    (ng (test-database-p nil))))
+
+(deftest with-test-db-runs-against-the-test-database
+  (testing "inside with-test-db the active connection is the test database,
+never the development database"
+    (with-test-db
+      (ok (string= (test-database-name) (current-database))))))
+
+(deftest cleanup-guard-refuses-non-test-database
+  (testing "cleanup-all-test-data aborts (deleting nothing) when the active
+connection is not the dedicated test database -- the guard that stops a test
+run from wiping the development database"
+    (let ((admin (connect-to-database "postgres")))
+      (unwind-protect
+           (with-connection (admin)
+             (ng (test-database-p (current-database))
+                 "sanity: connected to a non-test database")
+             (ok (signals (cleanup-all-test-data) 'error)
+                 "guard signals rather than deleting"))
+        (dbi:disconnect admin)))))
