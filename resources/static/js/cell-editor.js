@@ -75,7 +75,10 @@ function renderCell(cell) {
   let rendered = `${header}\n${body}`;
 
   if (cell.kind === 'code-exercise') {
-    const testCases = cell['test-cases'] ?? [];
+    // Tolerate the Lisp nil -> JSON `false` quirk for an empty test-case list
+    // (see serverCellToState); a raw server cell can carry `false` here.
+    const rawTestCases = cell['test-cases'];
+    const testCases = Array.isArray(rawTestCases) ? rawTestCases : [];
     for (const testCase of testCases) {
       rendered += '\n\n' + renderTestCase(testCase);
     }
@@ -135,7 +138,14 @@ const KIND_LABELS = {
  * @returns {{cellId: string, kind: string, body: string, description: string, testCases: Array<{input: string, expected: string, description: string}>, view: null}}
  */
 export function serverCellToState(serverCell) {
-  const testCases = serverCell['test-cases'] ?? [];
+  // The server serializes an empty test-case list as JSON `false` (the Lisp
+  // nil -> false quirk), not `[]`. `?? []` only defaults null/undefined, so it
+  // would leave `false` in place and `false.map(...)` would throw — dropping
+  // the whole editor into its textarea fallback whenever a notebook has any
+  // cell without test-cases (i.e. every edit of a real notebook). Guard with
+  // Array.isArray so any non-array (false/null/missing) becomes [].
+  const rawTestCases = serverCell['test-cases'];
+  const testCases = Array.isArray(rawTestCases) ? rawTestCases : [];
   return {
     cellId: serverCell['cell-id'] ?? '',
     // Fall back to 'prose' so a kind-less cell can never leave `kind`

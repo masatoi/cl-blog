@@ -190,3 +190,27 @@ console.log('ok: kindOptionsFor preserves scene only for existing scene cells');
 }
 
 console.log('ok: JS cellsToBody matches Lisp cells->body-md (fence parity)');
+
+// Regression (edit form went to textarea fallback): the server's json->string
+// serializes an EMPTY test-case list as JSON `false`, not `[]` (Lisp nil ->
+// false). Every real notebook has at least one cell without test-cases, so
+// `data-cells` always contains `"test-cases":false`. serverCellToState and
+// cellsToBody must tolerate it instead of throwing on `.map` / `for...of`.
+{
+  // Exact shape of a prose/eval cell as emitted by cell->jsonb-form + json->string.
+  const proseFromServer = {
+    'cell-id': 'abc', kind: 'prose', body: 'hi', description: '', 'test-cases': false,
+  };
+  const state = serverCellToState(proseFromServer); // must not throw
+  assert.deepStrictEqual(state.testCases, []);
+  // Round trips cleanly back through the fence serializer.
+  assert.strictEqual(cellsToBody([stateCellToServer(state)]), '===prose===\nhi');
+
+  // A code-exercise carrying `false` (no test-cases) must render header+body only.
+  const exerciseFalse = {
+    'cell-id': '', kind: 'code-exercise', body: '; x', description: 'd', 'test-cases': false,
+  };
+  assert.strictEqual(cellsToBody([exerciseFalse]), '===exercise: d===\n; x');
+}
+
+console.log('ok: tolerates test-cases:false (Lisp nil->false) without falling back');
