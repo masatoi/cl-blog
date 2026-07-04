@@ -274,28 +274,33 @@ HX-Request header is included so htmx-request-p returns T."
             (ok segment)
             (ok (search "value=public selected" segment))))))))
 
-(deftest course-edit-handler-eligible-list-excludes-private-notebook
+(deftest course-edit-handler-eligible-list-includes-published-any-visibility
   (with-test-db
     (let* ((user (mk-user))
            (dao (get-user-by-id (getf user :id)))
            (c (create-course! :title "Mine" :author dao))
            (id (princ-to-string (course-id c))))
-      (create-notebook!
-       :title "EligPub"
-       :body-md (format nil "===prose===~%hi")
-       :cells nil :status "published" :visibility "public"
-       :published-at (local-time:now) :author dao)
-      (create-notebook!
-       :title "EligPriv"
-       :body-md (format nil "===prose===~%shh")
-       :cells nil :status "published" :visibility "private"
-       :published-at (local-time:now) :author dao)
+      ;; Any of the owner's PUBLISHED notebooks are eligible regardless of
+      ;; visibility (public or private/unlisted)...
+      (create-notebook! :title "EligPub" :body-md (format nil "===prose===~%hi")
+        :cells nil :status "published" :visibility "public"
+        :published-at (local-time:now) :author dao)
+      (create-notebook! :title "EligPriv" :body-md (format nil "===prose===~%shh")
+        :cells nil :status "published" :visibility "private"
+        :published-at (local-time:now) :author dao)
+      ;; ...but a DRAFT notebook is still excluded.
+      (create-notebook! :title "EligDraft" :body-md (format nil "===prose===~%wip")
+        :cells nil :status "draft" :visibility "public" :author dao)
       (with-mock-session (make-session :user user)
         (let* ((res (course-edit-handler (list (cons :id id))))
                (body (first (response-body res))))
           (ok (= 200 (response-status res)))
-          (ok (search "EligPub" body))
-          (ng (search "EligPriv" body)))))))
+          (ok (search "EligPub" body)
+              "published+public notebook is eligible")
+          (ok (search "EligPriv" body)
+              "published+private notebook is now eligible too")
+          (ng (search "EligDraft" body)
+              "a draft notebook is still excluded"))))))
 
 ;;; --- update ---
 

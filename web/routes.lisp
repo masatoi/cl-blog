@@ -698,7 +698,7 @@ field is the number of notebooks attached to the course via course_notebook."
   "Return plists (:id :title) of USER-ID's published notebooks that are
 not already attached. ATTACHED-NOTEBOOK-IDS is a list of UUID strings."
   (let* ((own
-          (list-notebooks :status "published" :visibility "public"
+          (list-notebooks :status "published"
                                :author-id user-id
                                :limit 1000))
          (attached-set
