@@ -140,3 +140,15 @@
   (testing "cell has a boolean gated field defaulting to nil"
     (ok (null (cell-gated-p (make-cell :kind :code-solution))))
     (ok (eq t (cell-gated-p (make-cell :kind :code-solution :gated-p t))))))
+
+(deftest gated-survives-jsonb-json-round-trip
+  (testing "cell->jsonb-form + json->string + parse-json + jsonb-hash->cell keeps gated-p"
+    (dolist (g (list t nil))
+      (let* ((cell (make-cell :kind :code-solution :description "d"
+                              :body "(x)" :gated-p g))
+             (json (recurya/utils/common:json->string
+                    (recurya/game/notebook-jsonb:cell->jsonb-form cell)))
+             (parsed (recurya/utils/common:parse-json json))
+             (back (recurya/game/notebook-jsonb:jsonb-hash->cell parsed)))
+        (ok (eq (and g t) (cell-gated-p back))
+            (format nil "gated-p ~A round-trips" g))))))

@@ -13,6 +13,7 @@
                 #:cell-body
                 #:cell-description
                 #:cell-test-cases
+                #:cell-gated-p
                 #:make-cell)
   (:import-from #:recurya/game/puzzle
                 #:make-test-case
@@ -33,6 +34,7 @@ JSONB column while preserving stable cell ids across edits."
           (gethash "kind"        h) (string-downcase (symbol-name (cell-kind cell)))
           (gethash "body"        h) (or (cell-body cell) "")
           (gethash "description" h) (cell-description cell)
+          (gethash "gated"       h) (and (cell-gated-p cell) t)
           (gethash "test-cases"  h)
           (mapcar (lambda (tc)
                     (let ((th (make-hash-table :test 'equal)))
@@ -56,6 +58,12 @@ so cell ids stay stable across edits."
                :prose)
      :body (or (gethash "body" h) "")
      :description (or (gethash "description" h) "")
+     :gated-p (let ((g (gethash "gated" h)))
+                (cond ((null g) nil)
+                      ((eq g t) t)
+                      ((equal g "false") nil)
+                      ((eq g :false) nil)
+                      (t (and g t))))
      :test-cases (mapcar
                   (lambda (th)
                     (make-test-case
