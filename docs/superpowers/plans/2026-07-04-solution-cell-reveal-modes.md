@@ -18,6 +18,15 @@
 - **`repl-eval` を稼働中グローバル DB 接続に対して実行しない**（web リクエストと競合しワーカーがハング）。純関数（パーサー・シリアライザ）の repl-eval は安全。
 - Lisp 変更後は該当システムを `load-system force=true` でリロードしてから `run-tests`。
 
+## 命名規約注記（ST1 レビューを受けての確定）
+
+Lisp 側の真偽値は `-p` 接尾辞（`prompts/common-lisp-expert.md` + 既存 `passed-p` 前例）。よって:
+- **Lisp**: フィールド `gated-p`、アクセサ `cell-gated-p`、`make-cell` 引数 `:gated-p`。
+- **JSON キー**: `"gated"`（cell->jsonb-form/jsonb-hash->cell の hash キー。JSON の慣習で `-p` なし）。
+- **JS**: フィールド `gated`（JS の慣習）。
+
+以下の各タスクのコード例で `gated`/`cell-gated`/`:gated` と書かれた**Lisp** 箇所は、`gated-p`/`cell-gated-p`/`:gated-p` と読み替えること（JSON キー `"gated"` と JS の `gated` はそのまま）。
+
 ## 前提知識（実装者向け）
 
 - **cell 構造** (`game/notebook.lisp`): `defstruct cell` は `id kind body description test-cases`。kind は `:prose :code-eval :code-exercise :code-solution :scene`。

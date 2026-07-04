@@ -38,7 +38,9 @@
 ## 4. データモデル
 
 ### 4.1 `cell` 構造体（`game/notebook.lisp`）
-`defstruct cell` に `gated`（boolean, デフォルト `nil`）を追加。`:code-solution` でのみ意味を持つ（他 kind では常に `nil`）。アクセサ `cell-gated` を export。
+`defstruct cell` に `gated-p`（boolean, デフォルト `nil`）を追加。`:code-solution` でのみ意味を持つ（他 kind では常に `nil`）。アクセサ `cell-gated-p` を export（boolean は `-p` 接尾辞の規約）。`make-cell` 引数は `:gated-p`。
+
+> **命名の層別**: Lisp は `gated-p`/`cell-gated-p`/`:gated-p`、JSON キーは `"gated"`、JS フィールドは `gated`（各層の慣習に従う）。以降 §5–§7 の Lisp コード中の `cell-gated`/`:gated` は `cell-gated-p`/`:gated-p` を指す。
 
 ### 4.2 フェンス形式（後方互換）
 | 記法 | kind | gated |
