@@ -1014,6 +1014,33 @@ reader page until the preceding exercise is passed; a non-gated
             (ok (search "OPEN-ANSWER" page)
                 "non-gated solution body IS shown")))))))
 
+(deftest exercise-pass-oob-reveals-gated-solution
+  (testing "passing an exercise reveals the following gated solution via OOB swap"
+    (with-test-db
+      (let* ((user (mk-user))
+             (dao (get-user-by-id (getf user :id)))
+             (handle (users-handle dao))
+             (body (format nil "===exercise: q===~%; fill~%~%===expect===~%3~%~%===solution-locked: ans===~%(SECRET-ANSWER)"))
+             (cells (mapcar #'recurya/web/routes::cell->jsonb-form
+                            (recurya/game/notebook-parser:parse-notebook-body body))))
+        (create-notebook!
+         :title "N" :slug "n" :body-md body
+         :cells cells :author dao :status "published"
+         :visibility "public" :published-at (local-time:now))
+        (with-mock-session (make-session :user user)
+          (let* ((res (public-notebook-cell-run-by-handle-handler
+                       `((:captures . (,handle "n" "0"))
+                         ("codes[]" . "3"))))
+                 (frag (first (response-body res))))
+            (ok (= 200 (response-status res)))
+            (ok (search "hx-swap-oob" frag) "response carries an OOB swap")
+            (ok (search "cell-1-solution" frag)
+                "targets the gated solution container")
+            (ok (search "SECRET-ANSWER" frag)
+                "reveals the solution body on pass")
+            (ng (search "notebook-code" frag)
+                "OOB reveal must not inject an extra codes[] input")))))))
+
 (deftest run-cell-404-missing-slug
   (with-test-db
     (let* ((owner (mk-user))

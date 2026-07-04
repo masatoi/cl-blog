@@ -1495,7 +1495,14 @@ viewer cannot view it; 400 on bad index/cell-kind."
            (t
             (let* ((nb-uuid (princ-to-string (notebook-id nb-row)))
                    (result (run-cell notebook index codes-list))
-                   (body (recurya/web/ui/notebook:render-cell-result result)))
+                   (base (recurya/web/ui/notebook:render-cell-result result))
+                   (reveals
+                     (if (and (eq (cell-kind (nth index cells)) :code-exercise)
+                              (eq (notebook-cell-result-status result) :pass))
+                         (recurya/web/ui/notebook:render-solution-oob-reveals
+                          cells index)
+                         ""))
+                   (body (concatenate 'string base reveals)))
               (%maybe-persist-notebook-cell-run
                uid nb-uuid (nth index cells) result (nth index codes-list))
               (html-response body)))))))))

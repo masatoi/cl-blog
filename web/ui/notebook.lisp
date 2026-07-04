@@ -31,7 +31,7 @@
   (:import-from #:recurya/game/novel/eval #:eval-scene)
   (:import-from #:recurya/game/novel/interpreter #:interpret-directives)
   (:import-from #:recurya/web/ui/novel #:render-player)
-  (:export #:render #:render-cell-result))
+  (:export #:render #:render-cell-result #:render-solution-oob-reveals))
 
 (in-package #:recurya/web/ui/notebook)
 
@@ -273,24 +273,56 @@ exercise."
                           t))
         finally (return nil)))
 
+(defun %render-solution-unlocked (cell index &key oob)
+  "Render the unlocked (revealed) DOM for a :code-solution CELL at INDEX: the
+container <div id=\"cell-<index>-solution\"> wrapping a collapsible <details>
+with the solution body, followed by the empty hidden codes[] placeholder.
+When OOB is true the container additionally carries hx-swap-oob=\"true\" so
+an HTMX response can splice it into the live page out-of-band -- used to
+reveal a gated solution the instant its preceding exercise is passed. Shared
+by RENDER-SOLUTION-CELL (initial page render) and RENDER-SOLUTION-OOB-REVEALS
+(post-Run reveal) so both emit the exact same unlocked DOM shape."
+  (let ((container-id (format nil "cell-~D-solution" index)))
+    (with-html
+      (:div :id container-id :class "cell cell--solution"
+            :hx-swap-oob (when oob "true")
+        (:details :class "solution-details"
+          (:summary "解答を見る")
+          (:pre :class "solution-body" (or (cell-body cell) ""))))
+      (unless oob
+        (:input :type "hidden" :class "notebook-code" :name "codes[]"
+                :value "")))))
+
 (defun render-solution-cell (cell index)
   "Render a :code-solution cell. A non-gated solution is always shown in a
 collapsible <details>. A gated solution shows its body only when its preceding
 exercise is passed; otherwise only a locked placeholder (the body is never
 emitted). Always emits the empty hidden codes[] placeholder for index
 alignment. The container id cell-<index>-solution is the HTMX OOB target."
-  (let* ((unlocked (or (not (cell-gated-p cell))
-                       (preceding-exercise-passed-p index)))
-         (container-id (format nil "cell-~D-solution" index)))
-    (with-html
-      (:div :id container-id :class "cell cell--solution"
-        (if unlocked
-            (:details :class "solution-details"
-              (:summary "解答を見る")
-              (:pre :class "solution-body" (or (cell-body cell) "")))
-            (:div :class "solution-locked"
-              "🔒 直前の演習に正解すると解答が表示されます")))
-      (:input :type "hidden" :class "notebook-code" :name "codes[]" :value ""))))
+  (let ((unlocked (or (not (cell-gated-p cell))
+                      (preceding-exercise-passed-p index))))
+    (if unlocked
+        (%render-solution-unlocked cell index)
+        (let ((container-id (format nil "cell-~D-solution" index)))
+          (with-html
+            (:div :id container-id :class "cell cell--solution"
+              (:div :class "solution-locked"
+                "🔒 直前の演習に正解すると解答が表示されます"))
+            (:input :type "hidden" :class "notebook-code" :name "codes[]"
+                    :value ""))))))
+
+(defun render-solution-oob-reveals (cells exercise-index)
+  "Return HTML (string) of out-of-band <div id=\"cell-<M>-solution\"
+hx-swap-oob=\"true\"> reveals for every gated :code-solution cell that belongs
+to the exercise at EXERCISE-INDEX (appears after it, before the next
+exercise). Empty string when there are none. Appended to a Run response after
+a :pass so the solution unlocks instantly."
+  (with-html-string
+    (loop for i from (1+ exercise-index) below (length cells)
+          for c = (nth i cells)
+          until (eq (cell-kind c) :code-exercise)
+          when (and (eq (cell-kind c) :code-solution) (cell-gated-p c))
+            do (%render-solution-unlocked c i :oob t))))
 
 (defun render-cell (cell index nb-id)
   (declare (ignorable cell index nb-id))
