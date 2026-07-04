@@ -1561,3 +1561,24 @@ hi"
                                   `((:captures . (,handle))))))))
             (ng (search "HiddenList" listing) "not in /notebooks")
             (ng (search "HiddenList" profile) "not on /@handle profile")))))))
+
+(deftest exercise-multiline-description-renders-as-markdown
+  (testing "a multi-line Markdown exercise description renders as HTML paragraphs"
+    (with-test-db
+      (let* ((owner (mk-user))
+             (dao (get-user-by-id (getf owner :id)))
+             (handle (users-handle dao))
+             (body (format nil "===exercise===~%para one~%~%para two~%===code===~%(fill)~%~%===expect===~%3"))
+             (cells (mapcar #'recurya/web/routes::cell->jsonb-form
+                            (recurya/game/notebook-parser:parse-notebook-body body))))
+        (create-notebook! :title "N" :slug "n" :body-md body
+                          :cells cells :author dao
+                          :status "published" :visibility "public"
+                          :published-at (local-time:now))
+        (with-mock-session (make-session)
+          (let ((page (first (response-body
+                              (public-notebook-by-handle-handler
+                               (list (cons :captures (list handle "n"))))))))
+            (ok (search "para one" page))
+            (ok (search "para two" page))
+            (ok (search "<p>" page) "description is rendered as Markdown HTML")))))))

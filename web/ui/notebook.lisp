@@ -95,7 +95,7 @@ h1 { font-size: 1.6rem; letter-spacing: -0.02em; color: #f8fafc; }
 .cell--code { background: #1e293b; border-radius: 10px; padding: 1rem; }
 .cell--exercise { border: 1px solid #f59e0b; }
 .cell__desc { color: #fbbf24; font-size: 0.95rem; line-height: 1.65;
-              margin-bottom: 0.75rem; white-space: pre-wrap;
+              margin-bottom: 0.75rem; white-space: normal;
               padding: 0.5rem 0.75rem; background: rgba(251,191,36,0.07);
               border-radius: 6px; border-left: 3px solid #f59e0b; }
 .cell__desc p { margin: 0 0 0.4rem 0; }
