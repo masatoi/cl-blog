@@ -6,9 +6,14 @@
 #   - Development: ${PWD} (via docker-compose working_dir)
 #   - Production: /app (via Dockerfile WORKDIR)
 #
-# Services started:
+# Services started in this (parent) process:
 #   - Swank server on port 4005 (for Emacs SLIME connection)
-#   - cl-mcp HTTP server on port 12346 (for AI agent connection)
+#   - cl-mcp HTTP server on port 12346 (for AI agent connection); worker pool
+#     enabled, so repl-eval/load-system run in a per-session worker process.
+# The web server (port 13000) is NOT started here. It is started inside the
+# cl-mcp worker via the worker-init hook (MCP_WORKER_INIT_* in compose), so a
+# runtime reset (pool-kill-worker) restarts the app without dropping cl-mcp.
+# The DB is seeded here at boot so official content exists before any worker.
 
 set -e
 
@@ -38,22 +43,19 @@ exec qlot exec ros run \
     --eval "(swank:create-server :port 4005 :dont-close t :interface \"0.0.0.0\")" \
     --eval "(format t \"~%Swank server started on port 4005~%\")" \
     --eval "(force-output)" \
-    --eval "(ql:quickload :cl-mcp)" \
-    --eval "(mcp:start-http-server :port 12346 :host \"0.0.0.0\")" \
-    --eval "(format t \"cl-mcp HTTP server started on port 12346~%\")" \
-    --eval "(force-output)" \
-    --eval "(ql:quickload :recurya/web/server :verbose nil)" \
     --eval "(recurya/db/core:start!)" \
     --eval "(format t \"Database connection established~%\")" \
     --eval "(force-output)" \
     --eval "(handler-case (progn (recurya/seed/official-content:seed-official-content!) (format t \"Official content seeded~%\")) (error (e) (format t \"~&[seed] WARN: ~A~%\" e)))" \
     --eval "(force-output)" \
-    --eval "(recurya/web/server:start! :port 13000)" \
-    --eval "(format t \"Web server started on port 13000~%\")" \
+    --eval "(ql:quickload :cl-mcp)" \
+    --eval "(mcp:start-http-server :port 12346 :host \"0.0.0.0\")" \
+    --eval "(format t \"cl-mcp HTTP server started on port 12346~%\")" \
     --eval "(force-output)" \
     --eval "(format t \"~%=== recurya development environment ready ===\")" \
-    --eval "(format t \"~%  Web: http://localhost:13000\")" \
+    --eval "(format t \"~%  Web: http://localhost:13000 (started in the cl-mcp worker on first MCP session)\")" \
     --eval "(format t \"~%  Swank: localhost:4005 (M-x slime-connect)\")" \
-    --eval "(format t \"~%  cl-mcp HTTP: http://localhost:12346/mcp~%\")" \
+    --eval "(format t \"~%  cl-mcp HTTP: http://localhost:12346/mcp\")" \
+    --eval "(format t \"~%  web server + repl-eval/load-system run in the worker; reset via pool-kill-worker~%\")" \
     --eval "(force-output)" \
     --eval "(loop (sleep 60))"

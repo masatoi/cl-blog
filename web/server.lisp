@@ -22,6 +22,7 @@
                 #:csrf-failure)
   (:export #:start!
            #:stop!
+           #:start-worker-app
            #:*handler*))
 
 (in-package #:recurya/web/server)
@@ -156,6 +157,24 @@ application database, which is safe under Hunchentoot's worker threads."
                                :silent nil))
       (log:info "Web server started on http://~A:~A" address port)
       *handler*)))
+
+(defun start-worker-app ()
+  "Entry point for cl-mcp's worker init hook (MCP_WORKER_INIT_ENTRY): bring
+the full web app up inside the cl-mcp worker process and return the port so
+the pool can record it in `app_port'.
+
+Called with no arguments by the init hook. Returns promptly because START!
+uses clackup with :use-thread t (the server runs on its own thread), and it
+must NOT block or trigger a nested ASDF load (the worker-global load lock is
+held across this call). Connecting the datasource and starting Hunchentoot
+satisfy that contract.
+
+Running the web server here (rather than in the cl-mcp parent) is what lets
+`pool-kill-worker' reset the app's runtime to a fresh Lisp process without
+dropping the parent's cl-mcp HTTP endpoint, i.e. without a manual reconnect."
+  (recurya/db/core:start!)
+  (start!)
+  (get-port))
 
 (defun stop! ()
   "Stop the running web server."

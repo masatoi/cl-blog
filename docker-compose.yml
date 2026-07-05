@@ -58,7 +58,19 @@ services:
       POSTGRES_DB: recurya
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      MCP_NO_WORKER_POOL: "1"
+      # Worker pool ENABLED (MCP_NO_WORKER_POOL removed): repl-eval/load-system
+      # run in a per-session worker process. The web server is started INSIDE
+      # that worker via cl-mcp's worker-init hook (below), so resetting the dev
+      # runtime with pool-kill-worker restarts the app in a fresh Lisp process
+      # WITHOUT dropping the parent's cl-mcp endpoint (no manual /mcp reconnect).
+      # singleton mode: exactly one worker owns the fixed port 13000 and hosts
+      # the app + the developer's repl-eval/load-system (hot-reload lands there).
+      # Load the umbrella system (not just the web/server component) so all
+      # deps -- including lack/session/store/dbi used by build-app -- are present
+      # before the entry runs.
+      MCP_WORKER_INIT_SYSTEM: "recurya"
+      MCP_WORKER_INIT_ENTRY: "recurya/web/server:start-worker-app"
+      MCP_WORKER_INIT_MODE: "singleton"
       # OAuth dev stub: short-circuits the Google/GitHub flow for local
       # development. Safety gate inside web/oauth.lisp restricts activation
       # to localhost / ngrok hosts. See .env.example for details.
