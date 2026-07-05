@@ -96,11 +96,13 @@ no browser required.** Two levels:
    `hx-post=...`, `class="sb-link active"`, or a run fragment's body). Run with
    `run-tests` / `(rove:run :recurya/tests/web/notebook-routes)`.
 
-2. **HTTP smoke against the live server:** `./scripts/smoke.sh`. It drives the
-   running server over HTTP and replays HTMX requests exactly as the browser
-   would (session cookie + CSRF token + `HX-Request: true`), asserting on pages
-   and fragments. Use it after a UI change; copy a check block for whatever
-   you changed.
+2. **HTTP request tests against the live server:** `./scripts/request-test.sh`.
+   A request test drives the running app through the same HTTP request/response
+   cycle the browser uses — but without a browser — replaying HTMX requests
+   exactly (session cookie + CSRF token + `HX-Request: true`) and asserting on
+   pages and fragments. Use it after a UI change; copy a check block for
+   whatever you changed. `source scripts/request-test.sh` in another script to
+   reuse the `rt_*` primitives (e.g. to drive a full authenticated flow).
 
 **Check both sides of an HTMX wiring.** When asserting an interaction, check the
 trigger's `hx-target="#foo"` AND that an element with `id=foo` exists in the
