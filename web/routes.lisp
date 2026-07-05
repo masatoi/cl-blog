@@ -98,8 +98,7 @@
                 #:make-notebook
                 #:notebook-cells
                 #:run-cell
-                #:notebook-cell-result-status
-                #:notebook-cell-result-cell-id)
+                #:notebook-cell-result-status)
   (:import-from #:recurya/web/ui/notebook)
   (:import-from #:recurya/game/notebook-jsonb
                 #:cell->jsonb-form
@@ -176,7 +175,7 @@
          (content-length (or (getf env :content-length) 0)))
     (cond
       ((and stream (plusp content-length))
-       (ignore-errors (file-position stream 0))
+       (handler-case (file-position stream 0) (error () nil))
        (let ((buf (make-array content-length :element-type '(unsigned-byte 8))))
          (read-sequence buf stream)
          (babel:octets-to-string buf :encoding :utf-8)))
@@ -477,7 +476,7 @@ error (e.g. a missing title) is the one surfaced to the user."
                     :cells-json (cells->cells-json cells)
                     :errors parse-errors)))
                  (t
-                  (let* ((slug-val (if (and slug (string/= slug "")) slug nil))
+                  (let ((slug-val (if (and slug (string/= slug "")) slug nil))
                          (summary-val (if (and summary (string/= summary "")) summary nil))
                          (published-at
                            (when (equal status "published") (local-time:now)))
@@ -580,7 +579,7 @@ description) match."
                            :cells-json (cells->cells-json cells)
                            :errors parse-errors)))
                         (t
-                         (let* ((slug-val
+                         (let ((slug-val
                                   (if (and slug (string/= slug "")) slug nil))
                                 (summary-val
                                   (if (and summary (string/= summary ""))
@@ -668,7 +667,7 @@ field is the number of notebooks attached to the course via course_notebook."
                              :status status :visibility visibility)
                :errors '((:line nil :message "Title is required.")))))
             (t
-             (let* ((slug-val (if (and slug (string/= slug "")) slug nil))
+             (let ((slug-val (if (and slug (string/= slug "")) slug nil))
                     (summary-val (if (and summary (string/= summary "")) summary nil))
                     (published-at
                       (when (equal status "published") (local-time:now))))
@@ -697,7 +696,7 @@ field is the number of notebooks attached to the course via course_notebook."
 (defun course-eligible-notebooks (user-id attached-notebook-ids)
   "Return plists (:id :title) of USER-ID's published notebooks that are
 not already attached. ATTACHED-NOTEBOOK-IDS is a list of UUID strings."
-  (let* ((own
+  (let ((own
           (list-notebooks :status "published"
                                :author-id user-id
                                :limit 1000))
@@ -774,7 +773,7 @@ populated with the user's other published notebooks."
                                   :visibility visibility)
                     :errors '((:line nil :message "Title is required.")))))
                  (t
-                  (let* ((slug-val (if (and slug (string/= slug "")) slug nil))
+                  (let ((slug-val (if (and slug (string/= slug "")) slug nil))
                          (summary-val (if (and summary (string/= summary ""))
                                           summary
                                           nil))

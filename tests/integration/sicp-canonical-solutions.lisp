@@ -19,10 +19,8 @@
                 #:course-id)
   (:import-from #:recurya/db/notebooks
                 #:create-notebook!
-                #:get-notebook-by-slug
                 #:notebook-id
-                #:notebook-slug
-                #:notebook-body-md)
+                #:notebook-slug)
   (:import-from #:recurya/db/course-notebooks
                 #:add-notebook-to-course!
                 #:list-course-notebooks

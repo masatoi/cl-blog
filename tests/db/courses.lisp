@@ -96,7 +96,7 @@
 (deftest list-courses-test
   (testing "list-courses returns newest first; status and author filters work"
     (with-test-db
-      (let* ((u1 (create-test-user :email-prefix "alice"))
+      (let ((u1 (create-test-user :email-prefix "alice"))
              (u2 (create-test-user :email-prefix "bob")))
         (create-course! :title "A1" :author u1 :status "published")
         (create-course! :title "A2" :author u1 :status "draft")
@@ -128,7 +128,7 @@
 (deftest count-courses-test
   (testing "count-courses returns total and filters by status / author"
     (with-test-db
-      (let* ((u1 (create-test-user :email-prefix "carol"))
+      (let ((u1 (create-test-user :email-prefix "carol"))
              (u2 (create-test-user :email-prefix "dave")))
         (create-course! :title "C1" :author u1 :status "published")
         (create-course! :title "C2" :author u1 :status "draft")
@@ -171,7 +171,7 @@
 (deftest course-per-author-slug
   (testing "different authors can share the same slug"
     (with-test-db
-      (let* ((u1 (create-test-user :email-prefix "alice" :handle "alice"))
+      (let ((u1 (create-test-user :email-prefix "alice" :handle "alice"))
              (u2 (create-test-user :email-prefix "bob" :handle "bob")))
         (create-course! :slug "intro" :title "Alice intro" :author u1)
         (ok (create-course! :slug "intro" :title "Bob intro" :author u2)))))

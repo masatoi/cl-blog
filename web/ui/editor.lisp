@@ -93,7 +93,7 @@ TEXTAREA-CLASS, when non-nil, is set as the class attribute of the hidden
   textarea so HTMX hx-include selectors (e.g. '.notebook-code') can collect it.
 
 Uses esm.sh bundle mode (*) for fast single-request loading."
-  (let* ((escaped-value (escape-string initial-value))
+  (let ((escaped-value (escape-string initial-value))
          (escaped-placeholder (escape-string placeholder))
          (has-placeholder
           (and placeholder (stringp placeholder) (> (length placeholder) 0)))

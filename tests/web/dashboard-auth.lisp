@@ -92,7 +92,7 @@ the middleware passes the request through."
 
 (deftest dashboard-auth-does-not-redirect-public-paths
   (testing "anonymous GET /notebooks (public) is NOT redirected"
-    (let* ((wrapped (require-dashboard-auth (pass-through-app))))
+    (let ((wrapped (require-dashboard-auth (pass-through-app))))
       (dolist (p '("/" "/login" "/notebooks" "/courses"
                    "/@alice/some-slug" "/c/@alice/some-slug"
                    "/auth/google/start" "/static/app.css"

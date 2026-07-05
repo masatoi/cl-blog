@@ -107,7 +107,7 @@
                (let ((response (account-page-handler nil)))
                  (ok (= 200 (response-status response)))
                  (ok (search (getf user :email) (first (response-body response))))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 (deftest account-update-validates-display-name
   (testing "account update rejects blank display name"
@@ -131,7 +131,7 @@
                  ;; Session user should have updated name
                  (ok (string= "New Name"
                               (getf (gethash :user ningle/context:*session*) :name)))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 (deftest login-page-redirects-if-already-authenticated
   (testing "login page redirects authenticated users to /dashboard/notebooks"
@@ -194,7 +194,7 @@
                  (let ((db-user (get-user-by-id (getf user :id))))
                    (ok db-user "User should exist in database")
                    (ok (string= "Updated Name" (users-display-name db-user))))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 (deftest account-update-saves-language-setting
   (testing "account update saves language preference to database"
@@ -213,7 +213,7 @@
                  ;; Verify database updated
                  (let ((db-user (get-user-by-id (getf user :id))))
                    (ok (string= "ja" (users-language db-user))))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 (deftest account-update-saves-timezone-setting
   (testing "account update saves timezone preference to database"
@@ -232,7 +232,7 @@
                  ;; Verify database updated
                  (let ((db-user (get-user-by-id (getf user :id))))
                    (ok (string= "Asia/Tokyo" (users-timezone db-user))))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 (deftest account-update-saves-all-settings-together
   (testing "account update saves all settings (display name, language, timezone) together"
@@ -256,7 +256,7 @@
                    (ok (string= "New Display Name" (users-display-name db-user)))
                    (ok (string= "ko" (users-language db-user)))
                    (ok (string= "Asia/Seoul" (users-timezone db-user))))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 (deftest account-page-displays-saved-settings
   (testing "account page displays previously saved language and timezone"
@@ -283,7 +283,7 @@
                            "French should be selected in language dropdown")
                        (ok (search "value=\"Europe/Paris\" selected" body)
                            "Europe/Paris should be selected in timezone dropdown"))))))
-          (ignore-errors (delete-user! (getf user :email))))))))
+          (handler-case (delete-user! (getf user :email)) (error () nil)))))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Pagination Helper Tests

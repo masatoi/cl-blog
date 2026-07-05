@@ -8,11 +8,9 @@
                 #:run-puzzle
                 #:puzzle-result-passed
                 #:puzzle-result-failed
-                #:puzzle-result-total
                 #:puzzle-result-test-results
                 #:puzzle-result-error
                 #:test-result-passed-p
-                #:test-result-expected
                 #:test-result-actual))
 
 (in-package #:recurya/tests/game/puzzle)

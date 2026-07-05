@@ -8,9 +8,6 @@
                 #:create-test-user)
   (:import-from #:recurya/web/routes
                 #:profile-handler)
-  (:import-from #:recurya/db/users
-                #:users-id
-                #:users-handle)
   (:import-from #:recurya/db/notebooks
                 #:create-notebook!)
   (:import-from #:recurya/db/courses

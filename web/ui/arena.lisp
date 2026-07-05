@@ -8,9 +8,6 @@
                 #:arena-state-grid
                 #:arena-state-bot-pos
                 #:arena-state-enemy-pos
-                #:arena-state-bot-score
-                #:arena-state-enemy-score
-                #:arena-state-turn
                 #:grid-ref
                 #:arena-result-frames
                 #:arena-result-bot-score

@@ -14,8 +14,7 @@
   (:import-from #:recurya/db/jsonb #:lisp->jsonb #:jsonb->lisp)
   (:import-from #:recurya/models/users
                 #:users
-                #:users-id
-                #:users-handle)
+                #:users-id)
   (:import-from #:recurya/models/notebook
                 #:notebook
                 #:notebook-id

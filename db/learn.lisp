@@ -4,8 +4,7 @@
   (:use #:cl #:mito #:sxql)
   (:import-from #:recurya/models/learn-progress
                 #:learn-progress
-                #:learn-progress-cell-id
-                #:learn-progress-passed-at)
+                #:learn-progress-cell-id)
   (:import-from #:recurya/models/learn-cell-code
                 #:learn-cell-code
                 #:learn-cell-code-cell-id

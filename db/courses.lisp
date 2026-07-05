@@ -13,8 +13,7 @@
   (:import-from #:recurya/utils/common #:slugify)
   (:import-from #:recurya/models/users
                 #:users
-                #:users-id
-                #:users-handle)
+                #:users-id)
   (:import-from #:recurya/models/course
                 #:course
                 #:course-id

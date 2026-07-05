@@ -146,7 +146,7 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
                 (:th "Created") (:th "Actions")))
               (:tbody :id "notebooks-body"
                (dolist (nb notebooks)
-                 (let* ((id (getf nb :id))
+                 (let ((id (getf nb :id))
                         (slug (getf nb :slug))
                         (title (getf nb :title))
                         (status (getf nb :status))
