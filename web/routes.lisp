@@ -428,6 +428,23 @@ error (e.g. a missing title) is the one surfaced to the user."
         (html-response
          (recurya/web/ui/notebook-form:render :user user :cells-json "[]")))))
 
+(defun db-save-error-message (condition entity)
+  "Return a user-facing message for a DB write error CONDITION raised while
+saving ENTITY (a string such as \"notebook\" or \"course\"). A unique-slug
+constraint violation (SQLSTATE 23505 on the *_author_id_slug index) becomes a
+\"slug already taken\" message; any other database error becomes a generic
+save-failure message. Callers use this to turn a raw DBI error into a form
+validation error instead of letting it escape the handler and crash the web
+worker."
+  (let ((code (dbi.error:database-error-code condition))
+        (text (dbi.error:database-error-message condition)))
+    (if (or (equal code "23505")
+            (and text (search "slug" text)))
+        (format nil "That ~A slug is already taken. Please choose a different slug."
+                entity)
+        (format nil "Could not save the ~A due to a database error. Please try again."
+                entity))))
+
 (defun notebook-create-handler (params)
   "Handle POST /dashboard/notebooks - create a new notebook."
   (let ((user (get-current-user)))
@@ -481,14 +498,26 @@ error (e.g. a missing title) is the one surfaced to the user."
                         (published-at
                           (when (equal status "published") (local-time:now)))
                         (cells-plists (mapcar #'cell->jsonb-form cells)))
-                    (create-notebook!
-                     :title title :slug slug-val :summary summary-val
-                     :body-md body :cells cells-plists
-                     :status (or status "draft")
-                     :visibility visibility
-                     :published-at published-at
-                     :author (get-session-user-object))
-                    (redirect "/dashboard/notebooks")))))))))))
+                    (handler-case
+                        (progn
+                          (create-notebook!
+                           :title title :slug slug-val :summary summary-val
+                           :body-md body :cells cells-plists
+                           :status (or status "draft")
+                           :visibility visibility
+                           :published-at published-at
+                           :author (get-session-user-object))
+                          (redirect "/dashboard/notebooks"))
+                      (dbi.error:dbi-database-error (e)
+                        (html-response
+                         (recurya/web/ui/notebook-form:render
+                          :user user
+                          :notebook (list :title title :slug slug :summary summary
+                                          :body-md body :status status
+                                          :visibility visibility)
+                          :cells-json (cells->cells-json cells)
+                          :errors (list (list :line nil
+                                              :message (db-save-error-message e "notebook")))))))))))))))))
 
 (defun notebook-edit-handler (params)
   "Handle GET /dashboard/notebooks/:id/edit - show edit form for existing notebook
@@ -593,13 +622,26 @@ description) match."
                                    (local-time:now)))
                                (cells-plists
                                  (mapcar #'cell->jsonb-form cells)))
-                           (update-notebook!
-                            id :title title :slug slug-val :summary summary-val
-                            :body-md body :cells cells-plists
-                            :status (or status "draft")
-                            :visibility visibility
-                            :published-at published-at)
-                           (redirect "/dashboard/notebooks")))))))))))))))
+                           (handler-case
+                               (progn
+                                 (update-notebook!
+                                  id :title title :slug slug-val :summary summary-val
+                                  :body-md body :cells cells-plists
+                                  :status (or status "draft")
+                                  :visibility visibility
+                                  :published-at published-at)
+                                 (redirect "/dashboard/notebooks"))
+                             (dbi.error:dbi-database-error (e)
+                               (html-response
+                                (recurya/web/ui/notebook-form:render
+                                 :user user
+                                 :notebook (list :id id :title title :slug slug
+                                                 :summary summary :body-md body
+                                                 :status status
+                                                 :visibility visibility)
+                                 :cells-json (cells->cells-json cells)
+                                 :errors (list (list :line nil
+                                                     :message (db-save-error-message e "notebook")))))))))))))))))))))
 
 (defun course->plist (c)
   "Convert a course DAO into a plist for UI rendering. The :notebook-count
@@ -671,13 +713,23 @@ field is the number of notebooks attached to the course via course_notebook."
                    (summary-val (if (and summary (string/= summary "")) summary nil))
                    (published-at
                      (when (equal status "published") (local-time:now))))
-               (create-course!
-                :title title :slug slug-val :summary summary-val
-                :status (or status "draft")
-                :visibility visibility
-                :published-at published-at
-                :author (get-session-user-object))
-               (redirect "/dashboard/courses"))))))))
+               (handler-case
+                   (progn
+                     (create-course!
+                      :title title :slug slug-val :summary summary-val
+                      :status (or status "draft")
+                      :visibility visibility
+                      :published-at published-at
+                      :author (get-session-user-object))
+                     (redirect "/dashboard/courses"))
+                 (dbi.error:dbi-database-error (e)
+                   (html-response
+                    (recurya/web/ui/course-form:render
+                     :user user
+                     :course (list :title title :slug slug :summary summary
+                                   :status status :visibility visibility)
+                     :errors (list (list :line nil
+                                         :message (db-save-error-message e "course"))))))))))))))
 
 (defun course-notebook-row->plist (cn)
   "Convert a COURSE-NOTEBOOK DAO into a plist
@@ -782,12 +834,23 @@ populated with the user's other published notebooks."
                                      (not (equal (course-status existing)
                                                  "published")))
                             (local-time:now))))
-                    (update-course!
-                     id :title title :slug slug-val :summary summary-val
-                     :status (or status "draft")
-                     :visibility visibility
-                     :published-at published-at)
-                    (redirect "/dashboard/courses")))))))))))
+                    (handler-case
+                        (progn
+                          (update-course!
+                           id :title title :slug slug-val :summary summary-val
+                           :status (or status "draft")
+                           :visibility visibility
+                           :published-at published-at)
+                          (redirect "/dashboard/courses"))
+                      (dbi.error:dbi-database-error (e)
+                        (html-response
+                         (recurya/web/ui/course-form:render
+                          :user user
+                          :course (list :id id :title title :slug slug
+                                        :summary summary :status status
+                                        :visibility visibility)
+                          :errors (list (list :line nil
+                                              :message (db-save-error-message e "course")))))))))))))))))
 
 (defun %decode-state-token (token)
   "Decode the new pill state TOKEN into (values STATUS VISIBILITY) or

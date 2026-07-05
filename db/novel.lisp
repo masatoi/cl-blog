@@ -5,8 +5,10 @@
   (:import-from #:recurya/db/core #:ensure-uuid)
   (:import-from #:recurya/utils/common #:parse-json #:json->string)
   (:import-from #:recurya/models/novel-state
+                #:novel-state
                 #:novel-state-flags #:novel-state-scene-index)
-  (:export #:get-novel-state #:upsert-novel-state
+  (:export #:novel-state
+           #:get-novel-state #:upsert-novel-state
            #:novel-state-flags-alist))
 
 (in-package #:recurya/db/novel)

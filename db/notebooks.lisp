@@ -9,7 +9,7 @@
                 #:save-dao
                 #:delete-dao)
   (:import-from #:sxql #:where #:order-by #:limit)
-  (:import-from #:recurya/db/core #:generate-uuid #:ensure-uuid)
+  (:import-from #:recurya/db/core #:generate-uuid #:ensure-uuid #:uuid-string-p)
   (:import-from #:recurya/utils/common #:slugify)
   (:import-from #:recurya/db/jsonb #:lisp->jsonb #:jsonb->lisp)
   (:import-from #:recurya/models/users
@@ -100,7 +100,9 @@ Returns:
 
 Returns:
   NOTEBOOK instance if found, NIL otherwise."
-  (find-dao 'notebook :id (ensure-uuid id)))
+  (let ((uuid (and id (ensure-uuid id))))
+    (when (uuid-string-p uuid)
+      (find-dao 'notebook :id uuid))))
 
 (defun get-notebook-by-slug (slug)
   "Fetch a notebook by slug.

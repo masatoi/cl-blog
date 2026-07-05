@@ -19,18 +19,18 @@
   "/* User-notebook form page styles */
 .nb-form { display: flex; flex-direction: column; gap: 1.25rem; }
 .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
-.form-group label { font-weight: 600; font-size: 0.9rem; }
-.form-group input,
-.form-group textarea,
-.form-group select { width: 100%; box-sizing: border-box; }
-.form-group textarea.body-field {
+.form-group > label { font-weight: 600; font-size: 0.9rem; }
+.form-group > input,
+.form-group > textarea,
+.form-group > select { width: 100%; box-sizing: border-box; }
+.form-group > textarea.body-field {
   min-height: 600px;
   font-family: 'SF Mono', Menlo, Consolas, monospace;
   font-size: 0.85rem;
   white-space: pre-wrap;
   word-wrap: break-word;
 }
-.form-group textarea.summary-field { min-height: 80px; resize: vertical; }
+.form-group > textarea.summary-field { min-height: 80px; resize: vertical; }
 .form-hint { color: var(--color-text-muted); font-size: 0.8rem; }
 .form-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; }
 .flash-message { padding: 0.75rem 1rem; border-radius: 6px;
@@ -52,7 +52,54 @@
 .error-list li { padding: 0.25rem 0; font-size: 0.85rem; }
 .error-list .line { display: inline-block; min-width: 4rem;
                     color: var(--color-text-muted);
-                    font-family: monospace; }")
+                    font-family: monospace; }
+/* Cell editor (JS-driven; see resources/static/js/cell-editor.js) */
+.cell-editor-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.cell-editor-item { border: 1px solid var(--color-border-light);
+                    border-radius: 10px; padding: 0.75rem; background: #fff; }
+.cell-editor-item-header { display: flex; align-items: center;
+                           flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem; }
+.cell-editor-kind-select,
+.cell-editor-add-kind-select { width: auto; min-width: 9rem; }
+.cell-editor-controls { margin-left: auto; display: flex; gap: 0.35rem; }
+.cell-editor-icon-btn { display: inline-flex; align-items: center;
+                        justify-content: center; width: 2rem; height: 2rem;
+                        padding: 0; border: 1px solid var(--color-border);
+                        border-radius: 8px; background: #fff;
+                        color: var(--color-text-secondary); cursor: pointer;
+                        transition: background 0.12s ease, color 0.12s ease,
+                                    border-color 0.12s ease; }
+.cell-editor-icon-btn:hover:not(:disabled) { background: var(--color-secondary-bg);
+                                             color: var(--color-text-dark); }
+.cell-editor-icon-btn:disabled { opacity: 0.35; cursor: default; }
+.cell-editor-icon-btn.danger:hover:not(:disabled) { color: var(--color-error);
+                                                    border-color: var(--color-error);
+                                                    background: var(--color-error-bg); }
+.cell-editor-icon-btn svg { display: block; width: 0.95rem; height: 0.95rem; }
+.cell-editor-field { display: inline-flex; align-items: center; gap: 0.35rem;
+                     font-size: 0.85rem; font-weight: 500; }
+.cell-editor-field input[type=text] { padding: 0.4rem 0.6rem; font-size: 0.85rem;
+                                       width: auto; }
+.cell-editor-gated { font-weight: 400; color: var(--color-text-secondary); }
+.cell-editor-desc { display: block; margin: 0.5rem 0; }
+.cell-editor-desc-label { font-size: 0.8rem; font-weight: 600;
+                          color: var(--color-text-secondary); margin-bottom: 0.25rem; }
+.cell-editor-cm-mount { border-radius: 8px; overflow: hidden; }
+.cell-editor-testcases { display: flex; flex-direction: column; gap: 0.5rem;
+                         margin-top: 0.5rem; }
+.cell-editor-testcase-row { display: flex; align-items: center; flex-wrap: wrap;
+                            gap: 0.5rem; padding: 0.5rem;
+                            border: 1px dashed var(--color-border-light);
+                            border-radius: 8px; }
+.cell-editor-toolbar { display: flex; align-items: center; gap: 0.5rem;
+                       margin-top: 0.75rem; }
+.cell-editor-btn { display: inline-flex; align-items: center; gap: 0.4rem;
+                   padding: 0.5rem 0.9rem; border: 1px solid var(--color-border);
+                   border-radius: 8px; background: #fff; color: var(--color-text-dark);
+                   font-weight: 600; font-size: 0.85rem; cursor: pointer;
+                   transition: background 0.12s ease; }
+.cell-editor-btn:hover { background: var(--color-secondary-bg); }
+.cell-editor-btn svg { width: 0.8rem; height: 0.8rem; }")
 
 (defparameter *cheatsheet-text*
   "===prose===
@@ -80,8 +127,8 @@ a list of plists like (:line N :message \"...\"). CELLS-JSON is a JSON
 string (array of cell objects, as produced by
 `recurya/game/notebook-jsonb:cell->jsonb-form') embedded via a
 data-cells attribute for the client-side cell editor to consume."
-  (let* ((editing-p (not (null notebook)))
-         (nb-id      (getf notebook :id))
+  (let* ((nb-id      (getf notebook :id))
+         (editing-p  (not (null nb-id)))
          (nb-title   (or (getf notebook :title) ""))
          (nb-slug    (or (getf notebook :slug) ""))
          (nb-summary (or (getf notebook :summary) ""))
@@ -136,9 +183,9 @@ data-cells attribute for the client-side cell editor to consume."
                           :class "summary-field" :maxlength "500"
                           :placeholder "Short summary (max 500 chars)"
                           nb-summary))
-                      (:div :id "cell-editor-root" :data-cells cells-json)
                       (:div :class "form-group"
-                        (:label :for "body" "Body (Markdown + cell fences)")
+                        (:label :for "body" "Body")
+                        (:div :id "cell-editor-root" :data-cells cells-json)
                         (:textarea :id "body" :name "body"
                           :class "body-field" :required t :wrap "soft"
                           :placeholder "===prose===\nWrite here..."

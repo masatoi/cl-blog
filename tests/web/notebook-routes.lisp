@@ -99,6 +99,25 @@ HX-Request header is included so htmx-request-p returns T."
           (ok (= 200 (response-status res)))
           (ok (search "New Notebook" (first (response-body res)))))))))
 
+(deftest new-form-body-heading-precedes-cell-editor
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        (let ((body (first (response-body (notebook-new-handler nil)))))
+          ;; The Body heading is simplified to just "Body": cells are authored
+          ;; in the cell editor now, so "Markdown + cell fences" no longer fits.
+          (ok (search "Body</label>" body) "Body label reads just \"Body\"")
+          (ng (search "cell fences" body) "cell-fences wording removed")
+          ;; Order: the Body heading heads the section -> cell editor mount ->
+          ;; hidden body textarea carrier.
+          (let ((label-pos (search "Body</label>" body))
+                (root-pos (search "id=cell-editor-root" body))
+                (ta-pos (search "id=body name=body" body)))
+            (ok (and label-pos root-pos ta-pos
+                     (< label-pos root-pos)
+                     (< root-pos ta-pos))
+                "Body heading precedes cell editor, which precedes textarea")))))))
+
 (deftest create-handler-redirects-anonymous
   (with-mock-session (make-session)
     (let ((res (notebook-create-handler '(("title" . "x")))))
@@ -115,6 +134,49 @@ hi"))))
                (body (first (response-body res))))
           (ok (= 200 (response-status res)))
           (ok (search "Title is required" body)))))))
+
+(deftest create-handler-rejects-duplicate-slug
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        ;; First create with slug "dup" succeeds and redirects.
+        (let ((first (notebook-create-handler
+                      '(("title" . "Dup") ("slug" . "dup") ("body" . "===prose===
+hi")))))
+          (ok (= 302 (response-status first)) "first create redirects"))
+        ;; Second create with the SAME slug must NOT surface a raw DBI
+        ;; unique-constraint error (which, unhandled, crashes the web worker);
+        ;; it re-renders the form (200) with a slug validation error.
+        (let ((res (notebook-create-handler
+                    '(("title" . "Dup again") ("slug" . "dup") ("body" . "===prose===
+hi")))))
+          (ok (= 200 (response-status res))
+              "duplicate slug re-renders the form instead of crashing")
+          (ok (search "slug" (first (response-body res)))
+              "shows a slug-related validation error"))))))
+
+(deftest create-form-error-rerender-posts-to-create-url
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        ;; Seed a notebook so a duplicate-slug create triggers an error
+        ;; re-render of the CREATE form.
+        (notebook-create-handler
+         '(("title" . "Dup") ("slug" . "dup") ("body" . "===prose===
+hi")))
+        (let ((body (first (response-body
+                            (notebook-create-handler
+                             '(("title" . "Dup2") ("slug" . "dup") ("body" . "===prose===
+hi")))))))
+          ;; The re-rendered create form must POST back to the CREATE url and
+          ;; stay a "New Notebook" form -- NOT think it is editing an id-less
+          ;; notebook and target /dashboard/notebooks/NIL (which then crashes
+          ;; the update route on the bogus uuid).
+          (ok (search "action=\"/dashboard/notebooks\"" body)
+              "re-rendered create form posts to the create URL")
+          (ok (not (search "/dashboard/notebooks/NIL" body))
+              "does not target a NIL notebook id")
+          (ok (search "New Notebook" body) "stays a New Notebook form"))))))
 
 (deftest create-handler-validation-error-preserves-cells-json
   (with-test-db
@@ -406,6 +468,47 @@ new")
             (ok (string= "After" (notebook-title updated)))
             (ok (search "new" (notebook-body-md updated)))
             (ok (string= "published" (notebook-status updated)))))))))
+
+(deftest update-handler-rejects-duplicate-slug
+  (with-test-db
+    (let* ((user (mk-user))
+           (dao (get-user-by-id (getf user :id)))
+           (b (create-notebook! :title "B" :slug "taken-b"
+                                :body-md (format nil "===prose===~%y") :cells nil
+                                :status "draft" :visibility "private" :author dao))
+           (b-id (princ-to-string (notebook-id b))))
+      ;; A separate notebook already owns slug "taken-a".
+      (create-notebook! :title "A" :slug "taken-a"
+                        :body-md (format nil "===prose===~%x") :cells nil
+                        :status "draft" :visibility "private" :author dao)
+      (with-mock-session (make-session :user user)
+        ;; Renaming B's slug onto A's must re-render with a slug error, not
+        ;; crash the worker with a raw DBI unique-constraint error.
+        (let ((res (notebook-update-handler
+                    (list (cons :id b-id)
+                          (cons "title" "B")
+                          (cons "slug" "taken-a")
+                          (cons "body" "===prose===
+y")))))
+          (ok (= 200 (response-status res))
+              "duplicate slug re-renders the form instead of crashing")
+          (ok (search "slug" (first (response-body res)))
+              "shows a slug-related validation error"))))))
+
+(deftest update-handler-invalid-uuid-id-is-not-found
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        ;; A non-UUID :id (e.g. the literal "NIL" a broken create-form action
+        ;; can produce) must resolve to 404 rather than crashing the worker
+        ;; with a raw "invalid input syntax for type uuid" DBI error.
+        (let ((res (notebook-update-handler
+                    (list (cons :id "NIL")
+                          (cons "title" "x")
+                          (cons "body" "===prose===
+y")))))
+          (ok (= 404 (response-status res))
+              "invalid uuid id resolves to 404, no crash"))))))
 
 (deftest update-handler-shows-parser-errors
   (with-test-db
