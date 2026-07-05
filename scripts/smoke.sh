@@ -70,7 +70,11 @@ sm_not_contains() { grep -qF -- "$1" "$BODY" && _bad "$2 (unexpected: $1)" || _o
 
 # =============================================================================
 # Checks. Add/adapt blocks here when a UI change lands.
+# Run only when executed directly; `source scripts/smoke.sh` in another script
+# to reuse the primitives (sm_get/sm_login/sm_csrf/sm_hx_post/sm_*) without
+# running these checks.
 # =============================================================================
+[ "${BASH_SOURCE[0]}" = "${0}" ] || return 0
 
 echo "smoke against $BASE"
 
