@@ -94,11 +94,11 @@ TEXTAREA-CLASS, when non-nil, is set as the class attribute of the hidden
 
 Uses esm.sh bundle mode (*) for fast single-request loading."
   (let ((escaped-value (escape-string initial-value))
-         (escaped-placeholder (escape-string placeholder))
-         (has-placeholder
-          (and placeholder (stringp placeholder) (> (length placeholder) 0)))
-         (source-id (format nil "editor-source~A" id-suffix))
-         (mount-id (format nil "editor-mount~A" id-suffix)))
+        (escaped-placeholder (escape-string placeholder))
+        (has-placeholder
+         (and placeholder (stringp placeholder) (> (length placeholder) 0)))
+        (source-id (format nil "editor-source~A" id-suffix))
+        (mount-id (format nil "editor-mount~A" id-suffix)))
     (with-html-string
       (if textarea-class
           (:textarea :id source-id :name name :class textarea-class

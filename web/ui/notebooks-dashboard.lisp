@@ -147,12 +147,12 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
               (:tbody :id "notebooks-body"
                (dolist (nb notebooks)
                  (let ((id (getf nb :id))
-                        (slug (getf nb :slug))
-                        (title (getf nb :title))
-                        (status (getf nb :status))
-                        (visibility (or (getf nb :visibility) "private"))
-                        (published-at (getf nb :published-at))
-                        (created-at (getf nb :created-at)))
+                       (slug (getf nb :slug))
+                       (title (getf nb :title))
+                       (status (getf nb :status))
+                       (visibility (or (getf nb :visibility) "private"))
+                       (published-at (getf nb :published-at))
+                       (created-at (getf nb :created-at)))
                    (:tr :id (format nil "nb-row-~A" id)
                     (:td
                      (if (and slug user-handle (string= status "published"))

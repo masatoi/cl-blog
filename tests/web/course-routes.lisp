@@ -668,7 +668,7 @@ where the lists are aligned with the attached positions."
 (deftest course-notebook-move-up-403-non-owner
   (with-test-db
     (let ((owner (mk-user))
-           (other (mk-user)))
+          (other (mk-user)))
       (multiple-value-bind (course-uuid course-id-str cn-ids nb-ids)
           (%attach-n-notebooks 2 :user owner)
         (declare (ignore course-uuid nb-ids))
@@ -778,7 +778,7 @@ where the lists are aligned with the attached positions."
 (deftest course-notebook-remove-403-non-owner
   (with-test-db
     (let ((owner (mk-user))
-           (other (mk-user)))
+          (other (mk-user)))
       (multiple-value-bind (course-uuid course-id-str cn-ids nb-ids)
           (%attach-n-notebooks 1 :user owner)
         (declare (ignore course-uuid nb-ids))
@@ -939,9 +939,9 @@ where the lists are aligned with the attached positions."
   (testing "GET /c/@:handle/:slug isolates courses by author"
     (with-test-db
       (let ((alice-dao (create-test-user :email-prefix "alice"
-                                          :handle "alice-c7b"))
-             (bob-dao (create-test-user :email-prefix "bob"
-                                        :handle "bob-c7b")))
+                                         :handle "alice-c7b"))
+            (bob-dao (create-test-user :email-prefix "bob"
+                                       :handle "bob-c7b")))
         (create-course! :title "Alice course" :slug "intro"
                         :status "published" :visibility "public"
                         :published-at (local-time:now) :author alice-dao)
@@ -950,11 +950,11 @@ where the lists are aligned with the attached positions."
                         :published-at (local-time:now) :author bob-dao)
         (with-mock-session (make-session)
           (let ((res-alice
-                  (public-course-by-handle-handler
-                   '((:captures . ("alice-c7b" "intro")))))
-                 (res-bob
-                  (public-course-by-handle-handler
-                   '((:captures . ("bob-c7b" "intro"))))))
+                 (public-course-by-handle-handler
+                  '((:captures . ("alice-c7b" "intro")))))
+                (res-bob
+                 (public-course-by-handle-handler
+                  '((:captures . ("bob-c7b" "intro"))))))
             (ok (= 200 (response-status res-alice)))
             (ok (= 200 (response-status res-bob)))
             (ok (search "Alice course" (first (response-body res-alice))))

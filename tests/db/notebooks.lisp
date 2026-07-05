@@ -112,7 +112,7 @@ bye"
   (testing "list-notebooks returns newest first; status and author filters work"
     (with-test-db
       (let ((u1 (create-test-user :email-prefix "alice"))
-             (u2 (create-test-user :email-prefix "bob")))
+            (u2 (create-test-user :email-prefix "bob")))
         (create-notebook! :title "A1" :body-md "===prose===
 a1" :cells '() :author u1 :status "published")
         (create-notebook! :title "A2" :body-md "===prose===
@@ -151,7 +151,7 @@ x"
   (testing "count-notebooks returns total and filters by status / author"
     (with-test-db
       (let ((u1 (create-test-user :email-prefix "carol"))
-             (u2 (create-test-user :email-prefix "dave")))
+            (u2 (create-test-user :email-prefix "dave")))
         (create-notebook! :title "C1" :body-md "===prose===
 c1" :cells '() :author u1 :status "published")
         (create-notebook! :title "C2" :body-md "===prose===
@@ -221,7 +221,7 @@ r" :cells '() :author u
   (testing "different authors can share the same slug"
     (with-test-db
       (let ((u1 (create-test-user :email-prefix "alice" :handle "alice"))
-             (u2 (create-test-user :email-prefix "bob" :handle "bob")))
+            (u2 (create-test-user :email-prefix "bob" :handle "bob")))
         (create-notebook! :slug "intro"
                           :title "Alice intro"
                           :body-md "===prose===

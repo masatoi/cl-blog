@@ -477,10 +477,10 @@ error (e.g. a missing title) is the one surfaced to the user."
                     :errors parse-errors)))
                  (t
                   (let ((slug-val (if (and slug (string/= slug "")) slug nil))
-                         (summary-val (if (and summary (string/= summary "")) summary nil))
-                         (published-at
-                           (when (equal status "published") (local-time:now)))
-                         (cells-plists (mapcar #'cell->jsonb-form cells)))
+                        (summary-val (if (and summary (string/= summary "")) summary nil))
+                        (published-at
+                          (when (equal status "published") (local-time:now)))
+                        (cells-plists (mapcar #'cell->jsonb-form cells)))
                     (create-notebook!
                      :title title :slug slug-val :summary summary-val
                      :body-md body :cells cells-plists
@@ -580,19 +580,19 @@ description) match."
                            :errors parse-errors)))
                         (t
                          (let ((slug-val
-                                  (if (and slug (string/= slug "")) slug nil))
-                                (summary-val
-                                  (if (and summary (string/= summary ""))
-                                      summary
-                                      nil))
-                                (published-at
-                                  (when (and (equal status "published")
-                                             (not (equal
-                                                   (notebook-status existing)
-                                                   "published")))
-                                    (local-time:now)))
-                                (cells-plists
-                                  (mapcar #'cell->jsonb-form cells)))
+                                 (if (and slug (string/= slug "")) slug nil))
+                               (summary-val
+                                 (if (and summary (string/= summary ""))
+                                     summary
+                                     nil))
+                               (published-at
+                                 (when (and (equal status "published")
+                                            (not (equal
+                                                  (notebook-status existing)
+                                                  "published")))
+                                   (local-time:now)))
+                               (cells-plists
+                                 (mapcar #'cell->jsonb-form cells)))
                            (update-notebook!
                             id :title title :slug slug-val :summary summary-val
                             :body-md body :cells cells-plists
@@ -668,9 +668,9 @@ field is the number of notebooks attached to the course via course_notebook."
                :errors '((:line nil :message "Title is required.")))))
             (t
              (let ((slug-val (if (and slug (string/= slug "")) slug nil))
-                    (summary-val (if (and summary (string/= summary "")) summary nil))
-                    (published-at
-                      (when (equal status "published") (local-time:now))))
+                   (summary-val (if (and summary (string/= summary "")) summary nil))
+                   (published-at
+                     (when (equal status "published") (local-time:now))))
                (create-course!
                 :title title :slug slug-val :summary summary-val
                 :status (or status "draft")
@@ -697,11 +697,11 @@ field is the number of notebooks attached to the course via course_notebook."
   "Return plists (:id :title) of USER-ID's published notebooks that are
 not already attached. ATTACHED-NOTEBOOK-IDS is a list of UUID strings."
   (let ((own
-          (list-notebooks :status "published"
-                               :author-id user-id
-                               :limit 1000))
-         (attached-set
-          (mapcar (lambda (x) (princ-to-string x)) attached-notebook-ids)))
+         (list-notebooks :status "published"
+                              :author-id user-id
+                              :limit 1000))
+        (attached-set
+         (mapcar (lambda (x) (princ-to-string x)) attached-notebook-ids)))
     (loop for nb in own
           for nb-id = (princ-to-string (notebook-id nb))
           unless (member nb-id attached-set :test #'string=)
@@ -774,14 +774,14 @@ populated with the user's other published notebooks."
                     :errors '((:line nil :message "Title is required.")))))
                  (t
                   (let ((slug-val (if (and slug (string/= slug "")) slug nil))
-                         (summary-val (if (and summary (string/= summary ""))
-                                          summary
-                                          nil))
-                         (published-at
-                           (when (and (equal status "published")
-                                      (not (equal (course-status existing)
-                                                  "published")))
-                             (local-time:now))))
+                        (summary-val (if (and summary (string/= summary ""))
+                                         summary
+                                         nil))
+                        (published-at
+                          (when (and (equal status "published")
+                                     (not (equal (course-status existing)
+                                                 "published")))
+                            (local-time:now))))
                     (update-course!
                      id :title title :slug slug-val :summary summary-val
                      :status (or status "draft")

@@ -31,12 +31,12 @@
   (testing "create-user! persists credentials"
     (with-test-db
       (let ((created (create-user! :email "user@example.com"
-                                    :handle "user-example"
-                                    :display-name "Example User"
-                                    :password-hash "hash"
-                                    :password-salt "salt"
-                                    :role "user"))
-             (fetched (get-user-by-email "user@example.com")))
+                                   :handle "user-example"
+                                   :display-name "Example User"
+                                   :password-hash "hash"
+                                   :password-salt "salt"
+                                   :role "user"))
+            (fetched (get-user-by-email "user@example.com")))
         (ok (users-id created))
         (ok (equal (users-id created) (users-id fetched)))
         (ok (equal "Example User" (users-display-name fetched)))
@@ -91,13 +91,13 @@
   (testing "returns the same user when (provider, uid) already exists"
     (with-test-db
       (let ((u1 (find-or-create-oauth-user :provider "github"
-                                            :provider-uid "gh-9"
-                                            :email "a@example.com"
-                                            :display-name "A"))
-             (u2 (find-or-create-oauth-user :provider "github"
-                                            :provider-uid "gh-9"
-                                            :email "ignored@example.com"
-                                            :display-name "Ignored")))
+                                           :provider-uid "gh-9"
+                                           :email "a@example.com"
+                                           :display-name "A"))
+            (u2 (find-or-create-oauth-user :provider "github"
+                                           :provider-uid "gh-9"
+                                           :email "ignored@example.com"
+                                           :display-name "Ignored")))
         (ok (equal (users-id u1) (users-id u2)))
         (ok (equal "a@example.com" (users-email u2)))))))
 
@@ -105,13 +105,13 @@
   (testing "links provider to an existing email account when uid is new"
     (with-test-db
       (let ((existing (create-user! :email "shared@example.com"
-                                     :handle "shared-user"
-                                     :display-name "Shared"
-                                     :role "user"))
-             (linked (find-or-create-oauth-user :provider "google"
-                                                :provider-uid "g-merge"
-                                                :email "shared@example.com"
-                                                :display-name "Shared (Google)")))
+                                    :handle "shared-user"
+                                    :display-name "Shared"
+                                    :role "user"))
+            (linked (find-or-create-oauth-user :provider "google"
+                                               :provider-uid "g-merge"
+                                               :email "shared@example.com"
+                                               :display-name "Shared (Google)")))
         (ok (equal (users-id existing) (users-id linked)))
         (ok (equal "google" (users-provider linked)))
         (ok (equal "g-merge" (users-provider-uid linked)))
