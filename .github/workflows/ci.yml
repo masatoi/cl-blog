@@ -35,19 +35,39 @@ jobs:
           curl -L https://raw.githubusercontent.com/roswell/roswell/master/scripts/install-for-ci.sh | sh
           echo "$HOME/.roswell/bin" >> $GITHUB_PATH
 
-      - name: Cache Roswell and Quicklisp
+      # Roswell + compiled FASLs: safe to reuse across lock changes, so keep the
+      # prefix restore-keys for fast warm starts.
+      - name: Cache Roswell and FASLs
         uses: actions/cache@v4
         with:
           path: |
             ~/.roswell
             ~/.cache/common-lisp
-            .qlot
           key: ${{ runner.os }}-ros-${{ hashFiles('qlfile.lock', 'recurya.asd') }}
           restore-keys: |
             ${{ runner.os }}-ros-
 
+      # .qlot is cached with an EXACT key only (no restore-keys). qlot
+      # regenerates a local tarball per git source and records its byte size;
+      # restoring a stale/partial .qlot from a different qlfile.lock (or a
+      # different qlot version) makes that recorded size mismatch what the
+      # current run regenerates -> "wrong archive size". An exact key means a
+      # lock change gives a clean .qlot that `qlot install' rebuilds
+      # self-consistently. The `qlot175' marker also busts caches from the old
+      # floating-qlot setup.
+      - name: Cache .qlot (exact key)
+        uses: actions/cache@v4
+        with:
+          path: .qlot
+          key: ${{ runner.os }}-qlot175-${{ hashFiles('qlfile.lock') }}
+
       - name: Install qlot
-        run: ros install qlot
+        # Pin qlot to the same version the app is built with (Dockerfile
+        # QLOT_VERSION). qlot regenerates a local tarball for each git source
+        # and records its byte size; that size is qlot-version-dependent, so a
+        # floating `ros install qlot' can produce a size that mismatches a
+        # cached .qlot from a different qlot version -> "wrong archive size".
+        run: ros install fukamachi/qlot/1.7.5
 
       - name: Install dependencies via qlot
         run: |
