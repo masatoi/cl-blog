@@ -27,7 +27,6 @@
                 #:get-course-by-slug)
   (:import-from #:recurya/models/course
                 #:course-id
-                #:course-slug
                 #:course-status
                 #:course-visibility
                 #:course-author)
@@ -111,7 +110,7 @@
     (with-test-db
       (let ((spec (sicp-spec)))
         (unwind-protect
-             (let* ((r1 (seed-course! spec :attach-notebooks nil))
+             (let ((r1 (seed-course! spec :attach-notebooks nil))
                     (r2 (seed-course! spec :attach-notebooks nil)))
                (ok (string= (getf r1 :user-id) (getf r2 :user-id))
                    "user UUID stable across runs")

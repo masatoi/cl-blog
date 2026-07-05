@@ -23,13 +23,11 @@
                 #:courses-public-handler)
   (:import-from #:recurya/db/notebooks
                 #:create-notebook!
-                #:notebook-id
-                #:notebook-title)
+                #:notebook-id)
   (:import-from #:recurya/db/course-notebooks
                 #:add-notebook-to-course!
                 #:list-course-notebooks
                 #:course-notebook-id
-                #:course-notebook-notebook-id
                 #:course-notebook-position)
   (:import-from #:recurya/db/users
                 #:get-user-by-id
@@ -43,7 +41,6 @@
                 #:course-id
                 #:course-title
                 #:course-slug
-                #:course-summary
                 #:course-status
                 #:course-visibility
                 #:course-published-at)
@@ -670,7 +667,7 @@ where the lists are aligned with the attached positions."
 
 (deftest course-notebook-move-up-403-non-owner
   (with-test-db
-    (let* ((owner (mk-user))
+    (let ((owner (mk-user))
            (other (mk-user)))
       (multiple-value-bind (course-uuid course-id-str cn-ids nb-ids)
           (%attach-n-notebooks 2 :user owner)
@@ -780,7 +777,7 @@ where the lists are aligned with the attached positions."
 
 (deftest course-notebook-remove-403-non-owner
   (with-test-db
-    (let* ((owner (mk-user))
+    (let ((owner (mk-user))
            (other (mk-user)))
       (multiple-value-bind (course-uuid course-id-str cn-ids nb-ids)
           (%attach-n-notebooks 1 :user owner)
@@ -941,7 +938,7 @@ where the lists are aligned with the attached positions."
 (deftest course-by-handle-different-authors-same-slug-isolated
   (testing "GET /c/@:handle/:slug isolates courses by author"
     (with-test-db
-      (let* ((alice-dao (create-test-user :email-prefix "alice"
+      (let ((alice-dao (create-test-user :email-prefix "alice"
                                           :handle "alice-c7b"))
              (bob-dao (create-test-user :email-prefix "bob"
                                         :handle "bob-c7b")))
@@ -952,7 +949,7 @@ where the lists are aligned with the attached positions."
                         :status "published" :visibility "public"
                         :published-at (local-time:now) :author bob-dao)
         (with-mock-session (make-session)
-          (let* ((res-alice
+          (let ((res-alice
                   (public-course-by-handle-handler
                    '((:captures . ("alice-c7b" "intro")))))
                  (res-bob

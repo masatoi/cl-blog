@@ -6,16 +6,12 @@
                 #:make-arena-state
                 #:make-grid
                 #:grid-set!
-                #:grid-ref
                 #:simulate-arena
                 #:arena-result-frames
                 #:arena-result-bot-score
                 #:arena-result-enemy-score
                 #:arena-result-error
-                #:arena-state-bot-pos
-                #:arena-state-bot-score
-                #:arena-state-grid
-                #:arena-state-turn)
+                #:arena-state-bot-pos)
   (:import-from #:recurya/game/scenario
                 #:default-scenario))
 

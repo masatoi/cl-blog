@@ -40,7 +40,7 @@
 
 (deftest run-cell-prose-rejected
   (testing "prose cells cannot be executed"
-    (let* ((nb (make-notebook
+    (let ((nb (make-notebook
                 :id :demo :chapter "0" :title "Demo" :summary ""
                 :cells (list (make-cell :id :p :kind :prose :body '(:p "x"))))))
       (ok (signals (run-cell nb 0 '(""))

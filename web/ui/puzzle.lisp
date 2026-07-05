@@ -11,7 +11,6 @@
                 #:puzzle-signature
                 #:puzzle-hint
                 #:puzzle-test-cases
-                #:puzzle-difficulty
                 #:test-case-input
                 #:test-case-description
                 #:puzzle-result-passed
@@ -21,7 +20,6 @@
                 #:puzzle-result-fuel-used
                 #:puzzle-result-cons-used
                 #:puzzle-result-depth-reached
-                #:puzzle-result-error
                 #:test-result-passed-p
                 #:test-result-expected
                 #:test-result-actual
@@ -134,8 +132,7 @@ EVAL-OUTPUT is the printed result of evaluating the user code standalone.
 EVAL-ERROR is any error message from standalone evaluation.
 PRINT-OUTPUT is the stdout from (print ...) calls during evaluation."
   (let ((passed (puzzle-result-passed result))
-        (total (puzzle-result-total result))
-        (error-msg (puzzle-result-error result)))
+        (total (puzzle-result-total result)))
     (with-html-string
       (:div :class "result"
        ;; Show print output if any

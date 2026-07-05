@@ -3,10 +3,8 @@
 (defpackage #:recurya/web/ui/notebook
   (:use #:cl)
   (:import-from #:spinneret #:with-html-string #:with-html)
-  (:import-from #:alexandria #:when-let*)
   (:import-from #:recurya/game/notebook
                 #:notebook-id
-                #:notebook-chapter
                 #:notebook-title
                 #:notebook-summary
                 #:notebook-cells
@@ -15,8 +13,6 @@
                 #:cell-body
                 #:cell-description
                 #:cell-gated-p
-                #:notebook-cell-result-cell-id
-                #:notebook-cell-result-kind
                 #:notebook-cell-result-status
                 #:notebook-cell-result-value
                 #:notebook-cell-result-print-output
@@ -28,7 +24,6 @@
   (:import-from #:recurya/web/ui/layout #:header #:header-styles)
   (:import-from #:recurya/web/ui/editor #:editor-head-tags #:editor-textarea
                 #:editor-readonly)
-  (:import-from #:recurya/web/ui/csrf #:csrf-form-block #:csrf-input)
   (:import-from #:recurya/game/novel/eval #:eval-scene)
   (:import-from #:recurya/game/novel/interpreter #:interpret-directives)
   (:import-from #:recurya/web/ui/novel #:render-player)
@@ -373,7 +368,7 @@ as a bare span; entries with :href render as an <a>.
 COURSE-PREV-URL / COURSE-NEXT-URL, when non-nil, render \"← Previous\"
 and \"Next →\" links in the breadcrumb area for navigating between
 notebooks within the same course."
-  (let* ((*saved-codes* saved-codes)
+  (let ((*saved-codes* saved-codes)
          (*passed-cells* passed-cells)
          (*user* user)
          (*cells* (notebook-cells notebook))

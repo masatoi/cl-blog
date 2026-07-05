@@ -5,7 +5,6 @@
   (:import-from #:recurya/db/core #:ensure-uuid)
   (:import-from #:recurya/utils/common #:parse-json #:json->string)
   (:import-from #:recurya/models/novel-state
-                #:novel-state #:novel-state-user-id #:novel-state-notebook-id
                 #:novel-state-flags #:novel-state-scene-index)
   (:export #:get-novel-state #:upsert-novel-state
            #:novel-state-flags-alist))

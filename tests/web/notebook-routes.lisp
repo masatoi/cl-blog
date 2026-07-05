@@ -35,9 +35,7 @@
                 #:notebook-visibility)
   (:import-from #:recurya/db/courses
                 #:create-course!
-                #:course-id
-                #:course-slug
-                #:course-title)
+                #:course-id)
   (:import-from #:recurya/db/course-notebooks
                 #:add-notebook-to-course!)
   (:import-from #:uuid
@@ -396,7 +394,7 @@ old"
                                        :author dao))
            (id (princ-to-string (notebook-id nb))))
       (with-mock-session (make-session :user user)
-        (let* ((res (notebook-update-handler
+        (let ((res (notebook-update-handler
                      (list (cons :id id)
                            (cons "title" "After")
                            (cons "body" "===prose===
@@ -1114,7 +1112,7 @@ hi
        :cells cells :author dao :status "published"
        :visibility "public" :published-at (local-time:now))
       (with-mock-session (make-session)
-        (let* ((res (public-notebook-cell-run-by-handle-handler
+        (let ((res (public-notebook-cell-run-by-handle-handler
                      `((:captures . (,handle "ev" "1"))
                        ("codes[]" . "")
                        ("codes[]" . "(+ 1 2)")))))
@@ -1522,7 +1520,7 @@ hi"
   (testing "GET /@:handle/:slug returns each author's notebook when both
 authors use the same slug"
     (with-test-db
-      (let* ((alice-dao (create-test-user :email-prefix "alice"
+      (let ((alice-dao (create-test-user :email-prefix "alice"
                                           :handle "alice-7b"))
              (bob-dao (create-test-user :email-prefix "bob"
                                         :handle "bob-7b")))
@@ -1539,7 +1537,7 @@ bob"
                           :status "published" :visibility "public"
                           :published-at (local-time:now))
         (with-mock-session (make-session)
-          (let* ((res-alice
+          (let ((res-alice
                   (public-notebook-by-handle-handler
                    '((:captures . ("alice-7b" "intro")))))
                  (res-bob

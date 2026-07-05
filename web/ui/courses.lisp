@@ -146,7 +146,7 @@ COURSES is a list of plists with :id :slug :title :status
                 (:th "Created") (:th "Actions")))
               (:tbody :id "courses-body"
                (dolist (course courses)
-                 (let* ((id (getf course :id))
+                 (let ((id (getf course :id))
                         (slug (getf course :slug))
                         (title (getf course :title))
                         (status (getf course :status))

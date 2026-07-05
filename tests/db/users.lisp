@@ -9,7 +9,6 @@
                 #:users-id
                 #:users-email
                 #:users-display-name
-                #:users-handle
                 #:users-role
                 #:users-password-hash
                 #:users-password-salt
@@ -31,7 +30,7 @@
 (deftest create-and-fetch-user
   (testing "create-user! persists credentials"
     (with-test-db
-      (let* ((created (create-user! :email "user@example.com"
+      (let ((created (create-user! :email "user@example.com"
                                     :handle "user-example"
                                     :display-name "Example User"
                                     :password-hash "hash"
@@ -91,7 +90,7 @@
 (deftest find-or-create-oauth-user-existing-by-provider
   (testing "returns the same user when (provider, uid) already exists"
     (with-test-db
-      (let* ((u1 (find-or-create-oauth-user :provider "github"
+      (let ((u1 (find-or-create-oauth-user :provider "github"
                                             :provider-uid "gh-9"
                                             :email "a@example.com"
                                             :display-name "A"))
@@ -105,7 +104,7 @@
 (deftest find-or-create-oauth-user-merge-by-email
   (testing "links provider to an existing email account when uid is new"
     (with-test-db
-      (let* ((existing (create-user! :email "shared@example.com"
+      (let ((existing (create-user! :email "shared@example.com"
                                      :handle "shared-user"
                                      :display-name "Shared"
                                      :role "user"))

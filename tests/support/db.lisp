@@ -6,14 +6,11 @@
 (defpackage #:recurya/tests/support/db
   (:use #:cl)
   (:import-from #:recurya/db/core
-                #:start!
                 #:execute!
-                #:datasource
                 #:connect-to-database
                 #:with-connection
                 #:current-database)
   (:import-from #:recurya/db/users
-                #:users-id
                 #:create-user!)
   (:import-from #:uuid
                 #:make-v4-uuid)
@@ -102,7 +99,7 @@ cached connection to it is open. Returns the cached test connection."
     (ensure-test-database!)
     (setf *test-db-initialized* t))
   (unless (and *test-connection*
-               (ignore-errors (dbi:ping *test-connection*)))
+               (handler-case (dbi:ping *test-connection*) (error () nil)))
     (setf *test-connection* (connect-to-database (test-database-name))))
   *test-connection*)
 

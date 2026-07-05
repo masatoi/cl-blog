@@ -15,7 +15,6 @@
                 #:extract-uid
                 #:extract-name
                 #:oauth-provider-name
-                #:oauth-provider-scope
                 #:*http-post-fn*
                 #:*http-get-fn*))
 
@@ -81,7 +80,7 @@
                "OAUTH_GOOGLE_CLIENT_ID" "google-id-123"
                "OAUTH_GOOGLE_CLIENT_SECRET" "google-secret"
                "OAUTH_REDIRECT_BASE" "https://example.test")
-      (let* ((url (build-authorize-url (find-provider "google") "state-abc")))
+      (let ((url (build-authorize-url (find-provider "google") "state-abc")))
         (ok (search "https://accounts.google.com/o/oauth2/v2/auth" url))
         (ok (search "client_id=google-id-123" url))
         (ok (search "state=state-abc" url))

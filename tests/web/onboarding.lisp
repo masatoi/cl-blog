@@ -245,7 +245,7 @@ the middleware passes the request through."
 
 (deftest middleware-passes-anonymous-requests
   (testing "no session user => middleware does not redirect"
-    (let* ((wrapped (require-real-handle (pass-through-app)))
+    (let ((wrapped (require-real-handle (pass-through-app)))
            (env (mk-env :path-info "/dashboard/notebooks" :session (make-hash-table))))
       (let ((res (funcall wrapped env)))
         (ok (= 200 (response-status res))
@@ -253,7 +253,7 @@ the middleware passes the request through."
 
 (deftest middleware-passes-real-handle-on-protected-path
   (testing "user with real handle reaches protected page normally"
-    (let* ((session (make-hash-table)))
+    (let ((session (make-hash-table)))
       (setf (gethash :user session)
             '(:id "u1" :handle "alice"))
       (let* ((wrapped (require-real-handle (pass-through-app)))
