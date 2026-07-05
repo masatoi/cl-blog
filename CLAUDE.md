@@ -91,6 +91,34 @@ docker compose exec recurya qlot exec ros run \
   -e '(rove:run :recurya/tests/db/users)' -q
 ```
 
+### Verifying UI changes (server-side, no browser) — IMPORTANT
+
+This is an MPA + HTMX app: the server renders both full pages and the HTMX
+fragments that get swapped in. **When you change the UI, verify it yourself
+server-side — do NOT ask the user to check in a browser**, except for genuinely
+visual work (see the last bullet).
+
+Two means:
+1. **Handler / render tests** (`tests/web/*.lisp`, Rove): call the handler with a
+   mock session/params and assert on the returned HTML — `hx-*` wiring, `class`,
+   `id`, fragment content. Run via `run-tests`.
+2. **`./scripts/request-test.sh`** — a browserless HTTP *request test*: it drives
+   the live server and replays HTMX requests exactly as the browser does
+   (session cookie + CSRF token + `HX-Request` header), asserting on pages and
+   fragments. Copy a check block per change; `source scripts/request-test.sh` to
+   reuse the `rt_*` primitives for authenticated end-to-end flows.
+
+- When asserting an HTMX interaction, check **both sides**: the trigger's
+  `hx-target="#foo"` AND that an element with `id=foo` exists, plus the replayed
+  fragment.
+- **Only ask the user for a browser / visual check** when a change is
+  visual/CSS/layout-driven, or touches real-browser JS integration (CodeMirror,
+  buttons — cover JS logic with the `node` tests).
+
+See `docs/DEVELOPMENT.md` ("Verifying UI changes without a browser") for details,
+and for the current worker-based dev workflow (hot-reload, `pool-kill-worker`
+runtime reset).
+
 ### Code Reload vs Container Restart (IMPORTANT)
 
 **PREFER hot-reload over container restart.** Container restart disconnects cl-mcp/SLIME.
