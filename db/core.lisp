@@ -34,6 +34,7 @@
    #:nil->null
    #:null->nil
    #:ensure-uuid
+   #:uuid-string-p
    #:generate-uuid
    #:keyword->db-string
    #:clj->json-str
@@ -287,6 +288,21 @@ to ensure consistent comparisons and storage."
    (typecase value
      (string (string-trim '(#\Space) value))
      (otherwise (format nil "~A" value)))))
+
+(defun uuid-string-p (value)
+  "Return T if VALUE is a canonical 8-4-4-4-12 hexadecimal UUID string.
+
+Used to guard DB id lookups so a malformed id (e.g. the literal \"nil\" a
+broken form action can send to a /.../:id route) resolves to \"not found\"
+instead of reaching PostgreSQL and signalling an \"invalid input syntax for
+type uuid\" error (SQLSTATE 22P02) that would otherwise crash the request."
+  (and (stringp value)
+       (= (length value) 36)
+       (loop for ch across value
+             for i from 0
+             always (if (member i '(8 13 18 23))
+                        (char= ch #\-)
+                        (digit-char-p ch 16)))))
 
 (declaim (ftype (function (t) (or string null)) clj->json-str))
 (defun clj->json-str (value)

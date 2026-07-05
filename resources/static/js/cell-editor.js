@@ -160,6 +160,103 @@ const KIND_LABELS = {
 };
 
 /**
+ * Font Awesome 6 (free, solid) icon path data for the small set of glyphs the
+ * cell editor uses for its controls. Inlined as SVG so the editor needs no
+ * external font/CSS dependency and works offline; `currentColor` lets CSS drive
+ * the colour.
+ */
+const ICON_PATHS = {
+  'arrow-up': {
+    viewBox: '0 0 384 512',
+    d: 'M214.6 41.4c-12.5-12.5-32.8-12.5-45.3 0l-160 160c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 141.2V448c0 17.7 14.3 32 32 32s32-14.3 32-32V141.2L329.4 246.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-160-160z',
+  },
+  'arrow-down': {
+    viewBox: '0 0 384 512',
+    d: 'M169.4 470.6c12.5 12.5 32.8 12.5 45.3 0l160-160c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 370.8V64c0-17.7-14.3-32-32-32s-32 14.3-32 32V370.8L54.6 265.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l160 160z',
+  },
+  trash: {
+    viewBox: '0 0 448 512',
+    d: 'M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z',
+  },
+  plus: {
+    viewBox: '0 0 448 512',
+    d: 'M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32V224H48c-17.7 0-32 14.3-32 32s14.3 32 32 32H192V432c0 17.7 14.3 32 32 32s32-14.3 32-32V288H400c17.7 0 32-14.3 32-32s-14.3-32-32-32H256V80z',
+  },
+};
+
+/**
+ * Build an inline SVG element for one of the ICON_PATHS glyphs, sized in `em`
+ * so it scales with the button font-size and inherits colour via
+ * `currentColor`. Marked `aria-hidden` since the enclosing control carries the
+ * accessible label.
+ *
+ * @param {string} name key into ICON_PATHS
+ * @returns {SVGSVGElement}
+ */
+function icon(name) {
+  const spec = ICON_PATHS[name];
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('viewBox', spec.viewBox);
+  svg.setAttribute('width', '1em');
+  svg.setAttribute('height', '1em');
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const path = document.createElementNS(NS, 'path');
+  path.setAttribute('d', spec.d);
+  svg.appendChild(path);
+  return svg;
+}
+
+/**
+ * Build an icon-only `<button>` (no visible text) with an accessible label
+ * exposed via `title` + `aria-label`, so it degrades to a tooltip and stays
+ * screen-reader friendly. Pass `opts.danger` for destructive actions and
+ * `opts.disabled` to render it disabled.
+ *
+ * @param {string} iconName key into ICON_PATHS
+ * @param {string} label accessible label / tooltip
+ * @param {() => void} onClick
+ * @param {{danger?: boolean, disabled?: boolean}} [opts]
+ * @returns {HTMLButtonElement}
+ */
+function iconButton(iconName, label, onClick, opts = {}) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = opts.danger
+    ? 'cell-editor-icon-btn danger'
+    : 'cell-editor-icon-btn';
+  button.title = label;
+  button.setAttribute('aria-label', label);
+  if (opts.disabled) {
+    button.disabled = true;
+  }
+  button.appendChild(icon(iconName));
+  button.addEventListener('click', onClick);
+  return button;
+}
+
+/**
+ * Build a labelled action `<button>` (icon + visible text), used for the "add"
+ * actions (add cell, add test case).
+ *
+ * @param {string} iconName key into ICON_PATHS
+ * @param {string} label visible button text
+ * @param {() => void} onClick
+ * @returns {HTMLButtonElement}
+ */
+function labeledButton(iconName, label, onClick) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'cell-editor-btn';
+  button.appendChild(icon(iconName));
+  button.appendChild(document.createTextNode(label));
+  button.addEventListener('click', onClick);
+  return button;
+}
+
+/**
  * Convert a server-shaped cell (as produced by Lisp `cell->jsonb-form` and
  * read from `data-cells`) into the internal editor state shape used by the
  * UI. Pure and DOM-free.
@@ -410,7 +507,7 @@ function buildGatedCheckbox(cell) {
   });
   label.appendChild(input);
   label.appendChild(
-    document.createTextNode(' 正解後のみ表示（直前の演習に正解するまで解答を隠す）')
+    document.createTextNode(' Reveal only after the preceding exercise is solved')
   );
   return label;
 }
@@ -632,14 +729,17 @@ function buildTestCaseRow(editorState, cell, tcIndex) {
     })
   );
 
-  const removeButton = document.createElement('button');
-  removeButton.type = 'button';
-  removeButton.textContent = '削除';
-  removeButton.addEventListener('click', () => {
-    cell.testCases.splice(tcIndex, 1);
-    renderAll(editorState);
-  });
-  row.appendChild(removeButton);
+  row.appendChild(
+    iconButton(
+      'trash',
+      'Delete test case',
+      () => {
+        cell.testCases.splice(tcIndex, 1);
+        renderAll(editorState);
+      },
+      { danger: true }
+    )
+  );
 
   return row;
 }
@@ -660,14 +760,12 @@ function buildTestCasesSection(editorState, cell) {
     section.appendChild(buildTestCaseRow(editorState, cell, tcIndex));
   });
 
-  const addButton = document.createElement('button');
-  addButton.type = 'button';
-  addButton.textContent = '+ test-case 追加';
-  addButton.addEventListener('click', () => {
-    cell.testCases.push({ input: '', expected: '', description: '' });
-    renderAll(editorState);
-  });
-  section.appendChild(addButton);
+  section.appendChild(
+    labeledButton('plus', 'Add test case', () => {
+      cell.testCases.push({ input: '', expected: '', description: '' });
+      renderAll(editorState);
+    })
+  );
 
   return section;
 }
@@ -729,26 +827,19 @@ function buildCellControls(editorState, index) {
   const controls = document.createElement('div');
   controls.className = 'cell-editor-controls';
 
-  const upButton = document.createElement('button');
-  upButton.type = 'button';
-  upButton.textContent = '↑';
-  upButton.disabled = index === 0;
-  upButton.addEventListener('click', () => moveCell(editorState, index, index - 1));
-
-  const downButton = document.createElement('button');
-  downButton.type = 'button';
-  downButton.textContent = '↓';
-  downButton.disabled = index === editorState.cells.length - 1;
-  downButton.addEventListener('click', () => moveCell(editorState, index, index + 1));
-
-  const deleteButton = document.createElement('button');
-  deleteButton.type = 'button';
-  deleteButton.textContent = '削除';
-  deleteButton.addEventListener('click', () => deleteCell(editorState, index));
-
-  controls.appendChild(upButton);
-  controls.appendChild(downButton);
-  controls.appendChild(deleteButton);
+  controls.appendChild(
+    iconButton('arrow-up', 'Move cell up', () => moveCell(editorState, index, index - 1), {
+      disabled: index === 0,
+    })
+  );
+  controls.appendChild(
+    iconButton('arrow-down', 'Move cell down', () => moveCell(editorState, index, index + 1), {
+      disabled: index === editorState.cells.length - 1,
+    })
+  );
+  controls.appendChild(
+    iconButton('trash', 'Delete cell', () => deleteCell(editorState, index), { danger: true })
+  );
   return controls;
 }
 
@@ -792,7 +883,7 @@ function buildCellItemDom(editorState, cell, index) {
 }
 
 /**
- * Build the "+ セル追加" toolbar: a kind `<select>` (never offering `scene`)
+ * Build the "Add cell" toolbar: a kind `<select>` (never offering `scene`)
  * plus a button that appends a fresh cell of the chosen kind and re-renders.
  *
  * @param {object} editorState
@@ -811,10 +902,7 @@ function buildToolbarDom(editorState) {
     select.appendChild(option);
   }
 
-  const addButton = document.createElement('button');
-  addButton.type = 'button';
-  addButton.textContent = '+ セル追加';
-  addButton.addEventListener('click', () => {
+  const addButton = labeledButton('plus', 'Add cell', () => {
     editorState.cells.push(emptyCell(select.value));
     renderAll(editorState);
   });
@@ -921,7 +1009,7 @@ async function initCellEditor() {
           // the submit and surface the failure so nothing is lost.
           event.preventDefault();
           console.error('cell-editor: failed to assemble notebook body on submit', submitErr);
-          window.alert('セル内容の組み立てに失敗しました。ページを再読み込みしてください。');
+          window.alert('Failed to assemble the notebook body. Please reload the page.');
         }
       });
     } else {

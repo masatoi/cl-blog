@@ -153,8 +153,8 @@ When editing an existing COURSE, the caller may also supply:
   ELIGIBLE-NOTEBOOKS  - List of plists describing the user's other
                         published notebooks not yet attached
                         (:id :title), used as the Add dropdown source."
-  (let* ((editing-p (not (null course)))
-         (c-id      (getf course :id))
+  (let* ((c-id      (getf course :id))
+         (editing-p (not (null c-id)))
          (c-title   (or (getf course :title) ""))
          (c-slug    (or (getf course :slug) ""))
          (c-summary (or (getf course :summary) ""))

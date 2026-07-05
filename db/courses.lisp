@@ -9,7 +9,7 @@
                 #:save-dao
                 #:delete-dao)
   (:import-from #:sxql #:where #:order-by #:limit)
-  (:import-from #:recurya/db/core #:generate-uuid #:ensure-uuid)
+  (:import-from #:recurya/db/core #:generate-uuid #:ensure-uuid #:uuid-string-p)
   (:import-from #:recurya/utils/common #:slugify)
   (:import-from #:recurya/models/users
                 #:users
@@ -85,7 +85,9 @@ Returns:
 
 Returns:
   COURSE instance if found, NIL otherwise."
-  (find-dao 'course :id (ensure-uuid id)))
+  (let ((uuid (and id (ensure-uuid id))))
+    (when (uuid-string-p uuid)
+      (find-dao 'course :id uuid))))
 
 (defun get-course-by-slug (slug)
   "Fetch a course by slug.

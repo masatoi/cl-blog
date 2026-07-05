@@ -163,6 +163,43 @@ HX-Request header is included so htmx-request-p returns T."
             (ok (string= "My Course" (course-title c)))
             (ok (string= "draft" (course-status c)))))))))
 
+(deftest course-create-handler-rejects-duplicate-slug
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        ;; First create with slug "dup" succeeds and redirects.
+        (let ((first (course-create-handler
+                      '(("title" . "Dup") ("slug" . "dup") ("status" . "draft")))))
+          (ok (= 302 (response-status first)) "first create redirects"))
+        ;; A duplicate slug must re-render the form (200) with a slug validation
+        ;; error rather than letting a raw DBI unique-constraint error crash the
+        ;; web worker.
+        (let ((res (course-create-handler
+                    '(("title" . "Dup again") ("slug" . "dup") ("status" . "draft")))))
+          (ok (= 200 (response-status res))
+              "duplicate slug re-renders the form instead of crashing")
+          (ok (search "slug" (first (response-body res)))
+              "shows a slug-related validation error"))))))
+
+(deftest course-create-form-error-rerender-posts-to-create-url
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        ;; Seed a course so a duplicate-slug create triggers an error re-render.
+        (course-create-handler
+         '(("title" . "Dup") ("slug" . "dup") ("status" . "draft")))
+        (let ((body (first (response-body
+                            (course-create-handler
+                             '(("title" . "Dup2") ("slug" . "dup") ("status" . "draft")))))))
+          ;; The re-rendered create form must POST to the create URL and stay a
+          ;; "New Course" form -- not think it is editing an id-less course and
+          ;; target /dashboard/courses/NIL.
+          (ok (search "action=\"/dashboard/courses\"" body)
+              "re-rendered create form posts to the create URL")
+          (ok (not (search "/dashboard/courses/NIL" body))
+              "does not target a NIL course id")
+          (ok (search "New Course" body) "stays a New Course form"))))))
+
 (deftest course-create-handler-published-sets-published-at
   (with-test-db
     (let ((user (mk-user)))
@@ -332,6 +369,38 @@ HX-Request header is included so htmx-request-p returns T."
             (ok (string= "After" (course-title updated)))
             (ok (string= "published" (course-status updated)))
             (ok (course-published-at updated))))))))
+
+(deftest course-update-handler-rejects-duplicate-slug
+  (with-test-db
+    (let* ((user (mk-user))
+           (dao (get-user-by-id (getf user :id)))
+           (b (create-course! :title "B" :slug "taken-b" :author dao))
+           (b-id (princ-to-string (course-id b))))
+      ;; A separate course already owns slug "taken-a".
+      (create-course! :title "A" :slug "taken-a" :author dao)
+      (with-mock-session (make-session :user user)
+        ;; Renaming B's slug onto A's must re-render with a slug error, not
+        ;; crash the worker with a raw DBI unique-constraint error.
+        (let ((res (course-update-handler
+                    (list (cons :id b-id)
+                          (cons "title" "B")
+                          (cons "slug" "taken-a")))))
+          (ok (= 200 (response-status res))
+              "duplicate slug re-renders the form instead of crashing")
+          (ok (search "slug" (first (response-body res)))
+              "shows a slug-related validation error"))))))
+
+(deftest course-update-handler-invalid-uuid-id-is-not-found
+  (with-test-db
+    (let ((user (mk-user)))
+      (with-mock-session (make-session :user user)
+        ;; A non-UUID :id must resolve to 404 rather than crashing the worker
+        ;; with a raw "invalid input syntax for type uuid" DBI error.
+        (let ((res (course-update-handler
+                    (list (cons :id "NIL")
+                          (cons "title" "x")))))
+          (ok (= 404 (response-status res))
+              "invalid uuid id resolves to 404, no crash"))))))
 
 (deftest course-update-handler-persists-visibility
   (with-test-db
