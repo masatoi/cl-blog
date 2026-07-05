@@ -12,7 +12,8 @@
                 #:with-html-string
                 #:escape-string)
   (:export #:editor-head-tags
-           #:editor-textarea))
+           #:editor-textarea
+           #:editor-readonly))
 
 (in-package #:recurya/web/ui/editor)
 
@@ -63,7 +64,9 @@
 .cm-cursor, .cm-dropCursor {
   border-left-width: 0.55em !important;
   border-color: rgba(56, 189, 248, 0.7) !important;
-}"
+}
+.cm-readonly .cm-editor { min-height: auto; }
+.cm-readonly .cm-cursor { display: none !important; }"
   "CSS overrides for CodeMirror to match the site dark theme.")
 
 (defun editor-head-tags ()
@@ -155,3 +158,18 @@ try {
               "")
           source-id
           mount-id))))))
+
+(defun editor-readonly (code)
+  "Return HTML for a read-only, syntax-highlighted view of CODE.
+
+Progressive enhancement: CODE is rendered inside a <pre> (the no-JS /
+CM-load-failure fallback, styled like the plain solution body) within a
+`.cm-readonly' container; learn.js upgrades it in place to a read-only
+CodeMirror (Scheme + oneDark) matching the editor. Carries NO inline script,
+so it works unchanged inside a collapsed <details> and inside HTMX
+out-of-band swaps -- the initializer runs on DOMContentLoaded and on htmx
+swaps, re-measuring when a <details> is opened."
+  (with-html-string
+    (:div :class "cm-readonly"
+          (:pre :class "solution-body cm-readonly-src" code)
+          (:div :class "cm-readonly-mount"))))

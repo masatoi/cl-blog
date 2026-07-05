@@ -26,7 +26,8 @@
                 #:notebook-cell-result-test-results)
   (:import-from #:recurya/game/notebook-parser #:render-cell-prose-html)
   (:import-from #:recurya/web/ui/layout #:header #:header-styles)
-  (:import-from #:recurya/web/ui/editor #:editor-head-tags #:editor-textarea)
+  (:import-from #:recurya/web/ui/editor #:editor-head-tags #:editor-textarea
+                #:editor-readonly)
   (:import-from #:recurya/web/ui/csrf #:csrf-form-block #:csrf-input)
   (:import-from #:recurya/game/novel/eval #:eval-scene)
   (:import-from #:recurya/game/novel/interpreter #:interpret-directives)
@@ -294,7 +295,7 @@ by RENDER-SOLUTION-CELL (initial page render) and RENDER-SOLUTION-OOB-REVEALS
             :hx-swap-oob (when oob "true")
         (:details :class "solution-details"
           (:summary "解答を見る")
-          (:pre :class "solution-body" (or (cell-body cell) ""))))
+          (:raw (editor-readonly (or (cell-body cell) "")))))
       (unless oob
         (:input :type "hidden" :class "notebook-code" :name "codes[]"
                 :value "")))))

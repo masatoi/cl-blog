@@ -1041,6 +1041,34 @@ reader page until the preceding exercise is passed; a non-gated
             (ng (search "notebook-code" frag)
                 "OOB reveal must not inject an extra codes[] input")))))))
 
+(deftest public-solution-renders-readonly-codemirror-mount
+  (testing "a revealed :code-solution renders a read-only CodeMirror mount
+(progressive enhancement: a <pre> fallback upgraded in place) instead of a
+bare <pre>, so the displayed solution code gets the same syntax highlighting
+as the editor"
+    (with-test-db
+      (let* ((user (mk-user))
+             (dao (get-user-by-id (getf user :id)))
+             (handle (users-handle dao))
+             (body (format nil "===prose===~%hi~%~%===solution: ans===~%(define (sq x) (* x x))"))
+             (cells (mapcar #'recurya/web/routes::cell->jsonb-form
+                            (recurya/game/notebook-parser:parse-notebook-body body))))
+        (create-notebook!
+         :title "Sol" :slug "sol-nb" :body-md body
+         :cells cells :author dao :status "published"
+         :visibility "public" :published-at (local-time:now))
+        (with-mock-session (make-session)
+          (let* ((res (public-notebook-by-handle-handler
+                       (list (cons :captures (list handle "sol-nb")))))
+                 (html (first (response-body res))))
+            (ok (= 200 (response-status res)))
+            (ok (search "cm-readonly" html)
+                "solution wrapped in a read-only CodeMirror container")
+            (ok (search "cm-readonly-src" html)
+                "solution code kept in the progressive-enhancement fallback")
+            (ok (search "(define (sq x) (* x x))" html)
+                "the solution code text is present")))))))
+
 (deftest run-cell-404-missing-slug
   (with-test-db
     (let* ((owner (mk-user))

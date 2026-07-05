@@ -109,7 +109,62 @@ async function maybeSyncLocalProgress() {
   }
 }
 
+// --- Read-only CodeMirror for solution code (syntax highlighting, no edit).
+// Progressive enhancement: the server renders the solution as a <pre>
+// (.cm-readonly-src) inside a .cm-readonly container; upgrade it in place to a
+// read-only CodeMirror matching the editor. Works inside <details> (re-measures
+// on open) and for HTMX out-of-band reveals (re-scanned on htmx swaps).
+async function mountReadonlyEditor(container) {
+  const src = container.querySelector('.cm-readonly-src');
+  const mount = container.querySelector('.cm-readonly-mount');
+  if (!src || !mount) return;
+  const code = src.textContent;
+  try {
+    const [{ EditorView }, { EditorState }, { basicSetup },
+           { StreamLanguage }, { scheme }, { oneDark }] = await Promise.all([
+      import('@codemirror/view'),
+      import('@codemirror/state'),
+      import('@codemirror/basic-setup'),
+      import('@codemirror/language'),
+      import('@codemirror/legacy-modes/mode/scheme'),
+      import('@codemirror/theme-one-dark'),
+    ]);
+    const view = new EditorView({
+      state: EditorState.create({
+        doc: code,
+        extensions: [
+          basicSetup,
+          StreamLanguage.define(scheme),
+          oneDark,
+          EditorState.readOnly.of(true),
+          EditorView.editable.of(false),
+        ],
+      }),
+      parent: mount,
+    });
+    src.style.display = 'none'; // hide the fallback <pre>
+    const details = container.closest('details');
+    if (details) {
+      details.addEventListener('toggle', () => {
+        if (details.open) view.requestMeasure();
+      });
+      if (details.open) view.requestMeasure();
+    } else {
+      view.requestMeasure();
+    }
+  } catch (e) {
+    console.error('read-only CodeMirror failed to load:', e);
+    // Leave the fallback <pre> visible.
+  }
+}
+
+function initReadonlyEditors(root) {
+  (root || document).querySelectorAll('.cm-readonly:not([data-cm-init])')
+    .forEach((c) => { c.setAttribute('data-cm-init', '1'); mountReadonlyEditor(c); });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initReadonlyEditors(document);
   if (isLoggedIn()) {
     // Logged-in: server provides SSR badges; sync any leftover local data.
     maybeSyncLocalProgress();
@@ -173,4 +228,10 @@ document.body.addEventListener('htmx:afterRequest', (e) => {
   const cellId = ta.closest('[data-cell-id]')?.dataset?.cellId;
   if (!cellId) return;
   recordCode(nbId, cellId, ta.value);
+});
+
+// Upgrade read-only solution editors after HTMX swaps, including out-of-band
+// gated-solution reveals. Idempotent via the data-cm-init marker.
+['htmx:load', 'htmx:afterSwap', 'htmx:oobAfterSwap'].forEach((evt) => {
+  document.body.addEventListener(evt, () => initReadonlyEditors(document));
 });
