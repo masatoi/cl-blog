@@ -6,7 +6,8 @@
   (:import-from #:recurya/web/ui/layout
                 #:common-styles
                 #:format-timestamp
-                #:page-shell)
+                #:page-shell
+                #:icon)
   (:export #:render
            #:render-notebook-state-dropdown))
 
@@ -165,25 +166,29 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
                     (:td
                      (if published-at
                          (or (format-timestamp published-at user-timezone)
-                             "&#x2014;")
-                         "&#x2014;"))
+                             "—")
+                         "—"))
                     (:td
-                     (or (format-timestamp created-at user-timezone) "&#x2014;"))
+                     (or (format-timestamp created-at user-timezone) "—"))
                     (:td
                      (:div :class "actions-cell"
-                      (:a :class "link" :href
-                       (format nil "/dashboard/notebooks/~A/edit" id) "Edit")
-                      (:button :class "button-danger btn-sm" :hx-get
+                      (:a :class "icon-action" :title "Edit" :aria-label "Edit"
+                       :href (format nil "/dashboard/notebooks/~A/edit" id)
+                       (:raw (icon "pen-to-square")))
+                      (:button :class "icon-action danger" :title "Delete"
+                       :aria-label "Delete" :hx-get
                        (format nil "/dashboard/notebooks/~A/confirm-delete"
                                id)
                        :hx-target "#modal-container" :hx-swap "innerHTML"
-                       "Delete")
+                       (:raw (icon "trash")))
                       (when (and (string= visibility "unlisted")
                                  slug user-handle)
-                        (:button :type "button" :class "link copy-link-btn"
+                        (:button :type "button"
+                         :class "icon-action copy-link-btn"
+                         :title "Copy link" :aria-label "Copy link"
                          :data-share-url (format nil "/@~A/~A" user-handle slug)
                          :onclick "navigator.clipboard.writeText(location.origin+this.dataset.shareUrl)"
-                         "Copy link")))))))))
+                         (:raw (icon "link")))))))))))
              (when pagination
                (let ((current-page (getf pagination :current-page))
                      (total-pages (getf pagination :total-pages))
@@ -197,11 +202,13 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
                   (:nav :class "pagination-nav"
                    (if has-prev
                        (:a :class "pagination-btn" :href prev-url
-                        "&#x2190; Previous")
-                       (:span :class "pagination-btn disabled" "&#x2190; Previous"))
-                   (if has-next
-                       (:a :class "pagination-btn" :href next-url "Next &#x2192;")
+                        (:raw (icon "arrow-left")) " Previous")
                        (:span :class "pagination-btn disabled"
-                        "Next &#x2192;")))))))
+                        (:raw (icon "arrow-left")) " Previous"))
+                   (if has-next
+                       (:a :class "pagination-btn" :href next-url
+                        "Next " (:raw (icon "arrow-right")))
+                       (:span :class "pagination-btn disabled"
+                        "Next " (:raw (icon "arrow-right")))))))))
             (:p :class "muted" "No notebooks yet. Create your first one!")))
        (:div :id "modal-container")))))

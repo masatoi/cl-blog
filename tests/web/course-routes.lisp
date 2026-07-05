@@ -200,6 +200,27 @@ HX-Request header is included so htmx-request-p returns T."
               "does not target a NIL course id")
           (ok (search "New Course" body) "stays a New Course form"))))))
 
+(deftest courses-dashboard-actions-and-pager-render-icons
+  ;; Render test (no DB; a mock session supplies the header's CSRF context):
+  ;; the ACTIONS buttons and the pager arrows render as inline Font Awesome SVG
+  ;; icons.
+  (let ((user '(:id "u1" :email "t@example.com" :name "Tester"
+                :handle "tester" :role :user :language "en" :timezone "UTC")))
+    (with-mock-session (make-session :user user)
+      (let ((body (recurya/web/ui/courses:render
+                   :user user
+                   :courses (list (list :id "abc" :title "C1" :slug "s1"
+                                        :status "draft" :visibility "private"
+                                        :notebook-count 0
+                                        :created-at (local-time:now)))
+                   :pagination '(:current-page 2 :total-pages 3
+                                 :has-prev t :has-next t
+                                 :prev-url "/dashboard/courses?page=1"
+                                 :next-url "/dashboard/courses?page=3"))))
+        (ok (search "<svg" body) "ACTIONS + pager render inline svg icons")
+        (ok (search "Previous" body) "keeps the Previous label")
+        (ok (search "Next" body) "keeps the Next label")))))
+
 (deftest course-create-handler-published-sets-published-at
   (with-test-db
     (let ((user (mk-user)))

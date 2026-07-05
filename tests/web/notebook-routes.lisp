@@ -118,6 +118,30 @@ HX-Request header is included so htmx-request-p returns T."
                      (< root-pos ta-pos))
                 "Body heading precedes cell editor, which precedes textarea")))))))
 
+(deftest notebooks-dashboard-actions-and-pager-render-icons
+  ;; Render test (no DB; a mock session supplies the header's CSRF context):
+  ;; the ACTIONS buttons render as inline Font Awesome SVG icons, and the pager
+  ;; arrows render as SVG -- not as literal/escaped "&#x2190;" HTML entities
+  ;; (which Spinneret double-escapes to "&amp;#x2190;", shown verbatim).
+  (let ((user '(:id "u1" :email "t@example.com" :name "Tester"
+                :handle "tester" :role :user :language "en" :timezone "UTC")))
+    (with-mock-session (make-session :user user)
+      (let ((body (recurya/web/ui/notebooks-dashboard:render
+                   :user user
+                   :notebooks (list (list :id "abc" :title "N1" :slug "s1"
+                                          :status "draft" :visibility "private"
+                                          :published-at nil
+                                          :created-at (local-time:now)))
+                   :pagination '(:current-page 2 :total-pages 3
+                                 :has-prev t :has-next t
+                                 :prev-url "/dashboard/notebooks?page=1"
+                                 :next-url "/dashboard/notebooks?page=3"))))
+        (ok (search "<svg" body) "ACTIONS + pager render inline svg icons")
+        (ng (search "&amp;#x2190;" body) "pager has no escaped left-arrow entity")
+        (ng (search "&amp;#x2192;" body) "pager has no escaped right-arrow entity")
+        (ok (search "Previous" body) "keeps the Previous label")
+        (ok (search "Next" body) "keeps the Next label")))))
+
 (deftest create-handler-redirects-anonymous
   (with-mock-session (make-session)
     (let ((res (notebook-create-handler '(("title" . "x")))))

@@ -428,6 +428,44 @@ tbody tr:hover {
   cursor: not-allowed;
   pointer-events: none;
 }")
+
+(defparameter *icon-styles*
+  ".fa-icon {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+}
+
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+
+.icon-action:hover {
+  background: var(--color-secondary-bg);
+  color: var(--color-text-dark);
+  text-decoration: none;
+}
+
+.icon-action.danger:hover {
+  color: var(--color-error);
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+}")
+
 ;;; ---------------------------------------------------------------------------
 ;;; Utility Functions
 ;;; ---------------------------------------------------------------------------
@@ -444,7 +482,8 @@ tbody tr:hover {
                *table-styles*
                *modal-styles*
                *status-pill-styles*
-               *pagination-styles*))
+               *pagination-styles*
+               *icon-styles*))
 
 (defun page-styles (&rest additional-styles)
   "Return common styles plus any additional page-specific styles."
