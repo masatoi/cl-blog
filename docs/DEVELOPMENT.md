@@ -1,16 +1,15 @@
 # Development workflow
 
-This project runs entirely inside a long-lived Lisp image (the `recurya`
-container). The web server, Swank (SLIME), and cl-mcp all share that one
-image. The golden rule: **hot-reload code changes into the running image;
-almost never restart the container.**
+This project runs inside the long-lived `recurya` container. cl-mcp's worker
+pool is enabled and the **web server runs inside the cl-mcp worker** for your
+session (started by the worker-init hook), co-located with your
+repl-eval/load-system. The golden rule: **hot-reload code changes into the
+running worker; almost never restart the container.**
 
 ## Hot-reload (default for code changes)
 
-A container restart drops the Swank/cl-mcp connection and the in-memory
-state, and takes tens of seconds. For ordinary code edits you don't need it —
-reload from a connected REPL (Emacs SLIME on `localhost:4005`, or the AI agent
-via cl-mcp) instead:
+For ordinary code edits, reload from a connected REPL (the AI agent via cl-mcp,
+or Emacs SLIME on `localhost:4005`) instead of restarting anything:
 
 ```lisp
 ;; Reload one file after editing it:
@@ -23,19 +22,32 @@ via cl-mcp) instead:
 (asdf:load-system :recurya :force t)
 ```
 
-Routes are registered through a dynamic dispatch layer, so redefining a
-handler takes effect on the next request with no server restart.
+Because the web server lives in your cl-mcp worker, `load-system` lands in the
+same process as the running server, so the change is live on the next request.
+Routes use a dynamic dispatch layer, so a redefined handler takes effect
+immediately with no server restart.
 
-### When a container restart IS required
+### Full runtime reset (fresh Lisp process, no reconnect)
 
-Only these need `docker compose build recurya && docker compose --profile app up -d`:
+To throw away all in-memory state and get a clean Lisp process for the app, use
+cl-mcp's `pool-kill-worker` (reset). It kills your worker (and the web server in
+it) and spawns a fresh one, which re-runs the init hook and restarts the web
+server in ~3s. The cl-mcp parent survives, so **no `/mcp` reconnect is needed**.
+
+### When a full container recreate IS required
+
+Only these need a recreate
+(`docker compose --profile app up -d --force-recreate recurya`; deps are
+volume-mounted, so an image rebuild is only needed for `Dockerfile` changes):
 
 1. `Dockerfile` / `docker-compose.yml` changes
-2. New Quicklisp dependencies (new entries in `qlfile` → `qlot install`)
+2. New Quicklisp dependencies (new `qlfile` entries → `qlot install`)
 3. ASDF system-structure changes (new modules, renamed packages/files)
 4. Environment-variable changes
 
-After a restart, reconnect cl-mcp / SLIME.
+A recreate drops the cl-mcp parent, so reconnect with `/mcp` afterwards — the
+only time a reconnect is needed. The app comes back up when your next MCP
+session's worker is elected runtime owner.
 
 ## Tests never touch your dev data
 
@@ -71,3 +83,33 @@ against anything other than the test DB.
 
   Courses/notebooks you created by hand in the UI are not part of the seed and
   cannot be auto-restored.
+
+## Verifying UI changes without a browser
+
+This is an MPA + HTMX app: the server renders both full pages and the HTML
+fragments that HTMX swaps in, so **most UI verification can be done server-side,
+no browser required.** Two levels:
+
+1. **Handler / render tests (Rove).** Call the handler with a mock
+   session/params and assert on the returned HTML — elements, `hx-*` wiring, and
+   fragment content. This is what `tests/web/*.lisp` already do (e.g. asserting
+   `hx-post=...`, `class="sb-link active"`, or a run fragment's body). Run with
+   `run-tests` / `(rove:run :recurya/tests/web/notebook-routes)`.
+
+2. **HTTP smoke against the live server:** `./scripts/smoke.sh`. It drives the
+   running server over HTTP and replays HTMX requests exactly as the browser
+   would (session cookie + CSRF token + `HX-Request: true`), asserting on pages
+   and fragments. Use it after a UI change; copy a check block for whatever
+   you changed.
+
+**Check both sides of an HTMX wiring.** When asserting an interaction, check the
+trigger's `hx-target="#foo"` AND that an element with `id=foo` exists in the
+page, plus the replayed fragment. That closes the trigger → target → fragment
+loop server-side; HTMX-in-the-browser applying it is safe to trust. If a change
+renames an `id`/`class`/selector that JS or `hx-include`/`hx-target` depends on,
+add an assertion for it.
+
+**What still needs a browser or eyes** (a small residual): client-side JS
+behaviour (CodeMirror editor, buttons, arena stepping, novel advance) — cover
+its logic with the `node` tests, and visual/CSS/layout correctness — a quick
+human glance. Everything else is server-side.
