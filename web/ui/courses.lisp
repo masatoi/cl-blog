@@ -147,12 +147,12 @@ COURSES is a list of plists with :id :slug :title :status
               (:tbody :id "courses-body"
                (dolist (course courses)
                  (let ((id (getf course :id))
-                        (slug (getf course :slug))
-                        (title (getf course :title))
-                        (status (getf course :status))
-                        (visibility (or (getf course :visibility) "private"))
-                        (notebook-count (getf course :notebook-count))
-                        (created-at (getf course :created-at)))
+                       (slug (getf course :slug))
+                       (title (getf course :title))
+                       (status (getf course :status))
+                       (visibility (or (getf course :visibility) "private"))
+                       (notebook-count (getf course :notebook-count))
+                       (created-at (getf course :created-at)))
                    (:tr :id (format nil "course-row-~A" id)
                     (:td
                      (if (and slug user-handle

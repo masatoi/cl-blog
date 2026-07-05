@@ -111,7 +111,7 @@
       (let ((spec (sicp-spec)))
         (unwind-protect
              (let ((r1 (seed-course! spec :attach-notebooks nil))
-                    (r2 (seed-course! spec :attach-notebooks nil)))
+                   (r2 (seed-course! spec :attach-notebooks nil)))
                (ok (string= (getf r1 :user-id) (getf r2 :user-id))
                    "user UUID stable across runs")
                (ok (string= (getf r1 :course-id) (getf r2 :course-id))

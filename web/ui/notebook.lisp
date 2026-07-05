@@ -369,12 +369,12 @@ COURSE-PREV-URL / COURSE-NEXT-URL, when non-nil, render \"← Previous\"
 and \"Next →\" links in the breadcrumb area for navigating between
 notebooks within the same course."
   (let ((*saved-codes* saved-codes)
-         (*passed-cells* passed-cells)
-         (*user* user)
-         (*cells* (notebook-cells notebook))
-         (*run-cell-base*
-          (or run-cell-base
-              (format nil "/wardlisp/learn/~A" (notebook-url-id notebook)))))
+        (*passed-cells* passed-cells)
+        (*user* user)
+        (*cells* (notebook-cells notebook))
+        (*run-cell-base*
+         (or run-cell-base
+             (format nil "/wardlisp/learn/~A" (notebook-url-id notebook)))))
     (with-html-string (:doctype)
       (:html
        (:head

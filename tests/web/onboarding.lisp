@@ -246,7 +246,7 @@ the middleware passes the request through."
 (deftest middleware-passes-anonymous-requests
   (testing "no session user => middleware does not redirect"
     (let ((wrapped (require-real-handle (pass-through-app)))
-           (env (mk-env :path-info "/dashboard/notebooks" :session (make-hash-table))))
+          (env (mk-env :path-info "/dashboard/notebooks" :session (make-hash-table))))
       (let ((res (funcall wrapped env)))
         (ok (= 200 (response-status res))
             "anonymous user should be passed through, not redirected")))))

@@ -395,11 +395,11 @@ old"
            (id (princ-to-string (notebook-id nb))))
       (with-mock-session (make-session :user user)
         (let ((res (notebook-update-handler
-                     (list (cons :id id)
-                           (cons "title" "After")
-                           (cons "body" "===prose===
+                    (list (cons :id id)
+                          (cons "title" "After")
+                          (cons "body" "===prose===
 new")
-                           (cons "status" "published")))))
+                          (cons "status" "published")))))
           (ok (= 302 (response-status res)))
           (ok (string= "/dashboard/notebooks" (response-location res)))
           (let ((updated (get-notebook-by-id id)))
@@ -1113,9 +1113,9 @@ hi
        :visibility "public" :published-at (local-time:now))
       (with-mock-session (make-session)
         (let ((res (public-notebook-cell-run-by-handle-handler
-                     `((:captures . (,handle "ev" "1"))
-                       ("codes[]" . "")
-                       ("codes[]" . "(+ 1 2)")))))
+                    `((:captures . (,handle "ev" "1"))
+                      ("codes[]" . "")
+                      ("codes[]" . "(+ 1 2)")))))
           (ok (= 200 (response-status res))))))))
 
 (deftest run-cell-eval-logged-in-persists-saved-code
@@ -1521,9 +1521,9 @@ hi"
 authors use the same slug"
     (with-test-db
       (let ((alice-dao (create-test-user :email-prefix "alice"
-                                          :handle "alice-7b"))
-             (bob-dao (create-test-user :email-prefix "bob"
-                                        :handle "bob-7b")))
+                                         :handle "alice-7b"))
+            (bob-dao (create-test-user :email-prefix "bob"
+                                       :handle "bob-7b")))
         (create-notebook! :title "Alice intro" :slug "intro"
                           :body-md "===prose===
 alice"
@@ -1538,11 +1538,11 @@ bob"
                           :published-at (local-time:now))
         (with-mock-session (make-session)
           (let ((res-alice
-                  (public-notebook-by-handle-handler
-                   '((:captures . ("alice-7b" "intro")))))
-                 (res-bob
-                  (public-notebook-by-handle-handler
-                   '((:captures . ("bob-7b" "intro"))))))
+                 (public-notebook-by-handle-handler
+                  '((:captures . ("alice-7b" "intro")))))
+                (res-bob
+                 (public-notebook-by-handle-handler
+                  '((:captures . ("bob-7b" "intro"))))))
             (ok (= 200 (response-status res-alice)))
             (ok (= 200 (response-status res-bob)))
             (ok (search "Alice intro" (first (response-body res-alice))))
