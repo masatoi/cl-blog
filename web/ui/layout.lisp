@@ -18,6 +18,7 @@
            #:header-styles
            #:page-shell
            #:format-timestamp
+           #:icon
            ;; Re-export from styles
            #:common-styles
            #:page-styles))
@@ -101,6 +102,33 @@
           (error ()
             ;; Last resort: return the string representation
             (princ-to-string timestamp)))))))
+
+(defparameter *fa-icons*
+  '(("pen-to-square" "0 0 512 512"
+     "M471.6 21.7c-21.9-21.9-57.3-21.9-79.2 0L362.3 51.7l97.9 97.9 30.1-30.1c21.9-21.9 21.9-57.3 0-79.2L471.6 21.7zm-299.2 220c-6.1 6.1-10.8 13.6-13.5 21.9l-29.6 88.8c-2.9 8.6-.6 18.1 5.8 24.6s15.9 8.7 24.6 5.8l88.8-29.6c8.2-2.7 15.7-7.4 21.9-13.5L437.7 172.3 339.7 74.3 172.4 241.7zM96 64C43 64 0 107 0 160V416c0 53 43 96 96 96H352c53 0 96-43 96-96V320c0-17.7-14.3-32-32-32s-32 14.3-32 32v96c0 17.7-14.3 32-32 32H96c-17.7 0-32-14.3-32-32V160c0-17.7 14.3-32 32-32h96c17.7 0 32-14.3 32-32s-14.3-32-32-32H96z")
+    ("trash" "0 0 448 512"
+     "M135.2 17.7L128 32H32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H320l-7.2-14.3C307.4 6.8 296.3 0 284.2 0H163.8c-12.1 0-23.2 6.8-28.6 17.7zM416 128H32L53.2 467c1.6 25.3 22.6 45 47.9 45H346.9c25.3 0 46.3-19.7 47.9-45L416 128z")
+    ("link" "0 0 640 512"
+     "M579.8 267.7c56.5-56.5 56.5-148 0-204.5c-50-50-128.8-56.5-186.3-15.4l-1.6 1.1c-14.4 10.3-17.7 30.3-7.4 44.6s30.3 17.7 44.6 7.4l1.6-1.1c32.1-22.9 76-19.3 103.8 8.6c31.5 31.5 31.5 82.5 0 114L422.3 334.8c-31.5 31.5-82.5 31.5-114 0c-27.9-27.9-31.5-71.8-8.6-103.8l1.1-1.6c10.3-14.4 6.9-34.4-7.4-44.6s-34.4-6.9-44.6 7.4l-1.1 1.6C206.5 251.2 213 330 263 380c56.5 56.5 148 56.5 204.5 0L579.8 267.7zM60.2 244.3c-56.5 56.5-56.5 148 0 204.5c50 50 128.8 56.5 186.3 15.4l1.6-1.1c14.4-10.3 17.7-30.3 7.4-44.6s-30.3-17.7-44.6-7.4l-1.6 1.1c-32.1 22.9-76 19.3-103.8-8.6C81.5 371.8 81.5 320.8 113 289.3L217.7 184.6c31.5-31.5 82.5-31.5 114 0c27.9 27.9 31.5 71.8 8.6 103.9l-1.1 1.6c-10.3 14.4-6.9 34.4 7.4 44.6s34.4 6.9 44.6-7.4l1.1-1.6C433.5 260.8 427 182 377 132c-56.5-56.5-148-56.5-204.5 0L60.2 244.3z")
+    ("arrow-left" "0 0 448 512"
+     "M9.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.2 288 416 288c17.7 0 32-14.3 32-32s-14.3-32-32-32l-306.7 0L214.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z")
+    ("arrow-right" "0 0 448 512"
+     "M438.6 278.6c12.5-12.5 12.5-32.8 0-45.3l-160-160c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L338.8 224 32 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l306.7 0L233.4 393.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l160-160z"))
+  "Font Awesome 6 (free, solid) icon geometry: (NAME viewBox path-data),
+rendered inline by ICON so pages need no external icon font or CSS.")
+
+(defun icon (name)
+  "Return an inline SVG string for the Font Awesome (free, solid) glyph NAME
+(a key in *FA-ICONS*), for embedding via (:raw ...). The glyph is sized in em
+(scales with the surrounding font-size), coloured via currentColor, marked
+aria-hidden, and carries class \"fa-icon\"."
+  (let ((spec (cdr (assoc name *fa-icons* :test #'string=))))
+    (unless spec
+      (error "icon: unknown Font Awesome glyph ~S" name))
+    (destructuring-bind (view-box path) spec
+      (format nil
+              "<svg class=\"fa-icon\" viewBox=\"~A\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"~A\"/></svg>"
+              view-box path))))
 
 (defun header (user)
   "Generate the application header HTML.
