@@ -115,7 +115,7 @@
       (let* ((params '(("display-name" . "  ")))
              (response (account-update-handler params)))
         (ok (= 302 (response-status response)))
-        (ok (search "error" (response-location response))))))
+        (ok (search "err=account.name_blank" (response-location response))))))
 
   (testing "account update accepts valid display name"
     (with-test-db
@@ -127,7 +127,7 @@
                                 ("timezone" . "UTC")))
                       (response (account-update-handler params)))
                  (ok (= 302 (response-status response)))
-                 (ok (search "message" (response-location response)))
+                 (ok (search "msg=account.saved" (response-location response)))
                  ;; Session user should have updated name
                  (ok (string= "New Name"
                               (getf (gethash :user ningle/context:*session*) :name)))))
@@ -186,7 +186,7 @@
                       (response (account-update-handler params)))
                  ;; Should redirect with success message
                  (ok (= 302 (response-status response)))
-                 (ok (search "message" (response-location response)))
+                 (ok (search "msg=account.saved" (response-location response)))
                  ;; Verify session updated
                  (let ((session-user (gethash :user ningle/context:*session*)))
                    (ok (string= "Updated Name" (getf session-user :name))))
@@ -245,7 +245,7 @@
                                 ("timezone" . "Asia/Seoul")))
                       (response (account-update-handler params)))
                  (ok (= 302 (response-status response)))
-                 (ok (search "message=Settings" (response-location response)))
+                 (ok (search "msg=account.saved" (response-location response)))
                  ;; Verify all session fields updated
                  (let ((session-user (gethash :user ningle/context:*session*)))
                    (ok (string= "New Display Name" (getf session-user :name)))
@@ -266,7 +266,7 @@
              (progn
                (with-mock-session (make-session :user user)
                  (account-update-handler '(("display-name" . "Test User")
-                                           ("language" . "fr")
+                                           ("language" . "ja")
                                            ("timezone" . "Europe/Paris"))))
                (let* ((db-user (get-user-by-id (getf user :id)))
                       (fresh-user (list :id (recurya/models/users:users-id db-user)
@@ -279,8 +279,8 @@
                    (let ((response (account-page-handler nil)))
                      (ok (= 200 (response-status response)))
                      (let ((body (first (response-body response))))
-                       (ok (search "value=fr selected" body)
-                           "French should be selected in language dropdown")
+                       (ok (search "value=ja selected" body)
+                           "Japanese should be selected in language dropdown")
                        (ok (search "value=\"Europe/Paris\" selected" body)
                            "Europe/Paris should be selected in timezone dropdown"))))))
           (handler-case (delete-user! (getf user :email)) (error () nil)))))))

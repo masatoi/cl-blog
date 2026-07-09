@@ -1635,13 +1635,27 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
 
 ;;; Account Handlers
 
+(defparameter *flash-message-keys*
+  '(("account.saved"      . :flash.account.saved)
+    ("account.name_blank" . :flash.account.name_blank))
+  "許可されたフラッシュキー(URLトークン) -> カタログキー。任意キー注入を防ぐ。")
+
+(defun resolve-flash (token)
+  "URL クエリの TOKEN をホワイトリスト経由で翻訳文に解決。未許可/nil は nil。"
+  (let ((catalog-key (cdr (assoc token *flash-message-keys* :test #'equal))))
+    (when catalog-key
+      (recurya/web/i18n/core:tr catalog-key))))
+
 (defun account-page-handler (params)
   "Handle GET /account - show account settings."
-  (declare (ignore params))
   (let ((user (get-current-user)))
     (if (null user)
         (redirect "/login")
-        (html-response (recurya/web/ui/account:render :user user)))))
+        (let ((message (resolve-flash (get-param params "msg")))
+              (error   (resolve-flash (get-param params "err"))))
+          (html-response
+           (recurya/web/ui/account:render :user user
+                                          :message message :error error))))))
 
 (defun account-update-handler (params)
   "Handle POST /account - update account settings."
@@ -1652,7 +1666,7 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
               (language (get-param params "language"))
               (timezone (get-param params "timezone")))
           (if (or (null display-name) (string= (string-trim '(#\Space) display-name) ""))
-              (redirect "/account?error=Display+name+cannot+be+blank")
+              (redirect "/account?err=account.name_blank")
               (progn
                 (update-user! (getf user :id)
                               :display-name display-name
@@ -1662,7 +1676,7 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
                 (setf (getf user :language) language)
                 (setf (getf user :timezone) timezone)
                 (set-session-user! user)
-                (redirect "/account?message=Settings+updated")))))))
+                (redirect "/account?msg=account.saved")))))))
 
 (defun account-confirm-delete-handler (params)
   "Handle GET /account/confirm-delete - return modal fragment for account deletion."
