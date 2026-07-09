@@ -115,3 +115,60 @@ add an assertion for it.
 behaviour (CodeMirror editor, buttons, arena stepping, novel advance) — cover
 its logic with the `node` tests, and visual/CSS/layout correctness — a quick
 human glance. Everything else is server-side.
+
+## Internationalization (i18n)
+
+The UI is rendered in the user's language via a message catalog. Currently
+**English (`:en`, base/fallback) and Japanese (`:ja`)**; the design supports
+adding more with one file.
+
+**How it works**
+- `web/i18n/core.lisp` (`recurya/web/i18n/core`) provides `(tr KEY &rest ARGS)`.
+  It looks up `KEY` in the current locale, falls back to `*default-locale*`
+  (`:en`), then to a visible `⟦key⟧` marker (dev warning). Each locale stores its
+  own template, so `(tr :key a b)` runs `(format nil template a b)` — a missing
+  or malformed template degrades to the marker instead of crashing a render.
+- `*locale*` is bound **per request** by the `bind-locale` Lack middleware (in
+  the builder just after `:session`, see `web/server.lisp`). It reads the session
+  user's `:language` (anonymous / unsupported → `:en`).
+- Catalogs: `web/i18n/en.lisp` and `web/i18n/ja.lisp`, each one `defcatalog` form
+  of `(:namespace.key "text")` pairs. Keys are namespaced keywords
+  (`:account.heading`, `:common.pagination.next`); shared strings live under
+  `common.*`.
+
+**Using it in a template**
+```lisp
+(:h1 (tr :account.heading))                 ; plain visible text
+(:title (tr :notebook.form.browser_title p)) ; attribute value
+(tr :common.pagination.info page total)      ; format template (~A ~A)
+```
+Rules: keep catalog values **plain text** (structure/`<code>` stays in Spinneret,
+user data stays a separate escaped node — do not put HTML in a value and `:raw`
+it unless it is fully trusted static markup). Keep `format` directives
+(`~A`/`~D`/`~:P`) intact in the template. Brand/proper nouns
+(recurya/WardLisp/Google/GitHub) and Lisp technical terms (type names, resource
+metrics, HTTP status words) stay English by convention. For text set from inline
+JS, render the `tr` value into a `data-*` attribute and have the JS read it (see
+`novel.lisp` `data-end-label`, `arena.lisp` `data-turn-label`).
+
+**Flash messages** are passed as catalog *keys* through a redirect query
+(`/account?msg=account.saved`) and translated at render time via a whitelist
+(`*flash-message-keys*` / `resolve-flash` in `routes.lisp`) — never put
+translated text in a URL.
+
+**Adding a language** (e.g. `:fr`)
+1. Create `web/i18n/fr.lisp`: `(defcatalog :fr (:key "…") …)` — copy `en.lisp`'s
+   keys and translate the values.
+2. Register it in `recurya.asd` (add `"recurya/web/i18n/fr"` to the `recurya`
+   system, before `recurya/web/app`).
+3. It appears automatically in the account language dropdown (driven by
+   `available-locales`).
+4. Run `run-tests {system: "recurya/tests/web/i18n-catalog"}` — the **parity
+   test** fails if any key is missing from a locale, so it catches translation
+   gaps.
+
+**Testing** — `recurya/tests/web/i18n-core` (tr/fallback/`bind-locale`),
+`recurya/tests/web/i18n-catalog` (en/ja key parity), and
+`recurya/tests/web/i18n-render` (bind `*locale*` and assert rendered
+`:ja`/`:en` output). A draft translation review lives in
+`docs/superpowers/i18n-phase2-translation-review.md`.
