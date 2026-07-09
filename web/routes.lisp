@@ -965,12 +965,10 @@ after subsequent clicks. Owner-only."
                 (t
                  (html-response
                   (render-confirm-modal
-                   :title "Delete this course?"
-                   :message (format nil
-                                    "\"~A\" will be permanently deleted. This cannot be undone."
-                                    (course-title c))
+                   :title (tr :courses.delete.confirm_title)
+                   :message (tr :courses.delete.confirm_message (course-title c))
                    :confirm-hx-post (format nil "/dashboard/courses/~A/delete" id)
-                   :confirm-label "Delete course"))))))))
+                   :confirm-label (tr :courses.delete.confirm_label)))))))))
 
 (defun course-delete-handler (params)
   "Handle POST /dashboard/courses/:id/delete - delete course (owner only).
@@ -1211,12 +1209,10 @@ functional after subsequent clicks. Owner-only."
             (t
              (html-response
               (render-confirm-modal
-               :title "Delete this notebook?"
-               :message (format nil
-                                "\"~A\" will be permanently deleted. This cannot be undone."
-                                (notebook-title nb))
+               :title (tr :notebooks.delete.confirm_title)
+               :message (tr :notebooks.delete.confirm_message (notebook-title nb))
                :confirm-hx-post (format nil "/dashboard/notebooks/~A/delete" id)
-               :confirm-label "Delete notebook"))))))))
+               :confirm-label (tr :notebooks.delete.confirm_label)))))))))
 
 (defun notebook-delete-handler (params)
   "Handle POST /dashboard/notebooks/:id/delete - delete notebook (owner only).
@@ -1647,7 +1643,7 @@ plist key (some Clack handlers normalize headers there)."
 TITLE and MESSAGE describe the action. CONFIRM-HX-POST is the URL for the
 confirm button's hx-post. CONFIRM-HX-TARGET and CONFIRM-HX-SWAP control
 where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
-  (let ((confirm-label (or confirm-label "Delete")))
+  (let ((confirm-label (or confirm-label (tr :common.actions.delete))))
     (spinneret:with-html-string
       (:div :class "modal-overlay"
             :role "dialog"
@@ -1661,7 +1657,7 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
             ;; No server round-trip needed — hx-on:click runs client-side JS.
             (:button :type "button" :class "button-secondary"
                      :hx-on\:click "htmx.find('#modal-container').innerHTML=''"
-                     "Cancel")
+                     (tr :common.buttons.cancel))
             ;; Confirm: POST to the action URL.  The response is swapped into
             ;; #modal-container (default), clearing the modal.  Handlers may
             ;; also include OOB swap elements to update other parts of the page.
@@ -1725,10 +1721,10 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
         (html-response (tr :server.errors.unauthorized) :status 401)
         (html-response
          (render-confirm-modal
-          :title "Delete your account?"
-          :message "This will permanently delete your account and all associated posts. This action cannot be undone."
+          :title (tr :account.delete.confirm_title)
+          :message (tr :account.delete.confirm_message)
           :confirm-hx-post "/account/delete"
-          :confirm-label "Delete account")))))
+          :confirm-label (tr :account.danger.delete))))))
 
 (defun account-delete-handler (params)
   "Handle POST /account/delete - delete account.

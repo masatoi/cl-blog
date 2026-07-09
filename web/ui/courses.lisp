@@ -202,13 +202,17 @@ COURSES is a list of plists with :id :slug :title :status
                   (:nav :class "pagination-nav"
                    (if has-prev
                        (:a :class "pagination-btn" :href prev-url
-                        (:raw (icon "arrow-left")) " Previous")
+                        (:raw (icon "arrow-left"))
+                        (tr :courses.dashboard.pagination.previous))
                        (:span :class "pagination-btn disabled"
-                        (:raw (icon "arrow-left")) " Previous"))
+                        (:raw (icon "arrow-left"))
+                        (tr :courses.dashboard.pagination.previous)))
                    (if has-next
                        (:a :class "pagination-btn" :href next-url
-                        "Next " (:raw (icon "arrow-right")))
+                        (tr :courses.dashboard.pagination.next)
+                        (:raw (icon "arrow-right")))
                        (:span :class "pagination-btn disabled"
-                        "Next " (:raw (icon "arrow-right")))))))))
+                        (tr :courses.dashboard.pagination.next)
+                        (:raw (icon "arrow-right")))))))))
             (:p :class "muted" (tr :courses.empty))))
        (:div :id "modal-container")))))
