@@ -198,7 +198,7 @@ COURSES is a list of plists with :id :slug :title :status
                      (next-url (getf pagination :next-url)))
                  (:div :class "pagination"
                   (:span :class "pagination-info"
-                   (format nil "Page ~A of ~A" current-page total-pages))
+                   (tr :common.pagination.info current-page total-pages))
                   (:nav :class "pagination-nav"
                    (if has-prev
                        (:a :class "pagination-btn" :href prev-url
