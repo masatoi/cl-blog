@@ -16,6 +16,8 @@
   (:import-from #:recurya/web/auth
                 #:require-dashboard-auth
                 #:require-real-handle)
+  (:import-from #:recurya/web/i18n/core
+                #:bind-locale)
   (:import-from #:recurya/web/routes
                 #:setup-routes)
   (:import-from #:recurya/web/ui/errors
@@ -99,30 +101,36 @@ application database, which is safe under Hunchentoot's worker threads."
     ;; 2. :session                 — cookie-keyed, DB-backed session store
     ;;                               (persists logins across restarts; provides
     ;;                               ningle/context:*session*)
-    ;; 3. #'require-dashboard-auth — Login guard: redirects anonymous requests
+    ;; 3. #'bind-locale            — Binds *locale* from the session user's
+    ;;                               :language (anonymous/unsupported -> :en)
+    ;;                               for the request extent. Reads :lack.session,
+    ;;                               so must run after :session; wraps all render.
+    ;; 4. #'require-dashboard-auth — Login guard: redirects anonymous requests
     ;;                               to /dashboard or /dashboard/* back to
     ;;                               /login. Reads :lack.session, so must run
     ;;                               after :session. Runs before
     ;;                               require-real-handle so anonymous users go
     ;;                               to /login (not /onboarding/handle).
-    ;; 4. #'csrf-with-skip         — CSRF token check on POST/PUT/DELETE/PATCH;
+    ;; 5. #'csrf-with-skip         — CSRF token check on POST/PUT/DELETE/PATCH;
     ;;                               bypassed for paths in *csrf-skip-paths*.
     ;;                               Must run after :session because it reads
     ;;                               :lack.session.
-    ;; 5. #'require-real-handle    — Onboarding guard: redirects users with
+    ;; 6. #'require-real-handle    — Onboarding guard: redirects users with
     ;;                               placeholder handles to /onboarding/handle.
     ;;                               Reads :lack.session, so must run after
     ;;                               :session. Sits before :backtrace so its
     ;;                               302 response is unaffected by error
     ;;                               handling.
-    ;; 6. :backtrace               — renders a debug backtrace page on
+    ;; 7. :backtrace               — renders a debug backtrace page on
     ;;                               unhandled errors.
-    ;; 7. app                      — the Ningle router with all route handlers.
+    ;; 8. app                      — the Ningle router with all route handlers.
     (lack/builder:builder
      (:static :path "/static/"
               :root (asdf:system-relative-pathname
                      :recurya "resources/static/"))
      (:session :store (make-session-store))
+     ;; セッション確定後に現在ロケールを *locale* へ束縛(全描画をカバー)
+     #'bind-locale
      #'require-dashboard-auth
      #'csrf-with-skip
      #'require-real-handle
