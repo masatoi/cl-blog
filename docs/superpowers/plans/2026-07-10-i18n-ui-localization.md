@@ -113,13 +113,17 @@
 
 (defun normalize-locale (designator)
   "DESIGNATOR (\"ja\" / :ja / nil) を対応ロケールキーワードに正規化する。
-非対応/空/nil は *DEFAULT-LOCALE* を返す。"
-  (let ((kw (cond
-              ((keywordp designator) designator)
-              ((and (stringp designator) (plusp (length designator)))
-               (intern (string-upcase designator) :keyword))
-              (t nil))))
-    (if (and kw (gethash kw *catalogs*)) kw *default-locale*)))
+非対応/空/nil は *DEFAULT-LOCALE* を返す。ユーザー入力文字列から新しい
+キーワードを intern しない（登録済みロケールとの文字列比較のみ。house-rule:
+runtime intern 禁止 + KEYWORD パッケージ無制限増大の回避）。"
+  (cond
+    ((and (keywordp designator) (gethash designator *catalogs*))
+     designator)
+    ((stringp designator)
+     (or (find designator (available-locales)
+               :key #'symbol-name :test #'string-equal)
+         *default-locale*))
+    (t *default-locale*)))
 
 (defun %lookup (key locale)
   (let ((cat (gethash locale *catalogs*)))
@@ -199,7 +203,10 @@
     (testing "非対応/空/nil は既定ロケール"
       (ok (eq (normalize-locale "fr") :en))
       (ok (eq (normalize-locale "") :en))
-      (ok (eq (normalize-locale nil) :en)))))
+      (ok (eq (normalize-locale nil) :en)))
+    (testing "未対応文字列で新しいキーワードを intern しない"
+      (ok (eq (normalize-locale "totally-unknown-xyz") :en))
+      (ok (null (find-symbol "TOTALLY-UNKNOWN-XYZ" :keyword))))))
 
 (deftest bind-locale-from-session
   (with-fresh-catalogs
@@ -665,8 +672,8 @@ old_text:
 new_text:
                         (dolist (lang *languages*)
                           (let ((code (car lang)) (label (cdr lang)))
-                            (when (member (intern (string-upcase code) :keyword)
-                                          (available-locales))
+                            (when (member code (available-locales)
+                                          :key #'symbol-name :test #'string-equal)
                               (if (string= code language)
                                   (:option :value code :selected t label)
                                   (:option :value code label)))))
