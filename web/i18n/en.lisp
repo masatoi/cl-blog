@@ -52,6 +52,7 @@
   (:common.visibility.private "Private")
   (:common.visibility.unlisted "Unlisted")
   (:common.visibility.public "Public")
+  (:common.anonymous "Anonymous")
   ;; --- wardlisp ---
   (:wardlisp.reference.page_title "WardLisp Reference")
   (:wardlisp.reference.breadcrumb_reference " / Reference")

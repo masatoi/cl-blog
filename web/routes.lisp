@@ -1250,7 +1250,7 @@ the @handle attribution badge."
           :title (notebook-title nb)
           :summary (notebook-summary nb)
           :published-at (notebook-published-at nb)
-          :author-name (or author-name "Anonymous")
+          :author-name (or author-name (tr :common.anonymous))
           :author-handle author-handle)))
 
 (defun notebooks-public-handler (params)
@@ -1379,7 +1379,7 @@ viewer cannot view it."
                     (when course-handle
                       (format nil "/c/@~A/~A" course-handle cs)))
                    (breadcrumb
-                    (list (list :text "Notebooks" :href "/notebooks")
+                    (list (list :text (tr :layout.nav.notebooks) :href "/notebooks")
                           (list :text (course-title course-row)
                                 :href course-href)
                           (list :text (notebook-title nb-row)))))
@@ -1517,7 +1517,7 @@ the @handle attribution badge."
           :title (course-title c)
           :summary (course-summary c)
           :published-at (course-published-at c)
-          :author-name (or author-name "Anonymous")
+          :author-name (or author-name (tr :common.anonymous))
           :author-handle author-handle
           :notebook-count (count-course-notebooks (course-id c)))))
 

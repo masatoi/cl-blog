@@ -52,6 +52,7 @@
   (:common.visibility.private "非公開")
   (:common.visibility.unlisted "限定公開")
   (:common.visibility.public "全体公開")
+  (:common.anonymous "匿名")
   ;; --- wardlisp ---
   (:wardlisp.reference.page_title "WardLisp リファレンス")
   (:wardlisp.reference.breadcrumb_reference " / リファレンス")
