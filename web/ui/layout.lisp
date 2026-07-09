@@ -14,6 +14,8 @@
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-input
                 #:csrf-form-block)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:header
            #:header-styles
            #:page-shell
@@ -58,7 +60,7 @@
          (email (getf user :email))
          (display (or (and name (string/= name "") name)
                       (and email (string/= email "") email)
-                      "Account")))
+                      (tr :layout.auth.account_fallback))))
     display))
 
 (defun get-user-initial (user)
@@ -144,20 +146,20 @@ all visitors and account-related affordances gated on USER:
 
 The CSRF form block is emitted up-front so the logout form can pull
 its token via hx-include without a separate fetch."
-  (with-html-string (:raw (csrf-form-block))
+  (with-html-string (:raw (or (csrf-form-block) ""))
     (:header :class "app-header"
      (:div :class "app-header__inner"
       (:div :class "app-header__left"
        (:a :class "app-header__brand" :href "/" "Recurya")
        (:nav :class "app-header__nav"
-        (:a :class "app-header__link" :href "/notebooks" "Notebooks")
-        (:a :class "app-header__link" :href "/courses" "Courses")
+        (:a :class "app-header__link" :href "/notebooks" (tr :layout.nav.notebooks))
+        (:a :class "app-header__link" :href "/courses" (tr :layout.nav.courses))
         (when user
           (:a :class "app-header__link" :href "/dashboard/notebooks"
-           "My Notebooks"))
+           (tr :layout.nav.my_notebooks)))
         (when user
           (:a :class "app-header__link" :href "/dashboard/courses"
-           "My Courses"))))
+           (tr :layout.nav.my_courses)))))
       (cond
         (user
          (let ((display (get-user-display user))
@@ -168,12 +170,12 @@ its token via hx-include without a separate fetch."
              (:span :class "app-header__label" display)
              (:span :class "app-header__chevron" "v"))
             (:div :class "app-header__panel"
-             (:a :class "app-header__action" :href "/account" "Account settings")
-             (:form :method "post" :action "/logout" (:raw (csrf-input))
-              (:button :type "submit" :class "app-header__action" "Log out"))))))
+             (:a :class "app-header__action" :href "/account" (tr :layout.menu.account))
+             (:form :method "post" :action "/logout" (:raw (or (csrf-input) ""))
+              (:button :type "submit" :class "app-header__action" (tr :layout.menu.logout)))))))
         (t
-         (:span :class "app-header__auth-badge" "未ログイン")
-         (:a :class "app-header__link" :href "/login" "ログイン")))))))
+         (:span :class "app-header__auth-badge" (tr :layout.auth.badge_anon))
+         (:a :class "app-header__link" :href "/login" (tr :layout.auth.login))))))))
 
 (defun page-shell (&key title styles user body-content head-extras body-scripts)
   "Generate a complete HTML page shell.
