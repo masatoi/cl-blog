@@ -1,0 +1,42 @@
+(defpackage #:recurya/web/i18n/ja
+  (:use #:cl)
+  (:import-from #:recurya/web/i18n/core #:defcatalog))
+(in-package #:recurya/web/i18n/ja)
+
+(defcatalog :ja
+  ;; --- common ---
+  (:common.buttons.save    "保存")
+  (:common.buttons.cancel  "キャンセル")
+  (:common.buttons.add     "追加")
+  (:common.buttons.remove  "削除")
+  (:common.buttons.up      "上へ")
+  (:common.buttons.down    "下へ")
+  (:common.pagination.prev "← 前へ")
+  (:common.pagination.next "次へ →")
+  (:common.pagination.info "~A / ~A ページ")
+  ;; --- layout ---
+  (:layout.nav.notebooks      "ノートブック")
+  (:layout.nav.courses        "コース")
+  (:layout.nav.my_notebooks   "マイノートブック")
+  (:layout.nav.my_courses     "マイコース")
+  (:layout.menu.account       "アカウント設定")
+  (:layout.menu.logout        "ログアウト")
+  (:layout.auth.badge_anon    "未ログイン")
+  (:layout.auth.login         "ログイン")
+  (:layout.auth.account_fallback "アカウント")
+  ;; --- account ---
+  (:account.page_title        "アカウント設定 - recurya")
+  (:account.heading           "アカウント設定")
+  (:account.subtitle          "プロフィール情報の更新、またはアカウント削除の申請ができます。")
+  (:account.field.email       "メールアドレス")
+  (:account.field.display_name "表示名")
+  (:account.regional.heading  "地域設定")
+  (:account.regional.language "言語")
+  (:account.regional.timezone "タイムゾーン")
+  (:account.save              "変更を保存")
+  (:account.danger.heading    "危険な操作")
+  (:account.danger.body       "アカウントを削除すると、すべてのデータセット・機能・ジョブ・保存ファイルが失われます。この操作は取り消せません。")
+  (:account.danger.delete     "アカウントを削除")
+  ;; --- flash ---
+  (:flash.account.saved       "設定を更新しました")
+  (:flash.account.name_blank  "表示名は空にできません"))

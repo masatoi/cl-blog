@@ -1,0 +1,42 @@
+(defpackage #:recurya/web/i18n/en
+  (:use #:cl)
+  (:import-from #:recurya/web/i18n/core #:defcatalog))
+(in-package #:recurya/web/i18n/en)
+
+(defcatalog :en
+  ;; --- common ---
+  (:common.buttons.save    "Save")
+  (:common.buttons.cancel  "Cancel")
+  (:common.buttons.add     "Add")
+  (:common.buttons.remove  "Remove")
+  (:common.buttons.up      "Up")
+  (:common.buttons.down    "Down")
+  (:common.pagination.prev "← Previous")
+  (:common.pagination.next "Next →")
+  (:common.pagination.info "Page ~A of ~A")
+  ;; --- layout ---
+  (:layout.nav.notebooks      "Notebooks")
+  (:layout.nav.courses        "Courses")
+  (:layout.nav.my_notebooks   "My Notebooks")
+  (:layout.nav.my_courses     "My Courses")
+  (:layout.menu.account       "Account settings")
+  (:layout.menu.logout        "Log out")
+  (:layout.auth.badge_anon    "Not signed in")
+  (:layout.auth.login         "Login")
+  (:layout.auth.account_fallback "Account")
+  ;; --- account ---
+  (:account.page_title        "Account settings - recurya")
+  (:account.heading           "Account settings")
+  (:account.subtitle          "Update your profile information or request account deletion.")
+  (:account.field.email       "Email")
+  (:account.field.display_name "Display name")
+  (:account.regional.heading  "Regional settings")
+  (:account.regional.language "Language")
+  (:account.regional.timezone "Timezone")
+  (:account.save              "Save changes")
+  (:account.danger.heading    "Danger zone")
+  (:account.danger.body       "Deleting your account removes all datasets, features, jobs, and stored files. This action cannot be undone.")
+  (:account.danger.delete     "Delete account")
+  ;; --- flash ---
+  (:flash.account.saved       "Settings updated")
+  (:flash.account.name_blank  "Display name cannot be blank"))
