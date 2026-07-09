@@ -79,6 +79,10 @@
                "recurya/models/learn-cell-code"
                "recurya/models/learn-submission"
                "recurya/models/novel-state"
+               ;; i18n（web/ui・routes・server より前にロード）
+               "recurya/web/i18n/core"
+               "recurya/web/i18n/en"
+               "recurya/web/i18n/ja"
                ;; Web layer
                "recurya/web/app"
                "recurya/web/auth"
@@ -138,6 +142,9 @@
                "recurya/tests/db/learn"
                "recurya/tests/db/novel"
                ;; Web tests
+               "recurya/tests/web/i18n-core"
+               "recurya/tests/web/i18n-catalog"
+               "recurya/tests/web/i18n-render"
                "recurya/tests/web/oauth"
                "recurya/tests/web/onboarding"
                "recurya/tests/web/routes"

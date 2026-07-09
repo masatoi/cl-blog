@@ -9,6 +9,8 @@
   (:use #:cl)
   (:import-from #:spinneret #:with-html-string)
   (:import-from #:recurya/web/ui/layout #:page-shell #:format-timestamp)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render-profile-page))
 
 (in-package #:recurya/web/ui/profile)
@@ -67,11 +69,11 @@ Returns the full HTML page as a string."
                       (not (string= display-name handle)))
              (:div :class "display-name" "")))
      (:section :class "section"
-               (:h2 "Notebooks")
+               (:h2 (tr :profile.section.notebooks))
                (cond
                  ((null notebooks)
                   (:p :class "empty"
-                      "No public notebooks yet."))
+                      (tr :profile.notebooks.empty)))
                  (t
                   (dolist (nb notebooks)
                     (let ((slug (recurya/db/notebooks:notebook-slug nb))
@@ -90,11 +92,11 @@ Returns the full HTML page as a string."
                             (when (and summary (string/= summary ""))
                               (:p :class "card__summary" summary))))))))
      (:section :class "section"
-               (:h2 "Courses")
+               (:h2 (tr :profile.section.courses))
                (cond
                  ((null courses)
                   (:p :class "empty"
-                      "No public courses yet."))
+                      (tr :profile.courses.empty)))
                  (t
                   (dolist (c courses)
                     (let ((slug (recurya/db/courses:course-slug c))

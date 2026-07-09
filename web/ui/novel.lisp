@@ -3,6 +3,7 @@
   (:use #:cl)
   (:import-from #:spinneret #:with-html-string)
   (:import-from #:recurya/utils/common #:json->string)
+  (:import-from #:recurya/web/i18n/core #:tr)
   (:export #:render-player))
 
 (in-package #:recurya/web/ui/novel)
@@ -36,7 +37,7 @@ inline scene cells). Clicking anywhere in the player advances to the next beat."
   var bg=document.getElementById('~A');
   var sp=document.getElementById('~A');
   var tx=document.getElementById('~A');
-  function show(n){var b=beats[n]; if(!b){tx.textContent='— おわり —'; sp.textContent=''; return;}
+  function show(n){var b=beats[n]; if(!b){tx.textContent=root.getAttribute('data-end-label')||'— おわり —'; sp.textContent=''; return;}
     bg.setAttribute('data-bg', b.bg||'');
     sp.textContent=(b.type==='say')?(b.speaker||''):'';
     tx.textContent=b.text||'';}
@@ -47,6 +48,7 @@ inline scene cells). Clicking anywhere in the player advances to the next beat."
     (with-html-string
       (:div :class "novel-player" :id root-id
             :data-beats (%beats->json beats)
+            :data-end-label (tr :novel.end)
         (:div :class "novel-bg" :id bg-id)
         (:div :class "novel-box"
           (:div :class "novel-speaker" :id sp-id)

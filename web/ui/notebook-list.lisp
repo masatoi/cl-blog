@@ -6,6 +6,8 @@
   (:import-from #:recurya/web/ui/layout
                 #:page-shell
                 #:format-timestamp)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render))
 
 (in-package #:recurya/web/ui/notebook-list)
@@ -58,14 +60,14 @@ Each card links to /@<handle>/<slug>. Notebooks without an
 :author-handle render the title as plain text (no link) — the
 slug-only legacy URL was removed in Phase 7C."
   (page-shell
-   :title "Notebooks"
+   :title (tr :notebook_list.page_title)
    :styles *styles*
    :user user
    :body-content
    (with-html-string
      (:div :class "list-header"
-           (:h1 "Notebooks")
-           (:p "Community-authored Lisp notebooks."))
+           (:h1 (tr :notebook_list.heading))
+           (:p (tr :notebook_list.subtitle)))
      (if notebooks
          (progn
            (dolist (nb notebooks)
@@ -95,7 +97,7 @@ slug-only legacy URL was removed in Phase 7C."
                      (when detail-url
                        (:a :class "nb-card__open"
                            :href detail-url
-                           "Open →")))))
+                           (tr :notebook_list.open_link))))))
            (when pagination
              (let ((current-page (getf pagination :current-page))
                    (total-pages (getf pagination :total-pages))
@@ -105,18 +107,18 @@ slug-only legacy URL was removed in Phase 7C."
                    (next-url (getf pagination :next-url)))
                (:div :class "pagination"
                      (:span :class "pagination-info"
-                            (format nil "Page ~A of ~A"
-                                    current-page total-pages))
+                            (tr :common.pagination.info
+                                current-page total-pages))
                      (:nav :class "pagination-nav"
                            (if has-prev
                                (:a :class "pagination-btn"
-                                   :href prev-url "← Previous")
+                                   :href prev-url (tr :common.pagination.prev))
                                (:span :class "pagination-btn disabled"
-                                      "← Previous"))
+                                      (tr :common.pagination.prev)))
                            (if has-next
                                (:a :class "pagination-btn"
-                                   :href next-url "Next →")
+                                   :href next-url (tr :common.pagination.next))
                                (:span :class "pagination-btn disabled"
-                                      "Next →")))))))
+                                      (tr :common.pagination.next))))))))
          (:p :class "empty"
-             "No notebooks yet. Check back soon!")))))
+             (tr :notebook_list.empty))))))

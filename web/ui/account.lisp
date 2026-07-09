@@ -12,6 +12,9 @@
                 #:page-shell)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-input)
+  (:import-from #:recurya/web/i18n/core
+                #:tr
+                #:available-locales)
   (:export #:render))
 
 (in-package #:recurya/web/ui/account)
@@ -92,14 +95,14 @@ form.settings .button-primary {
         (timezone (or (getf user :timezone) "UTC"))
         (page-styles (concatenate 'string (common-styles) *account-styles*)))
     (page-shell
-     :title "Account settings - recurya"
+     :title (tr :account.page_title)
      :styles page-styles
      :user user
      :body-content
      (with-html-string
        (:div :class "card"
-         (:h1 "Account settings")
-         (:p :class "muted" "Update your profile information or request account deletion.")
+         (:h1 (tr :account.heading))
+         (:p :class "muted" (tr :account.subtitle))
          (when message
            (:div :class "message success" message))
          (when error
@@ -107,10 +110,10 @@ form.settings .button-primary {
          (:form :class "settings" :method "post" :action "/account"
            (:raw (csrf-input))
            (:div
-             (:label :for "account-email" "Email")
+             (:label :for "account-email" (tr :account.field.email))
              (:input :id "account-email" :type "text" :value email :readonly t))
            (:div
-             (:label :for "account-display-name" "Display name")
+             (:label :for "account-display-name" (tr :account.field.display_name))
              (:input :id "account-display-name"
                      :name "display-name"
                      :type "text"
@@ -120,19 +123,21 @@ form.settings .button-primary {
                      :maxlength "120"))
            ;; Language and Timezone settings
            (:div :class "settings-section"
-             (:h3 "Regional settings")
+             (:h3 (tr :account.regional.heading))
              (:div :class "settings-row"
                (:div
-                 (:label :for "account-language" "Language")
+                 (:label :for "account-language" (tr :account.regional.language))
                  (:select :id "account-language" :name "language"
                    (dolist (lang *languages*)
                      (let ((code (car lang))
                            (label (cdr lang)))
-                       (if (string= code language)
-                           (:option :value code :selected t label)
-                           (:option :value code label))))))
+                       (when (member code (available-locales)
+                                     :key #'symbol-name :test #'string-equal)
+                         (if (string= code language)
+                             (:option :value code :selected t label)
+                             (:option :value code label)))))))
                (:div
-                 (:label :for "account-timezone" "Timezone")
+                 (:label :for "account-timezone" (tr :account.regional.timezone))
                  (:select :id "account-timezone" :name "timezone"
                    (dolist (tz *timezones*)
                      (let ((code (car tz))
@@ -140,13 +145,13 @@ form.settings .button-primary {
                        (if (string= code timezone)
                            (:option :value code :selected t label)
                            (:option :value code label))))))))
-           (:button :type "submit" :class "button-primary" "Save changes")))
+           (:button :type "submit" :class "button-primary" (tr :account.save))))
        (:div :class "card"
-         (:h2 "Danger zone")
-         (:p :class "muted" "Deleting your account removes all datasets, features, jobs, and stored files. This action cannot be undone.")
+         (:h2 (tr :account.danger.heading))
+         (:p :class "muted" (tr :account.danger.body))
          (:button :type "button" :class "button-danger"
                   :hx-get "/account/confirm-delete"
                   :hx-target "#modal-container"
                   :hx-swap "innerHTML"
-                  "Delete account"))
+                  (tr :account.danger.delete)))
        (:div :id "modal-container")))))

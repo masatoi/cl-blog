@@ -15,6 +15,8 @@
                 #:auth-page-styles)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-input)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render-onboarding-handle-page))
 
 (in-package #:recurya/web/ui/onboarding)
@@ -64,27 +66,27 @@ by the standard middleware via RECURYA/WEB/UI/CSRF:CSRF-INPUT."
      (:head
       (:meta :charset "utf-8")
       (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-      (:title "Choose your handle - recurya")
+      (:title (tr :onboarding.page_title))
       (:style (:raw (auth-page-styles *onboarding-extra-styles*))))
      (:body
       (:div :class "auth-container"
-            (:div :class "app-name" "Welcome to recurya")
-            (:h1 "Choose your handle")
+            (:div :class "app-name" (tr :onboarding.app_name))
+            (:h1 (tr :onboarding.heading))
             (:p :class "auth-help"
-                "Your handle is the permanent URL for your profile and the things you publish. "
-                "It must be 3 to 64 characters, use lowercase letters, digits and hyphens, "
-                "and start and end with a letter or digit.")
+                (tr :onboarding.handle_help_1)
+                (tr :onboarding.handle_help_2)
+                (tr :onboarding.handle_help_3))
             (when suggested-handle
               (:div :class "current-handle"
-                    "Your temporary handle is "
+                    (tr :onboarding.current_handle_prefix)
                     (:code suggested-handle)
-                    ". Pick a permanent one below."))
+                    (tr :onboarding.current_handle_suffix)))
             (when error
               (:div :class "error" error))
             (:form :method "post" :action "/onboarding/handle"
                    (:raw (or (csrf-input) ""))
                    (:div :class "field"
-                         (:label :for "onboarding-handle" "Handle")
+                         (:label :for "onboarding-handle" (tr :onboarding.field_label_handle))
                          (:input :id "onboarding-handle"
                                  :name "handle"
                                  :type "text"
@@ -97,7 +99,7 @@ by the standard middleware via RECURYA/WEB/UI/CSRF:CSRF-INPUT."
                                  :autocapitalize "off"
                                  :spellcheck "false")
                          (:p :class "hint"
-                             "Allowed characters: a-z, 0-9, hyphen. Cannot start or end with a hyphen."))
+                             (tr :onboarding.field_hint)))
                    (:div :class "submit-row"
                          (:button :type "submit" :class "button-primary"
-                                  "Save handle"))))))))
+                                  (tr :onboarding.submit_button)))))))))

@@ -11,6 +11,8 @@
                 #:csrf-input)
   (:import-from #:recurya/web/ui/editor
                 #:editor-head-tags)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render))
 
 (in-package #:recurya/web/ui/notebook-form)
@@ -101,23 +103,6 @@
 .cell-editor-btn:hover { background: var(--color-secondary-bg); }
 .cell-editor-btn svg { width: 0.8rem; height: 0.8rem; }")
 
-(defparameter *cheatsheet-text*
-  "===prose===
-Markdown text — **bold**, *italic*, `code`, links.
-
-===eval===
-(+ 1 2)
-
-===exercise: 説明文===
-; ユーザが穴埋めするコード
-
-===expect: 説明文===
-期待値（リテラル）
-
-===expect===
-input: (foo 1 2)
-output: 3")
-
 (defun render (&key user notebook message errors (cells-json "[]"))
   "Render the notebook create/edit form as an HTML string.
 
@@ -138,9 +123,11 @@ data-cells attribute for the client-side cell editor to consume."
          (action-url (if editing-p
                          (format nil "/dashboard/notebooks/~A" nb-id)
                          "/dashboard/notebooks"))
-         (page-title (if editing-p "Edit Notebook" "New Notebook"))
+         (page-title (if editing-p
+                         (tr :notebook.form.page_title_edit)
+                         (tr :notebook.form.page_title_new)))
          (page-styles (concatenate 'string (common-styles) *form-page-styles*)))
-    (page-shell :title (format nil "recurya - ~A" page-title)
+    (page-shell :title (tr :notebook.form.browser_title page-title)
                 :styles page-styles
                 :user user
                 :head-extras (editor-head-tags)
@@ -155,68 +142,70 @@ data-cells attribute for the client-side cell editor to consume."
                       (:div :class "flash-message success" message))
                     (when errors
                       (:div :class "flash-message error"
-                        (:strong "Validation errors:")
+                        (:strong (tr :notebook.form.validation_errors))
                         (:ul :class "error-list"
                           (dolist (err errors)
                             (:li
                               (:span :class "line"
-                                (format nil "L~A" (or (getf err :line) "?")))
+                                (tr :notebook.form.error_line (or (getf err :line) "?")))
                               " "
                               (getf err :message))))))
                     (:form :class "nb-form" :method "post" :action action-url
                       (:raw (csrf-input))
                       (:div :class "form-group"
-                        (:label :for "title" "Title")
+                        (:label :for "title" (tr :notebook.form.label_title))
                         (:input :type "text" :id "title" :name "title"
                           :value nb-title :required t
-                          :placeholder "Notebook title"))
+                          :placeholder (tr :notebook.form.placeholder_title)))
                       (:div :class "form-group"
-                        (:label :for "slug" "Slug")
+                        (:label :for "slug" (tr :notebook.form.label_slug))
                         (:input :type "text" :id "slug" :name "slug"
                           :value nb-slug
                           :placeholder "auto-generated-from-title")
                         (:span :class "form-hint"
-                          "Leave blank to auto-generate from title."))
+                          (tr :notebook.form.hint_slug)))
                       (:div :class "form-group"
-                        (:label :for "summary" "Summary")
+                        (:label :for "summary" (tr :notebook.form.label_summary))
                         (:textarea :id "summary" :name "summary"
                           :class "summary-field" :maxlength "500"
-                          :placeholder "Short summary (max 500 chars)"
+                          :placeholder (tr :notebook.form.placeholder_summary)
                           nb-summary))
                       (:div :class "form-group"
-                        (:label :for "body" "Body")
+                        (:label :for "body" (tr :notebook.form.label_body))
                         (:div :id "cell-editor-root" :data-cells cells-json)
                         (:textarea :id "body" :name "body"
                           :class "body-field" :required t :wrap "soft"
-                          :placeholder "===prose===\nWrite here..."
+                          :placeholder (tr :notebook.form.placeholder_body)
                           nb-body))
                       (:div :class "form-group"
-                        (:label :for "status" "Status")
+                        (:label :for "status" (tr :notebook.form.label_status))
                         (:select :id "status" :name "status"
                           (:option :value "draft"
                             :selected (when (equal nb-status "draft") "selected")
-                            "Draft")
+                            (tr :common.visibility.draft))
                           (:option :value "published"
                             :selected (when (equal nb-status "published") "selected")
-                            "Published")))
+                            (tr :common.visibility.published))))
                       (:div :class "form-group"
-                        (:label :for "visibility" "Visibility")
+                        (:label :for "visibility" (tr :notebook.form.label_visibility))
                         (:select :id "visibility" :name "visibility"
                           (:option :value "private"
                             :selected (when (equal nb-visibility "private") "selected")
-                            "Private (only you)")
+                            (tr :notebook.form.visibility_private))
                           (:option :value "unlisted"
                             :selected (when (equal nb-visibility "unlisted") "selected")
-                            "Unlisted (anyone with the link)")
+                            (tr :notebook.form.visibility_unlisted))
                           (:option :value "public"
                             :selected (when (equal nb-visibility "public") "selected")
-                            "Public (anyone)")))
+                            (tr :notebook.form.visibility_public))))
                       (:div :class "form-actions"
                         (:button :type "submit" :class "btn-primary"
-                          (if editing-p "Update Notebook" "Create Notebook"))
+                          (if editing-p
+                              (tr :notebook.form.submit_update)
+                              (tr :notebook.form.submit_create)))
                         (:a :class "btn-secondary" :href "/dashboard/notebooks"
                           :style "text-decoration:none;text-align:center"
-                          "Cancel")))
+                          (tr :common.buttons.cancel))))
                     (:div :class "cheatsheet"
-                      (:h3 "セル区切りチートシート")
-                      (:pre *cheatsheet-text*)))))))
+                      (:h3 (tr :notebook.cheatsheet.heading))
+                      (:pre (tr :notebook.cheatsheet.body))))))))

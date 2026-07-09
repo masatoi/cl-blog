@@ -6,6 +6,8 @@
   (:import-from #:recurya/web/ui/layout
                 #:page-shell
                 #:format-timestamp)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render))
 
 (in-package #:recurya/web/ui/course-list)
@@ -58,14 +60,14 @@ Each card links to /c/@<handle>/<slug>. Courses without an
 :author-handle render the title as plain text (no link) — the
 slug-only legacy URL was removed in Phase 7C."
   (page-shell
-   :title "Courses"
+   :title (tr :course_list.page_title)
    :styles *styles*
    :user user
    :body-content
    (with-html-string
      (:div :class "list-header"
-           (:h1 "Courses")
-           (:p "Community-authored Lisp courses."))
+           (:h1 (tr :course_list.heading))
+           (:p (tr :course_list.subtitle)))
      (if courses
          (progn
            (dolist (c courses)
@@ -90,17 +92,16 @@ slug-only legacy URL was removed in Phase 7C."
                                  :class "c-card__handle"
                                  (format nil "@~A" author-handle))
                              (:span " · "))
-                           (format nil
-                                   "~@[~A~]~@[ · ~A notebook~:P~]~@[ · ~A~]"
-                                   author-name
-                                   notebook-count
-                                   (format-timestamp published-at)))
+                           (tr :course_list.card_meta
+                               author-name
+                               notebook-count
+                               (format-timestamp published-at)))
                      (when (and summary (string/= summary ""))
                        (:p :class "c-card__summary" summary))
                      (when detail-url
                        (:a :class "c-card__open"
                            :href detail-url
-                           "Open →")))))
+                           (tr :course_list.open_link))))))
            (when pagination
              (let ((current-page (getf pagination :current-page))
                    (total-pages (getf pagination :total-pages))
@@ -110,18 +111,18 @@ slug-only legacy URL was removed in Phase 7C."
                    (next-url (getf pagination :next-url)))
                (:div :class "pagination"
                      (:span :class "pagination-info"
-                            (format nil "Page ~A of ~A"
-                                    current-page total-pages))
+                            (tr :common.pagination.info
+                                current-page total-pages))
                      (:nav :class "pagination-nav"
                            (if has-prev
                                (:a :class "pagination-btn"
-                                   :href prev-url "← Previous")
+                                   :href prev-url (tr :common.pagination.prev))
                                (:span :class "pagination-btn disabled"
-                                      "← Previous"))
+                                      (tr :common.pagination.prev)))
                            (if has-next
                                (:a :class "pagination-btn"
-                                   :href next-url "Next →")
+                                   :href next-url (tr :common.pagination.next))
                                (:span :class "pagination-btn disabled"
-                                      "Next →")))))))
+                                      (tr :common.pagination.next))))))))
          (:p :class "empty"
-             "No courses yet. Check back soon!")))))
+             (tr :course_list.empty))))))

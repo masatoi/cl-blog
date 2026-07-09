@@ -9,6 +9,8 @@
                 #:page-shell)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-input)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render
            #:render-course-notebooks-list))
 
@@ -76,13 +78,13 @@ in sync with the attached set after every mutation."
     (spinneret:with-html-string
       (:div :id "course-notebooks-list"
             :class "course-notebooks-section"
-            (:h2 "Notebooks")
+            (:h2 (tr :course_form.notebooks_heading))
             (when message
               (:div :class "flash-message error" message))
             (cond
               ((null course-notebooks)
                (:p :class "course-notebooks-empty"
-                   "No notebooks attached yet. Add one below."))
+                   (tr :course_form.notebooks_empty)))
               (t
                (:ul :class "course-notebooks-list"
                     (dolist (nb course-notebooks)
@@ -106,25 +108,25 @@ in sync with the attached set after every mutation."
                                              :hx-target "#course-notebooks-list"
                                              :hx-swap "outerHTML"
                                              :hx-include "#csrf-form"
-                                             "Up")
+                                             (tr :common.buttons.up))
                                     (:button :type "button"
                                              :class "btn-secondary"
                                              :hx-post down-url
                                              :hx-target "#course-notebooks-list"
                                              :hx-swap "outerHTML"
                                              :hx-include "#csrf-form"
-                                             "Down")
+                                             (tr :common.buttons.down))
                                     (:button :type "button"
                                              :class "btn-secondary"
                                              :hx-post remove-url
                                              :hx-target "#course-notebooks-list"
                                              :hx-swap "outerHTML"
                                              :hx-include "#csrf-form"
-                                             "Remove"))))))))
+                                             (tr :common.buttons.remove)))))))))
             (cond
               ((null eligible-notebooks)
                (:p :class "course-notebooks-empty"
-                   "No more notebooks available to add."))
+                   (tr :course_form.no_more_notebooks)))
               (t
                (:form :class "add-notebook-form"
                       :hx-post (format nil "/dashboard/courses/~A/notebooks" course-id)
@@ -132,13 +134,13 @@ in sync with the attached set after every mutation."
                       :hx-swap "outerHTML"
                       :hx-include "#csrf-form"
                       (:div :class "form-group"
-                            (:label :for "notebook_id" "Add notebook")
+                            (:label :for "notebook_id" (tr :course_form.add_notebook_label))
                             (:select :id "notebook_id" :name "notebook_id"
                                      :required t
                                      (dolist (nb eligible-notebooks)
                                        (:option :value (getf nb :id)
                                                 (getf nb :title)))))
-                      (:button :type "submit" :class "btn-primary" "Add"))))))))
+                      (:button :type "submit" :class "btn-primary" (tr :common.buttons.add)))))))))
 
 (defun render (&key user course message errors course-notebooks eligible-notebooks)
   "Render the course create/edit form as an HTML string.
@@ -163,10 +165,10 @@ When editing an existing COURSE, the caller may also supply:
          (action-url (if editing-p
                          (format nil "/dashboard/courses/~A" c-id)
                          "/dashboard/courses"))
-         (page-title (if editing-p "Edit Course" "New Course"))
+         (page-title (if editing-p (tr :course_form.page_title_edit) (tr :course_form.page_title_new)))
          (page-styles (concatenate 'string (common-styles) *form-page-styles*)))
     (page-shell
-     :title (format nil "recurya - ~A" page-title)
+     :title (tr :course_form.browser_title page-title)
      :styles page-styles
      :user user
      :body-content
@@ -177,59 +179,59 @@ When editing an existing COURSE, the caller may also supply:
            (:div :class "flash-message success" message))
          (when errors
            (:div :class "flash-message error"
-             (:strong "Validation errors:")
+             (:strong (tr :course_form.validation_errors_heading))
              (:ul :class "error-list"
                (dolist (err errors)
                  (:li
                    (:span :class "line"
-                     (format nil "L~A" (or (getf err :line) "?")))
+                     (tr :course_form.error_line_prefix (or (getf err :line) "?")))
                    " "
                    (getf err :message))))))
          (:form :class "course-form" :method "post" :action action-url
            (:raw (csrf-input))
            (:div :class "form-group"
-             (:label :for "title" "Title")
+             (:label :for "title" (tr :course_form.title_label))
              (:input :type "text" :id "title" :name "title"
-               :value c-title :required t :placeholder "Course title"))
+               :value c-title :required t :placeholder (tr :course_form.title_placeholder)))
            (:div :class "form-group"
-             (:label :for "slug" "Slug")
+             (:label :for "slug" (tr :course_form.slug_label))
              (:input :type "text" :id "slug" :name "slug"
-               :value c-slug :placeholder "auto-generated-from-title")
+               :value c-slug :placeholder (tr :course_form.slug_placeholder))
              (:span :class "form-hint"
-               "Leave blank to auto-generate from title."))
+               (tr :course_form.slug_hint)))
            (:div :class "form-group"
-             (:label :for "summary" "Summary")
+             (:label :for "summary" (tr :course_form.summary_label))
              (:textarea :id "summary" :name "summary"
                :class "summary-field" :maxlength "500"
-               :placeholder "Short summary (max 500 chars)"
+               :placeholder (tr :course_form.summary_placeholder)
                c-summary))
            (:div :class "form-group"
-             (:label :for "status" "Status")
+             (:label :for "status" (tr :course_form.status_label))
              (:select :id "status" :name "status"
                (:option :value "draft"
                  :selected (when (equal c-status "draft") "selected")
-                 "Draft")
+                 (tr :common.visibility.draft))
                (:option :value "published"
                  :selected (when (equal c-status "published") "selected")
-                 "Published")))
+                 (tr :common.visibility.published))))
            (:div :class "form-group"
-             (:label :for "visibility" "Visibility")
+             (:label :for "visibility" (tr :course_form.visibility_label))
              (:select :id "visibility" :name "visibility"
                (:option :value "private"
                  :selected (when (equal c-visibility "private") "selected")
-                 "Private (only you)")
+                 (tr :course_form.visibility_private))
                (:option :value "unlisted"
                  :selected (when (equal c-visibility "unlisted") "selected")
-                 "Unlisted (anyone with the link)")
+                 (tr :course_form.visibility_unlisted))
                (:option :value "public"
                  :selected (when (equal c-visibility "public") "selected")
-                 "Public (anyone)")))
+                 (tr :course_form.visibility_public))))
            (:div :class "form-actions"
              (:button :type "submit" :class "btn-primary"
-               (if editing-p "Update Course" "Create Course"))
+               (if editing-p (tr :course_form.submit_update) (tr :course_form.submit_create)))
              (:a :class "btn-secondary" :href "/dashboard/courses"
                :style "text-decoration:none;text-align:center"
-               "Cancel")))
+               (tr :common.buttons.cancel))))
          (when editing-p
            (:raw (render-course-notebooks-list
                   course course-notebooks eligible-notebooks))))))))
