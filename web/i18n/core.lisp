@@ -30,10 +30,11 @@
 
 (defmacro defcatalog (locale &body pairs)
   "LOCALE に複数メッセージを登録する。各 PAIR は (KEY TEMPLATE)。"
-  `(progn
-     ,@(loop for (key template) in pairs
-             collect `(register-message ,locale ,key ,template))
-     ,locale))
+  (let ((loc (gensym "LOCALE")))
+    `(let ((,loc ,locale))
+       ,@(loop for (key template) in pairs
+               collect `(register-message ,loc ,key ,template))
+       ,loc)))
 
 (defun available-locales ()
   "登録済みロケールのキーワード一覧。"
@@ -69,10 +70,15 @@
 
 (defun tr (key &rest format-args)
   "KEY を *LOCALE* -> *DEFAULT-LOCALE* -> 可視マーカー の順に引き、
-テンプレートに (apply #'format nil template format-args) を適用して返す。"
+テンプレートに (apply #'format nil template format-args) を適用して返す。
+テンプレートと引数が食い違っても描画をクラッシュさせず、警告 + マーカーへ縮退する。"
   (let ((template (or (%lookup key *locale*) (%lookup key *default-locale*))))
     (if template
-        (apply #'format nil template format-args)
+        (handler-case
+            (apply #'format nil template format-args)
+          (error (e)
+            (warn "i18n: format error for key ~S (locale ~S): ~A" key *locale* e)
+            (format nil "⟦~A⟧" key)))
         (progn
           (warn "i18n: missing message key ~S (locale ~S)" key *locale*)
           (format nil "⟦~A⟧" key)))))
