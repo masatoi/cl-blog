@@ -7,6 +7,8 @@
   (:import-from #:recurya/web/ui/styles
                 #:*color-vars*
                 #:*base-styles*)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:not-found
            #:server-error
            #:csrf-failure))
@@ -45,13 +47,13 @@
       (:head
         (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title "404 - Not Found")
+        (:title (tr :errors.not_found.title))
         (:style (:raw (error-styles))))
       (:body
         (:div :class "error-container"
           (:h1 "404")
-          (:p "The page you're looking for doesn't exist.")
-          (:a :href "/dashboard" "Go to Dashboard"))))))
+          (:p (tr :errors.not_found.body))
+          (:a :href "/dashboard" (tr :errors.actions.go_to_dashboard)))))))
 
 (defun server-error (&key message)
   "Render a 500 Server Error page."
@@ -61,13 +63,13 @@
       (:head
         (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title "500 - Server Error")
+        (:title (tr :errors.server_error.title))
         (:style (:raw (error-styles))))
       (:body
         (:div :class "error-container"
           (:h1 "500")
-          (:p (or message "Something went wrong on our end."))
-          (:a :href "/dashboard" "Go to Dashboard"))))))
+          (:p (or message (tr :errors.server_error.body)))
+          (:a :href "/dashboard" (tr :errors.actions.go_to_dashboard)))))))
 
 (defun csrf-failure ()
   "Render a 400 page returned when a state-changing request arrives
@@ -79,10 +81,10 @@ from a stale tab or a cross-origin attacker page)."
       (:head
         (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title "400 - Invalid request")
+        (:title (tr :errors.csrf.title))
         (:style (:raw (error-styles))))
       (:body
         (:div :class "error-container"
           (:h1 "400")
-          (:p "セッションの有効期限が切れたか、リクエストが無効です。ブラウザの戻るボタンで前のページに戻り、再読み込みしてから再操作してください。")
-          (:a :href "/" "Home"))))))
+          (:p (tr :errors.csrf.body))
+          (:a :href "/" (tr :errors.actions.home)))))))

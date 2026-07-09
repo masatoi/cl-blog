@@ -4,6 +4,8 @@
   (:use #:cl)
   (:import-from #:spinneret
                 #:with-html-string)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render))
 
 (in-package #:recurya/web/ui/reference)
@@ -42,70 +44,70 @@ td code { font-size: 0.85rem; }
     (:html
      (:head (:meta :charset "utf-8")
       (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-      (:title "WardLisp Reference")
+      (:title (tr :wardlisp.reference.page_title))
       (:style (:raw *styles*)))
      (:body
       (:main
        (:div :class "breadcrumb"
-        (:a :href "/wardlisp/" "WardLisp") " / Reference")
-       (:h1 "WardLisp Reference")
-       (:p :class "subtitle" "A safe, restricted Lisp dialect for learning")
+        (:a :href "/wardlisp/" "WardLisp") (tr :wardlisp.reference.breadcrumb_reference))
+       (:h1 (tr :wardlisp.reference.heading))
+       (:p :class "subtitle" (tr :wardlisp.reference.subtitle))
 
        ;; Types
-       (:h2 "Types")
+       (:h2 (tr :wardlisp.reference.section_types))
        (:table
-        (:tr (:th "Type") (:th "Examples") (:th "Notes"))
-        (:tr (:td "Integer") (:td (:code "42") ", " (:code "-7") ", " (:code "0")) (:td "Whole numbers"))
-        (:tr (:td "Float") (:td (:code "3.14") ", " (:code "-0.5") ", " (:code "1e3")) (:td "Double-precision floating point"))
-        (:tr (:td "Boolean") (:td (:code "t") ", " (:code "nil")) (:td "True and false"))
-        (:tr (:td "Symbol") (:td (:code "'up") ", " (:code "'foo")) (:td "Named values (quote to use as data)"))
-        (:tr (:td "Pair") (:td (:code "(cons 1 2)") " => " (:code "(1 . 2)")) (:td "Two-element pair (car/cdr)"))
-        (:tr (:td "List") (:td (:code "'(1 2 3)")) (:td "Pairs ending in nil"))
-        (:tr (:td "Nil") (:td (:code "nil")) (:td "Empty list, false value"))
-        (:tr (:td "Function") (:td (:code "(lambda (x) x)")) (:td "Closures with lexical scope")))
+        (:tr (:th (tr :wardlisp.reference.types_col_type)) (:th (tr :wardlisp.reference.types_col_examples)) (:th (tr :wardlisp.reference.types_col_notes)))
+        (:tr (:td (tr :wardlisp.reference.type_integer)) (:td (:code "42") ", " (:code "-7") ", " (:code "0")) (:td (tr :wardlisp.reference.type_integer_note)))
+        (:tr (:td (tr :wardlisp.reference.type_float)) (:td (:code "3.14") ", " (:code "-0.5") ", " (:code "1e3")) (:td (tr :wardlisp.reference.type_float_note)))
+        (:tr (:td (tr :wardlisp.reference.type_boolean)) (:td (:code "t") ", " (:code "nil")) (:td (tr :wardlisp.reference.type_boolean_note)))
+        (:tr (:td (tr :wardlisp.reference.type_symbol)) (:td (:code "'up") ", " (:code "'foo")) (:td (tr :wardlisp.reference.type_symbol_note)))
+        (:tr (:td (tr :wardlisp.reference.type_pair)) (:td (:code "(cons 1 2)") " => " (:code "(1 . 2)")) (:td (tr :wardlisp.reference.type_pair_note)))
+        (:tr (:td (tr :wardlisp.reference.type_list)) (:td (:code "'(1 2 3)")) (:td (tr :wardlisp.reference.type_list_note)))
+        (:tr (:td (tr :wardlisp.reference.type_nil)) (:td (:code "nil")) (:td (tr :wardlisp.reference.type_nil_note)))
+        (:tr (:td (tr :wardlisp.reference.type_function)) (:td (:code "(lambda (x) x)")) (:td (tr :wardlisp.reference.type_function_note))))
 
        ;; Special Forms
-       (:h2 "Special Forms")
+       (:h2 (tr :wardlisp.reference.section_special_forms))
        (:div :class "entry"
         (:div :class "entry-sig" "(define name expr)")
-        (:div :class "entry-desc" "Bind a value to a name in the current scope."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_define_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(define (name params...) body...)")
-        (:div :class "entry-desc" "Shorthand for defining a function."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_define_fn_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(lambda (params...) body...)")
-        (:div :class "entry-desc" "Create an anonymous function (closure)."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_lambda_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(if test then else)")
-        (:div :class "entry-desc" "Conditional. Only nil is falsy."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_if_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(let ((var val) ...) body...)")
-        (:div :class "entry-desc" "Parallel bindings. All values evaluated before binding."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_let_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(let* ((var val) ...) body...)")
-        (:div :class "entry-desc" "Sequential bindings. Each binding sees previous ones."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_letstar_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(begin expr...)")
-        (:div :class "entry-desc" "Evaluate expressions in sequence, return last."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_begin_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(quote expr) or 'expr")
-        (:div :class "entry-desc" "Return expression unevaluated."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_quote_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(and expr...)")
-        (:div :class "entry-desc" "Short-circuit logical AND."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_and_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(or expr...)")
-        (:div :class "entry-desc" "Short-circuit logical OR."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_or_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(cond (test expr...) ...)")
-        (:div :class "entry-desc" "Multi-branch conditional. First true test's body is evaluated."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_cond_desc)))
        (:div :class "entry"
         (:div :class "entry-sig" "(apply func args-list)")
-        (:div :class "entry-desc" "Apply function to a list of arguments."))
+        (:div :class "entry-desc" (tr :wardlisp.reference.sf_apply_desc)))
 
        ;; Arithmetic
-       (:h2 "Built-in Functions")
-       (:h3 "Arithmetic")
+       (:h2 (tr :wardlisp.reference.section_builtins))
+       (:h3 (tr :wardlisp.reference.subsection_arithmetic))
        (:pre (:code "(+ 1 2 3)       ; => 6
 (- 10 3)         ; => 7
 (* 2 3 4)        ; => 24
@@ -115,7 +117,7 @@ td code { font-size: 0.85rem; }
 (mod 7 3)        ; => 1"))
 
        ;; Comparison
-       (:h3 "Comparison")
+       (:h3 (tr :wardlisp.reference.subsection_comparison))
        (:pre (:code "(= 3 3)      ; => t
 (< 1 2)       ; => t
 (> 5 3)       ; => t
@@ -123,7 +125,7 @@ td code { font-size: 0.85rem; }
 (>= 4 4)      ; => t"))
 
        ;; Lists
-       (:h3 "List Operations")
+       (:h3 (tr :wardlisp.reference.subsection_list_operations))
        (:pre (:code "(cons 1 '(2 3))      ; => (1 2 3)
 (cons 1 2)            ; => (1 . 2)
 (car '(1 2 3))        ; => 1
@@ -135,7 +137,7 @@ td code { font-size: 0.85rem; }
 (append '(1 2) '(3))  ; => (1 2 3)"))
 
        ;; Type Predicates
-       (:h3 "Type Predicates")
+       (:h3 (tr :wardlisp.reference.subsection_type_predicates))
        (:pre (:code "(null? x)       ; => t if x is nil
 (atom? x)       ; => t if x is not a pair
 (integer? 42)   ; => t
@@ -145,36 +147,36 @@ td code { font-size: 0.85rem; }
 (equal? x y)    ; deep structural equality"))
 
        ;; Utility
-       (:h3 "Utility")
+       (:h3 (tr :wardlisp.reference.subsection_utility))
        (:pre (:code "(print 42)      ; prints to output, returns value"))
 
        ;; Resource Limits
-       (:h2 "Resource Limits")
-       (:p "All executions are sandboxed with these limits:")
+       (:h2 (tr :wardlisp.reference.section_resource_limits))
+       (:p (tr :wardlisp.reference.limits_intro))
        (:table :class "limit-table"
-        (:tr (:th "Resource") (:th "Limit") (:th "Description"))
-        (:tr (:td "Fuel") (:td "100,000 steps") (:td "Maximum evaluation steps"))
-        (:tr (:td "Cons") (:td "10,000 cells") (:td "Maximum list allocations"))
-        (:tr (:td "Depth") (:td "200 levels") (:td "Maximum recursion depth"))
-        (:tr (:td "Output") (:td "10,000 chars") (:td "Maximum printed output"))
-        (:tr (:td "Timeout") (:td "5 seconds") (:td "Wall-clock time limit")))
+        (:tr (:th (tr :wardlisp.reference.limits_col_resource)) (:th (tr :wardlisp.reference.limits_col_limit)) (:th (tr :wardlisp.reference.limits_col_description)))
+        (:tr (:td (tr :wardlisp.reference.limit_fuel)) (:td (tr :wardlisp.reference.limit_fuel_value)) (:td (tr :wardlisp.reference.limit_fuel_desc)))
+        (:tr (:td (tr :wardlisp.reference.limit_cons)) (:td (tr :wardlisp.reference.limit_cons_value)) (:td (tr :wardlisp.reference.limit_cons_desc)))
+        (:tr (:td (tr :wardlisp.reference.limit_depth)) (:td (tr :wardlisp.reference.limit_depth_value)) (:td (tr :wardlisp.reference.limit_depth_desc)))
+        (:tr (:td (tr :wardlisp.reference.limit_output)) (:td (tr :wardlisp.reference.limit_output_value)) (:td (tr :wardlisp.reference.limit_output_desc)))
+        (:tr (:td (tr :wardlisp.reference.limit_timeout)) (:td (tr :wardlisp.reference.limit_timeout_value)) (:td (tr :wardlisp.reference.limit_timeout_desc))))
 
        ;; Examples
-       (:h2 "Examples")
-       (:h3 "Recursive function")
+       (:h2 (tr :wardlisp.reference.section_examples))
+       (:h3 (tr :wardlisp.reference.example_recursive))
        (:pre (:code "(define (factorial n)
   (if (= n 0) 1
       (* n (factorial (- n 1)))))
 (factorial 10)  ; => 3628800"))
 
-       (:h3 "Higher-order function")
+       (:h3 (tr :wardlisp.reference.example_higher_order))
        (:pre (:code "(define (map f lst)
   (if (null? lst) '()
       (cons (f (car lst))
             (map f (cdr lst)))))
 (map (lambda (x) (* x x)) '(1 2 3 4))  ; => (1 4 9 16)"))
 
-       (:h3 "Working with alists")
+       (:h3 (tr :wardlisp.reference.example_alists))
        (:pre (:code ";; Define your own alist-ref helper:
 (define (alist-ref key alist)
   (cond ((null? alist) nil)

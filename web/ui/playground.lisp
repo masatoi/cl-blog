@@ -12,6 +12,8 @@
                 #:editor-textarea)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-form-block)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render
            #:render-result))
 
@@ -52,7 +54,7 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
     (:html
      (:head (:meta :charset "utf-8")
       (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-      (:title "WardLisp Playground")
+      (:title (tr :wardlisp.playground.page_title))
       (:script :src "https://unpkg.com/htmx.org@2.0.4" :integrity
        "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
        :crossorigin "anonymous")
@@ -60,20 +62,20 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
      (:body
       (:raw (or (csrf-form-block) ""))
       (:main
-       (:div :class "breadcrumb" (:a :href "/wardlisp/" "WardLisp") " / Playground")
-       (:h1 "Playground")
+       (:div :class "breadcrumb" (:a :href "/wardlisp/" "WardLisp") (tr :wardlisp.playground.breadcrumb_playground))
+       (:h1 (tr :wardlisp.playground.heading))
        (:p :class "description"
-        "Write and run any WardLisp code. Experiment freely!")
+        (tr :wardlisp.playground.description))
        (:form :class "editor-area"
         (:raw
          (editor-textarea "code" "(+ 1 2)"
-                          :placeholder "Write WardLisp code here..."))
+                          :placeholder (tr :wardlisp.playground.editor_placeholder)))
         (:button :class "btn-run" :type "button"
          :hx-post "/wardlisp/playground/run"
          :hx-include "closest form, #csrf-form"
          :hx-target "#output-panel"
          :hx-swap "innerHTML"
-         "Run"))
+         (tr :common.buttons.run)))
        (:div :id "output-panel"))))))
 
 (defun render-result (code)
@@ -98,14 +100,14 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
                (:div :class "result-error" error-msg))
              (when (and print-output (plusp (length print-output)))
                (:div :class "print-output"
-                (:div :class "print-output__label" "Print Output")
+                (:div :class "print-output__label" (tr :wardlisp.playground.print_output_label))
                 (:div :class "print-output__value" print-output)))
              (:div :class "result-value" (print-value result))
              (:div :class "metrics"
-              (format nil "Fuel: ~D | Cons: ~D | Depth: ~D"
-                      (or fuel-used 0)
-                      (or cons-used 0)
-                      (or depth-reached 0)))))))
+              (tr :wardlisp.playground.metrics
+                  (or fuel-used 0)
+                  (or cons-used 0)
+                  (or depth-reached 0)))))))
     (error (e)
       (with-html-string
         (:div :class "result"

@@ -9,6 +9,8 @@
                 #:puzzle-title
                 #:puzzle-description
                 #:puzzle-difficulty)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render))
 
 (in-package #:recurya/web/ui/wardlisp-home)
@@ -34,9 +36,9 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
                      padding: 0.2rem 0.6rem; border-radius: 999px; font-size: 0.75rem; }")
 
 (defun difficulty-label (n)
-  (cond ((<= n 1) "Easy")
-        ((= n 2) "Medium")
-        (t "Hard")))
+  (cond ((<= n 1) (tr :wardlisp.home.difficulty_easy))
+        ((= n 2) (tr :wardlisp.home.difficulty_medium))
+        (t (tr :wardlisp.home.difficulty_hard))))
 
 (defun render (puzzles)
   "Render the WardLisp home page with puzzle listing."
@@ -45,12 +47,12 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
     (:html
      (:head (:meta :charset "utf-8")
       (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-      (:title "WardLisp - Puzzles")
+      (:title (tr :wardlisp.home.page_title))
       (:style (:raw *styles*)))
      (:body
       (:main
-       (:h1 "WardLisp Puzzles")
-       (:p :class "subtitle" "Learn Lisp by solving puzzles")
+       (:h1 (tr :wardlisp.home.heading))
+       (:p :class "subtitle" (tr :wardlisp.home.subtitle))
        (:ul :class "puzzle-list"
         (dolist (p puzzles)
           (:li
@@ -64,10 +66,10 @@ h1 { font-size: 2rem; letter-spacing: -0.03em; text-align: center;
        (:div :style "margin-top: 2.5rem; display: flex; gap: 1rem; justify-content: center;"
         (:a :href "/wardlisp/arena"
             :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
-            "Bot Arena")
+            (tr :wardlisp.home.nav_bot_arena))
         (:a :href "/wardlisp/playground"
             :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
-            "Playground")
+            (tr :wardlisp.home.nav_playground))
         (:a :href "/wardlisp/reference"
             :style "background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.5rem; text-decoration: none; color: #e2e8f0; font-weight: 600; transition: border-color 0.15s;"
-            "Language Reference")))))))
+            (tr :wardlisp.home.nav_language_reference))))))))

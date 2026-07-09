@@ -111,6 +111,8 @@
                 #:record-submission
                 #:merge-localstorage)
   (:import-from #:recurya/utils/common #:parse-json #:json->string)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:setup-routes
            #:dashboard-home-handler
            #:account-confirm-delete-handler
@@ -298,7 +300,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
        (html-response (recurya/web/ui/errors:not-found) :status 404))
       ((not (recurya/web/oauth:provider-configured-p provider))
        (html-response (recurya/web/ui/login:render
-                       :error (format nil "OAuth provider ~A is not configured." provider-name))
+                       :error (tr :auth.login.error.provider_not_configured provider-name))
                       :status 503))
       (t
        (let ((state (recurya/web/oauth:generate-state)))
@@ -325,7 +327,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
            (not (string= state saved-state))
            (not (and saved-provider (string-equal provider-name saved-provider))))
        (html-response (recurya/web/ui/login:render
-                       :error "Sign-in session expired. Please try again.")
+                       :error (tr :auth.login.error.session_expired))
                       :status 400))
       (t
        (when ningle/context:*session*
@@ -340,7 +342,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
              (cond
                ((or (null email) (null uid))
                 (html-response (recurya/web/ui/login:render
-                                :error "Could not retrieve a verified email from the provider.")
+                                :error (tr :auth.login.error.no_verified_email))
                                :status 400))
                (t
                 (let* ((role (if (admin-email-p email) "admin" "user"))
@@ -358,7 +360,7 @@ Returns plist with :current-page :total-pages :total-count :has-prev :has-next
          (error (e)
            (declare (ignore e))
            (html-response (recurya/web/ui/login:render
-                           :error "OAuth login failed. Please try again.")
+                           :error (tr :auth.login.error.login_failed))
                           :status 502)))))))
 
 ;;; Blog Post Handlers
@@ -440,10 +442,8 @@ worker."
         (text (dbi.error:database-error-message condition)))
     (if (or (equal code "23505")
             (and text (search "slug" text)))
-        (format nil "That ~A slug is already taken. Please choose a different slug."
-                entity)
-        (format nil "Could not save the ~A due to a database error. Please try again."
-                entity))))
+        (tr :server.db.slug_taken entity)
+        (tr :server.db.save_failed entity))))
 
 (defun notebook-create-handler (params)
   "Handle POST /dashboard/notebooks - create a new notebook."
@@ -469,7 +469,7 @@ worker."
                                :body-md body :status status
                                :visibility visibility)
                :cells-json (body->cells-json body)
-               :errors '((:line nil :message "Title is required.")))))
+               :errors (list (list :line nil :message (tr :server.forms.title_required))))))
             ((or (null body) (equal body ""))
              (html-response
               (recurya/web/ui/notebook-form:render
@@ -478,7 +478,7 @@ worker."
                                :body-md body :status status
                                :visibility visibility)
                :cells-json (body->cells-json body)
-               :errors '((:line nil :message "Body is required.")))))
+               :errors (list (list :line nil :message (tr :server.forms.body_required))))))
             (t
              (multiple-value-bind (cells parse-errors)
                  (parse-notebook-body body)
@@ -532,7 +532,7 @@ worker."
              (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (notebook-author-id nb))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (html-response
               (recurya/web/ui/notebook-form:render
@@ -550,98 +550,137 @@ description) match."
         (let* ((id (get-path-param params :id))
                (existing (and id (get-notebook-by-id id))))
           (cond
-            ((null existing)
-             (html-response (recurya/web/ui/errors:not-found) :status 404))
-            ((not (equal (princ-to-string (notebook-author-id existing))
-                         (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
-            (t
-             (let* ((title (get-param params "title"))
-                    (slug (get-param params "slug"))
-                    (summary (get-param params "summary"))
-                    (body (get-param params "body"))
-                    (status (get-param params "status"))
-                    (visibility-raw (get-param params "visibility"))
-                    (visibility
-                      (cond
-                        ((member visibility-raw '("private" "unlisted" "public")
-                                 :test #'equal)
-                         visibility-raw)
-                        (visibility-raw "private")
-                        (t (notebook-visibility existing)))))
-               (cond
-                 ((or (null title) (equal title ""))
-                  (html-response
-                   (recurya/web/ui/notebook-form:render
-                    :user user
-                    :notebook (list :id id :title title :slug slug
-                                    :summary summary :body-md body
-                                    :status status :visibility visibility)
-                    :cells-json (body->cells-json body)
-                    :errors '((:line nil :message "Title is required.")))))
-                 ((or (null body) (equal body ""))
-                  (html-response
-                   (recurya/web/ui/notebook-form:render
-                    :user user
-                    :notebook (list :id id :title title :slug slug
-                                    :summary summary :body-md body
-                                    :status status :visibility visibility)
-                    :cells-json (body->cells-json body)
-                    :errors '((:line nil :message "Body is required.")))))
-                 (t
-                  (let ((existing-cells
-                          (mapcar #'jsonb-hash->cell
-                                  (coerce
-                                   (recurya/db/notebooks:notebook-cells-parsed existing)
-                                   'list))))
-                    (multiple-value-bind (cells parse-errors)
-                        (parse-notebook-body body existing-cells)
-                      (cond
-                        (parse-errors
-                         (html-response
-                          (recurya/web/ui/notebook-form:render
-                           :user user
-                           :notebook (list :id id :title title :slug slug
-                                           :summary summary :body-md body
-                                           :status status
-                                           :visibility visibility)
-                           :cells-json (cells->cells-json cells)
-                           :errors parse-errors)))
-                        (t
-                         (let ((slug-val
-                                 (if (and slug (string/= slug "")) slug nil))
-                               (summary-val
-                                 (if (and summary (string/= summary ""))
-                                     summary
-                                     nil))
-                               (published-at
-                                 (when (and (equal status "published")
-                                            (not (equal
-                                                  (notebook-status existing)
-                                                  "published")))
-                                   (local-time:now)))
-                               (cells-plists
-                                 (mapcar #'cell->jsonb-form cells)))
-                           (handler-case
-                               (progn
-                                 (update-notebook!
-                                  id :title title :slug slug-val :summary summary-val
-                                  :body-md body :cells cells-plists
-                                  :status (or status "draft")
-                                  :visibility visibility
-                                  :published-at published-at)
-                                 (redirect "/dashboard/notebooks"))
-                             (dbi.error:dbi-database-error (e)
-                               (html-response
-                                (recurya/web/ui/notebook-form:render
-                                 :user user
-                                 :notebook (list :id id :title title :slug slug
-                                                 :summary summary :body-md body
-                                                 :status status
-                                                 :visibility visibility)
-                                 :cells-json (cells->cells-json cells)
-                                 :errors (list (list :line nil
-                                                     :message (db-save-error-message e "notebook")))))))))))))))))))))
+           ((null existing)
+            (html-response (recurya/web/ui/errors:not-found) :status 404))
+           ((not
+             (equal (princ-to-string (notebook-author-id existing))
+                    (princ-to-string (getf user :id))))
+            (html-response (tr :server.errors.forbidden) :status 403))
+           (t
+            (let* ((title (get-param params "title"))
+                   (slug (get-param params "slug"))
+                   (summary (get-param params "summary"))
+                   (body (get-param params "body"))
+                   (status (get-param params "status"))
+                   (visibility-raw (get-param params "visibility"))
+                   (visibility
+                    (cond
+                     ((member visibility-raw '("private" "unlisted" "public")
+                              :test #'equal)
+                      visibility-raw)
+                     (visibility-raw "private")
+                     (t (notebook-visibility existing)))))
+              (cond
+               ((or (null title) (equal title ""))
+                (html-response
+                 (recurya/web/ui/notebook-form:render :user user :notebook
+                                                      (list :id id :title title
+                                                            :slug slug :summary
+                                                            summary :body-md
+                                                            body :status status
+                                                            :visibility
+                                                            visibility)
+                                                      :cells-json
+                                                      (body->cells-json body)
+                                                      :errors
+                                                      (list (list :line nil :message
+                                                                  (tr :server.forms.title_required))))))
+               ((or (null body) (equal body ""))
+                (html-response
+                 (recurya/web/ui/notebook-form:render :user user :notebook
+                                                      (list :id id :title title
+                                                            :slug slug :summary
+                                                            summary :body-md
+                                                            body :status status
+                                                            :visibility
+                                                            visibility)
+                                                      :cells-json
+                                                      (body->cells-json body)
+                                                      :errors
+                                                      (list (list :line nil :message
+                                                                  (tr :server.forms.body_required))))))
+               (t
+                (let ((existing-cells
+                       (mapcar #'jsonb-hash->cell
+                               (coerce
+                                (recurya/db/notebooks:notebook-cells-parsed
+                                 existing)
+                                'list))))
+                  (multiple-value-bind (cells parse-errors)
+                      (parse-notebook-body body existing-cells)
+                    (cond
+                     (parse-errors
+                      (html-response
+                       (recurya/web/ui/notebook-form:render :user user
+                                                            :notebook
+                                                            (list :id id :title
+                                                                  title :slug
+                                                                  slug :summary
+                                                                  summary
+                                                                  :body-md body
+                                                                  :status
+                                                                  status
+                                                                  :visibility
+                                                                  visibility)
+                                                            :cells-json
+                                                            (cells->cells-json
+                                                             cells)
+                                                            :errors
+                                                            parse-errors)))
+                     (t
+                      (let ((slug-val
+                             (if (and slug (string/= slug ""))
+                                 slug
+                                 nil))
+                            (summary-val
+                             (if (and summary (string/= summary ""))
+                                 summary
+                                 nil))
+                            (published-at
+                             (when
+                                 (and (equal status "published")
+                                      (not
+                                       (equal (notebook-status existing)
+                                              "published")))
+                               (local-time:now)))
+                            (cells-plists (mapcar #'cell->jsonb-form cells)))
+                        (handler-case
+                         (progn
+                          (update-notebook! id :title title :slug slug-val
+                                            :summary summary-val :body-md body
+                                            :cells cells-plists :status
+                                            (or status "draft") :visibility
+                                            visibility :published-at
+                                            published-at)
+                          (redirect "/dashboard/notebooks"))
+                         (dbi.error:dbi-database-error (e)
+                          (html-response
+                           (recurya/web/ui/notebook-form:render :user user
+                                                                :notebook
+                                                                (list :id id
+                                                                      :title
+                                                                      title
+                                                                      :slug
+                                                                      slug
+                                                                      :summary
+                                                                      summary
+                                                                      :body-md
+                                                                      body
+                                                                      :status
+                                                                      status
+                                                                      :visibility
+                                                                      visibility)
+                                                                :cells-json
+                                                                (cells->cells-json
+                                                                 cells)
+                                                                :errors
+                                                                (list
+                                                                 (list :line
+                                                                       nil
+                                                                       :message
+                                                                       (db-save-error-message
+                                                                        e
+                                                                        "notebook")))))))))))))))))))))
 
 (defun course->plist (c)
   "Convert a course DAO into a plist for UI rendering. The :notebook-count
@@ -707,7 +746,7 @@ field is the number of notebooks attached to the course via course_notebook."
                :user user
                :course (list :title title :slug slug :summary summary
                              :status status :visibility visibility)
-               :errors '((:line nil :message "Title is required.")))))
+               :errors (list (list :line nil :message (tr :server.forms.title_required))))))
             (t
              (let ((slug-val (if (and slug (string/= slug "")) slug nil))
                    (summary-val (if (and summary (string/= summary "")) summary nil))
@@ -773,7 +812,7 @@ populated with the user's other published notebooks."
              (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (course-author-id c))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (let* ((rows (list-course-notebooks (course-id c)))
                     (course-notebooks
@@ -801,7 +840,7 @@ populated with the user's other published notebooks."
              (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (course-author-id existing))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (let* ((title (get-param params "title"))
                     (slug (get-param params "slug"))
@@ -823,7 +862,7 @@ populated with the user's other published notebooks."
                     :course (list :id id :title title :slug slug
                                   :summary summary :status status
                                   :visibility visibility)
-                    :errors '((:line nil :message "Title is required.")))))
+                    :errors (list (list :line nil :message (tr :server.forms.title_required))))))
                  (t
                   (let ((slug-val (if (and slug (string/= slug "")) slug nil))
                         (summary-val (if (and summary (string/= summary ""))
@@ -881,22 +920,22 @@ after subsequent clicks. Owner-only."
   (let ((user (get-current-user)))
     (cond
       ((null user)
-       (html-response "Unauthorized" :status 401))
+       (html-response (tr :server.errors.unauthorized) :status 401))
       (t
        (let* ((id (get-path-param params :id))
               (state-token (get-param params "state"))
               (c (and id (get-course-by-id id))))
          (cond
-           ((null c) (html-response "Not found" :status 404))
+           ((null c) (html-response (tr :server.errors.not_found) :status 404))
            ((not (equal (princ-to-string (course-author-id c))
                         (princ-to-string (getf user :id))))
-            (html-response "Forbidden" :status 403))
+            (html-response (tr :server.errors.forbidden) :status 403))
            (t
             (multiple-value-bind (new-status new-vis)
                 (%decode-state-token state-token)
               (cond
                 ((null new-status)
-                 (html-response "Bad request" :status 400))
+                 (html-response (tr :server.errors.bad_request) :status 400))
                 (t
                  (let* ((current-status (course-status c))
                         (current-vis (course-visibility c))
@@ -916,13 +955,13 @@ after subsequent clicks. Owner-only."
   "Handle GET /dashboard/courses/:id/confirm-delete - return modal fragment for deletion."
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (let* ((id (get-path-param params :id))
                (c (and id (get-course-by-id id))))
-          (cond ((null c) (html-response "Not found" :status 404))
+          (cond ((null c) (html-response (tr :server.errors.not_found) :status 404))
                 ((not (equal (princ-to-string (course-author-id c))
                              (princ-to-string (getf user :id))))
-                 (html-response "Forbidden" :status 403))
+                 (html-response (tr :server.errors.forbidden) :status 403))
                 (t
                  (html-response
                   (render-confirm-modal
@@ -945,7 +984,7 @@ For HTMX requests returns an empty OOB row swap; otherwise redirects."
                  (html-response (recurya/web/ui/errors:not-found) :status 404))
                 ((not (equal (princ-to-string (course-author-id c))
                              (princ-to-string (getf user :id))))
-                 (html-response "Forbidden" :status 403))
+                 (html-response (tr :server.errors.forbidden) :status 403))
                 (t
                  (delete-course! id)
                  (if (htmx-request-p)
@@ -964,14 +1003,14 @@ HTMX outerHTML swap. Duplicate attachments are caught and reported as a
 flash message in the rendered list."
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (let* ((id (get-path-param params :id))
                (c (and id (get-course-by-id id))))
-          (cond ((null c) (html-response "Not found" :status 404))
+          (cond ((null c) (html-response (tr :server.errors.not_found) :status 404))
                 ((not
                   (equal (princ-to-string (course-author-id c))
                          (princ-to-string (getf user :id))))
-                 (html-response "Forbidden" :status 403))
+                 (html-response (tr :server.errors.forbidden) :status 403))
                 (t
                  (let* ((nb-id-raw (get-param params "notebook_id"))
                         (nb-id (and nb-id-raw (string/= nb-id-raw "")
@@ -981,17 +1020,17 @@ flash message in the rendered list."
                         (message nil))
                    (cond
                      ((null nb)
-                      (setf message "Selected notebook does not exist."))
+                      (setf message (tr :server.errors.notebook_not_exist)))
                      ((not (equal (princ-to-string
                                    (notebook-author-id nb))
                                   (princ-to-string (getf user :id))))
-                      (setf message "You can only add your own notebooks."))
+                      (setf message (tr :server.errors.only_own_notebooks)))
                      (t
                       (handler-case
                           (add-notebook-to-course! course-id nb-id)
                         (error ()
                           (setf message
-                                "This notebook is already attached.")))))
+                                (tr :server.errors.notebook_already_attached))))))
                    (let* ((rows (list-course-notebooks course-id))
                           (course-notebooks
                            (mapcar #'course-notebook-row->plist rows))
@@ -1041,19 +1080,19 @@ Owner only. Re-renders #course-notebooks-list as an HTMX outerHTML
 fragment. No-op when already at position 0."
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (let* ((id (get-path-param params :id))
                (c (and id (get-course-by-id id))))
           (cond
-            ((null c) (html-response "Not found" :status 404))
+            ((null c) (html-response (tr :server.errors.not_found) :status 404))
             ((not (equal (princ-to-string (course-author-id c))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (let* ((cn-id-raw (get-path-param params :cn-id))
                     (row (%lookup-course-notebook-row (course-id c) cn-id-raw)))
                (cond
-                 ((null row) (html-response "Not found" :status 404))
+                 ((null row) (html-response (tr :server.errors.not_found) :status 404))
                  (t
                   (move-notebook-up! (course-notebook-id row))
                   (%render-course-notebook-list-fragment
@@ -1067,19 +1106,19 @@ Owner only. Re-renders #course-notebooks-list as an HTMX outerHTML
 fragment. No-op when already at the last position."
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (let* ((id (get-path-param params :id))
                (c (and id (get-course-by-id id))))
           (cond
-            ((null c) (html-response "Not found" :status 404))
+            ((null c) (html-response (tr :server.errors.not_found) :status 404))
             ((not (equal (princ-to-string (course-author-id c))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (let* ((cn-id-raw (get-path-param params :cn-id))
                     (row (%lookup-course-notebook-row (course-id c) cn-id-raw)))
                (cond
-                 ((null row) (html-response "Not found" :status 404))
+                 ((null row) (html-response (tr :server.errors.not_found) :status 404))
                  (t
                   (move-notebook-down! (course-notebook-id row))
                   (%render-course-notebook-list-fragment
@@ -1095,19 +1134,19 @@ just the single row) for consistency with up/down — keeping the eligible
 notebooks dropdown in sync."
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (let* ((id (get-path-param params :id))
                (c (and id (get-course-by-id id))))
           (cond
-            ((null c) (html-response "Not found" :status 404))
+            ((null c) (html-response (tr :server.errors.not_found) :status 404))
             ((not (equal (princ-to-string (course-author-id c))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (let* ((cn-id-raw (get-path-param params :cn-id))
                     (row (%lookup-course-notebook-row (course-id c) cn-id-raw)))
                (cond
-                 ((null row) (html-response "Not found" :status 404))
+                 ((null row) (html-response (tr :server.errors.not_found) :status 404))
                  (t
                   (remove-notebook-from-course!
                    (course-id c)
@@ -1126,22 +1165,22 @@ functional after subsequent clicks. Owner-only."
   (let ((user (get-current-user)))
     (cond
       ((null user)
-       (html-response "Unauthorized" :status 401))
+       (html-response (tr :server.errors.unauthorized) :status 401))
       (t
        (let* ((id (get-path-param params :id))
               (state-token (get-param params "state"))
               (nb (and id (get-notebook-by-id id))))
          (cond
-           ((null nb) (html-response "Not found" :status 404))
+           ((null nb) (html-response (tr :server.errors.not_found) :status 404))
            ((not (equal (princ-to-string (notebook-author-id nb))
                         (princ-to-string (getf user :id))))
-            (html-response "Forbidden" :status 403))
+            (html-response (tr :server.errors.forbidden) :status 403))
            (t
             (multiple-value-bind (new-status new-vis)
                 (%decode-state-token state-token)
               (cond
                 ((null new-status)
-                 (html-response "Bad request" :status 400))
+                 (html-response (tr :server.errors.bad_request) :status 400))
                 (t
                  (let* ((current-status (notebook-status nb))
                         (current-vis (notebook-visibility nb))
@@ -1161,14 +1200,14 @@ functional after subsequent clicks. Owner-only."
   "Handle GET /dashboard/notebooks/:id/confirm-delete - return modal fragment for deletion."
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (let* ((id (get-path-param params :id))
                (nb (and id (get-notebook-by-id id))))
           (cond
-            ((null nb) (html-response "Not found" :status 404))
+            ((null nb) (html-response (tr :server.errors.not_found) :status 404))
             ((not (equal (princ-to-string (notebook-author-id nb))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (html-response
               (render-confirm-modal
@@ -1192,7 +1231,7 @@ For HTMX requests returns an empty OOB row swap; otherwise redirects."
              (html-response (recurya/web/ui/errors:not-found) :status 404))
             ((not (equal (princ-to-string (notebook-author-id nb))
                          (princ-to-string (getf user :id))))
-             (html-response "Forbidden" :status 403))
+             (html-response (tr :server.errors.forbidden) :status 403))
             (t
              (delete-notebook! id)
              (if (htmx-request-p)
@@ -1534,9 +1573,9 @@ viewer cannot view it; 400 on bad index/cell-kind."
   (let* ((user (get-current-user))
          (uid (and user (getf user :id))))
     (cond
-      ((null nb-row) (html-response "Notebook not found" :status 404))
+      ((null nb-row) (html-response (tr :server.errors.notebook_not_found) :status 404))
       ((not (recurya/utils/access-control:can-view-notebook-p user nb-row))
-       (html-response "Notebook not found" :status 404))
+       (html-response (tr :server.errors.notebook_not_found) :status 404))
       (t
        (let* ((notebook (notebook-row->notebook-struct nb-row))
               (cells (notebook-cells notebook))
@@ -1549,12 +1588,12 @@ viewer cannot view it; 400 on bad index/cell-kind."
                                 when (and (stringp k) (string= k "codes[]"))
                                 collect v)))
          (cond
-           ((null index) (html-response "Invalid index" :status 400))
+           ((null index) (html-response (tr :server.errors.invalid_index) :status 400))
            ((or (< index 0) (>= index (length cells)))
-            (html-response "Index out of range" :status 400))
+            (html-response (tr :server.errors.index_out_of_range) :status 400))
            ((member (cell-kind (nth index cells))
                     '(:prose :code-solution))
-            (html-response "Cannot run this cell" :status 400))
+            (html-response (tr :server.errors.cannot_run_cell) :status 400))
            (t
             (let* ((nb-uuid (princ-to-string (notebook-id nb-row)))
                    (result (run-cell notebook index codes-list))
@@ -1683,7 +1722,7 @@ where the confirm response is swapped. CONFIRM-LABEL defaults to \"Delete\"."
   (declare (ignore params))
   (let ((user (get-current-user)))
     (if (null user)
-        (html-response "Unauthorized" :status 401)
+        (html-response (tr :server.errors.unauthorized) :status 401)
         (html-response
          (render-confirm-modal
           :title "Delete your account?"
@@ -1758,13 +1797,13 @@ session plist, and redirects to /."
          (redirect "/login"))
         ((not (recurya/utils/handle:valid-handle-p handle))
          (render-error
-          "Invalid handle. Use 3-64 lowercase letters, digits or hyphens, and start/end with a letter or digit."))
+          (tr :onboarding.handle.error.invalid)))
         ((recurya/utils/handle:reserved-handle-p handle)
          (render-error
-          "That handle is reserved. Please choose a different one."))
+          (tr :onboarding.handle.error.reserved)))
         ((mito:find-dao 'recurya/models/users:users :handle handle)
          (render-error
-          "That handle is already taken. Please choose a different one."
+          (tr :onboarding.handle.error.taken)
           :status 409))
         (t
          (let* ((user-id (getf session-user :id))

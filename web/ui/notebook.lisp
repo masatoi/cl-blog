@@ -27,6 +27,8 @@
   (:import-from #:recurya/game/novel/eval #:eval-scene)
   (:import-from #:recurya/game/novel/interpreter #:interpret-directives)
   (:import-from #:recurya/web/ui/novel #:render-player)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render #:render-cell-result #:render-solution-oob-reveals))
 
 (in-package #:recurya/web/ui/notebook)
@@ -233,7 +235,7 @@ the matching entry as 'sb-link active'."
             (when exercise-p
           (:div :class "cell__desc"
            (:raw (render-cell-prose-html (or (cell-description cell) "")))))
-            (when passed-p (:span :class "badge-pass" "✓ done"))
+            (when passed-p (:span :class "badge-pass" (tr :notebook.cell.done_badge)))
             (:raw
              (editor-textarea "codes[]" initial-code :id-suffix id-suffix
                               :textarea-class "notebook-code"))
@@ -242,10 +244,10 @@ the matching entry as 'sb-link active'."
                      :hx-target (format nil "#~A" result-id)
                      :hx-include ".notebook-code, #csrf-form"
                      :hx-swap "innerHTML"
-                     "Run")
+                     (tr :common.buttons.run))
             (:button :type "button" :class "btn-reset"
-                     :title "セルを初期コードに戻す"
-                     "リセット")
+                     :title (tr :notebook.cell.reset_title)
+                     (tr :notebook.cell.reset))
             (:div :class "result-panel" :id result-id)))))
 
 (defun render-scene-cell (cell index)
@@ -261,7 +263,7 @@ inline so a bad scene never breaks the page."
     (error (e)
       (with-html
         (:div :class "cell cell--prose"
-          (:p "（このシーンを表示できません: " (princ-to-string e) "）"))))))
+          (:p (tr :notebook.cell.scene_error_prefix) (princ-to-string e) (tr :notebook.cell.scene_error_suffix)))))))
 
 (defun preceding-exercise-passed-p (index)
   "True when the nearest :code-exercise cell before INDEX in *cells* has been
@@ -289,7 +291,7 @@ by RENDER-SOLUTION-CELL (initial page render) and RENDER-SOLUTION-OOB-REVEALS
       (:div :id container-id :class "cell cell--solution"
             :hx-swap-oob (when oob "true")
         (:details :class "solution-details"
-          (:summary "解答を見る")
+          (:summary (tr :notebook.cell.view_solution))
           (:raw (editor-readonly (or (cell-body cell) "")))))
       (unless oob
         (:input :type "hidden" :class "notebook-code" :name "codes[]"
@@ -309,7 +311,7 @@ alignment. The container id cell-<index>-solution is the HTMX OOB target."
           (with-html
             (:div :id container-id :class "cell cell--solution"
               (:div :class "solution-locked"
-                "🔒 直前の演習に正解すると解答が表示されます"))
+                (tr :notebook.cell.solution_locked)))
             (:input :type "hidden" :class "notebook-code" :name "codes[]"
                     :value ""))))))
 
@@ -420,11 +422,11 @@ notebooks within the same course."
                              (when course-prev-url
                                (:a :href course-prev-url
                                    :style "color: #38bdf8; text-decoration: none; margin-right: 1rem;"
-                                   "← Previous"))
+                                   (tr :common.pagination.prev)))
                              (when course-next-url
                                (:a :href course-next-url
                                    :style "color: #38bdf8; text-decoration: none;"
-                                   "Next →"))))
+                                   (tr :common.pagination.next)))))
                      (:h1 (notebook-title notebook))
                      (:p :class "summary" (notebook-summary notebook))
                      (loop for cell in (notebook-cells notebook)
@@ -435,17 +437,17 @@ notebooks within the same course."
 (defun render-test-results (results)
   (spinneret:with-html
     (:ul :class "test-list"
-         (dolist (tr results)
+         (dolist (res results)
            (:li :class "result-line"
-                (if (getf tr :passed)
+                (if (getf res :passed)
                     (:span :class "result-ok" "✓")
                     (:span :class "result-fail" "✗"))
                 " "
-                (:code (getf tr :input))
-                " — expected "
-                (:code (getf tr :expected))
-                " got "
-                (:code (or (getf tr :actual) "<error>")))))))
+                (:code (getf res :input))
+                (tr :notebook.cell.expected)
+                (:code (getf res :expected))
+                (tr :notebook.cell.got)
+                (:code (or (getf res :actual) (tr :notebook.cell.error_placeholder))))))))
 
 (defun render-cell-result (result)
   "Render one cell's result as an HTMX fragment (no html/head wrappers).
@@ -464,29 +466,29 @@ metrics, mirroring the WardLisp playground."
            (:div :class "result-ok"
                  (:code "=> " (notebook-cell-result-value result))))
           (:pass
-           (:div :class "result-ok" (:span :class "badge-pass" "PASS") " 全テスト合格")
+           (:div :class "result-ok" (:span :class "badge-pass" (tr :notebook.cell.pass_badge)) (tr :notebook.cell.all_tests_passed))
            (render-test-results (notebook-cell-result-test-results result)))
           (:fail
-           (:div :class "result-fail" "一部のテストが失敗しました")
+           (:div :class "result-fail" (tr :notebook.cell.some_tests_failed))
            (render-test-results (notebook-cell-result-test-results result)))
           (:error
            (let ((origin (notebook-cell-result-error-cell-id result)))
              (:pre :class "result-error"
                    (if origin
-                       (format nil "セル「~A」でエラー: ~A"
+                       (tr :notebook.cell.error_in_cell
                                (%cell-id->string origin)
                                (notebook-cell-result-error-message result))
                        (notebook-cell-result-error-message result)))
              (:div :class "error-hint"
                    (if origin
-                       "💡 上のセル「リセット」ボタンで初期コードに戻せます。"
-                       "💡 上のセルを編集している場合、「リセット」ボタンで初期コードに戻せます。")))))))
+                       (tr :notebook.cell.reset_hint_origin)
+                       (tr :notebook.cell.reset_hint_edited))))))))
     (let ((out (notebook-cell-result-print-output result)))
       (when (and out (plusp (length out))) (:pre :class "print-output" out)))
     (let ((m (notebook-cell-result-metrics result)))
       (when m
         (:div :class "metrics"
-              (format nil "Fuel: ~D | Cons: ~D | Depth: ~D"
+              (tr :notebook.cell.metrics
                       (or (getf m :steps-used) 0)
                       (or (getf m :cons-allocated) 0)
                       (or (getf m :max-depth-reached) 0)))))))

@@ -12,6 +12,8 @@
   (:import-from #:recurya/web/ui/reference)
   (:import-from #:recurya/web/ui/playground)
   (:import-from #:wardlisp #:evaluate #:print-value)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:import-from #:recurya/web/routes
                 #:sicp-learn-redirect-handler
                 #:sicp-notebook-redirect-handler
@@ -50,7 +52,7 @@
          (puzzle (get-puzzle id)))
     (if puzzle
         (html-response (recurya/web/ui/puzzle:render puzzle))
-        (html-response "<h1>Puzzle not found</h1>" :status 404))))
+        (html-response (tr :wardlisp.puzzle.not_found_page) :status 404))))
 
 (defun puzzle-run-handler (params)
   "POST /wardlisp/puzzle/:id/run - Execute and grade user code (HTMX fragment)."
@@ -78,7 +80,7 @@
                 :eval-output eval-output
                 :eval-error eval-error
                 :print-output print-output)))))
-        (html-response "<div class=\"error\">Puzzle not found</div>"
+        (html-response (tr :wardlisp.puzzle.not_found_fragment)
                        :status 404))))
 
 (defun arena-page-handler (params)

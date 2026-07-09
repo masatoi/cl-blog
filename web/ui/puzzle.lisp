@@ -32,6 +32,8 @@
                 #:editor-textarea)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-form-block)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render
            #:render-result))
 
@@ -90,7 +92,7 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
       (:html
        (:head (:meta :charset "utf-8")
         (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-        (:title (format nil "~A - WardLisp" (puzzle-title puzzle)))
+        (:title (tr :wardlisp.puzzle.page_title (puzzle-title puzzle)))
         (:script :src "https://unpkg.com/htmx.org@2.0.4"
          :integrity "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
          :crossorigin "anonymous")
@@ -100,7 +102,7 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
         (:raw (or (csrf-form-block) ""))
         (:main
          (:div :class "breadcrumb"
-          (:a :href "/wardlisp/" "Puzzles") " / " (puzzle-title puzzle))
+          (:a :href "/wardlisp/" (tr :wardlisp.puzzle.breadcrumb_puzzles)) " / " (puzzle-title puzzle))
          (:h1 (puzzle-title puzzle))
          (:p :class "puzzle-desc" (puzzle-description puzzle))
          (:div :class "signature" (puzzle-signature puzzle))
@@ -108,7 +110,7 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
            (:div :class "hint" (puzzle-hint puzzle)))
          ;; Test cases preview
          (:div :class "test-cases"
-          (:h3 "Test Cases")
+          (:h3 (tr :wardlisp.puzzle.test_cases_heading))
           (dolist (tc (puzzle-test-cases puzzle))
             (:div :class "test-case"
              (format nil "~A  ; ~A" (test-case-input tc) (test-case-description tc)))))
@@ -116,13 +118,13 @@ h1 { font-size: 1.5rem; letter-spacing: -0.02em; color: #f8fafc; }
          (:form :class "editor-area"
           (:raw (editor-textarea "code"
                                  (format nil "; ~A~%~%" (puzzle-signature puzzle))
-                                 :placeholder "Write your solution here..."))
+                                 :placeholder (tr :wardlisp.puzzle.code_placeholder)))
           (:button :class "btn-run" :type "button"
                    :hx-post (format nil "/wardlisp/puzzle/~A/run" id)
                    :hx-include "closest form, #csrf-form"
                    :hx-target "#result-panel"
                    :hx-swap "innerHTML"
-                   "Run"))
+                   (tr :common.buttons.run)))
          ;; Result area (populated by HTMX)
          (:div :id "result-panel")))))))
 
@@ -138,13 +140,13 @@ PRINT-OUTPUT is the stdout from (print ...) calls during evaluation."
        ;; Show print output if any
        (when (and print-output (plusp (length print-output)))
          (:div :class "eval-output"
-          (:div :class "eval-output__label" "Print Output")
+          (:div :class "eval-output__label" (tr :wardlisp.puzzle.print_output_label))
           (:div :class "eval-output__value"
            :style "color: #fbbf24;" print-output)))
        ;; Show standalone evaluation result
        (when (or eval-output eval-error)
          (:div :class "eval-output"
-          (:div :class "eval-output__label" "Result")
+          (:div :class "eval-output__label" (tr :wardlisp.puzzle.result_label))
           (if eval-error
               (:div :class "result-error" eval-error)
               (:div :class "eval-output__value" eval-output))))
@@ -153,7 +155,7 @@ PRINT-OUTPUT is the stdout from (print ...) calls during evaluation."
         (if (and (= passed total) (zerop (puzzle-result-failed result)))
             "result-header result-pass"
             "result-header result-fail")
-        (format nil "~D / ~D passed" passed total))
+        (tr :wardlisp.puzzle.passed_count passed total))
        ;; Individual test rows (always show)
        (dolist (tr (puzzle-result-test-results result))
          (:div :class "test-row"
@@ -167,15 +169,15 @@ PRINT-OUTPUT is the stdout from (print ...) calls during evaluation."
           (unless (test-result-passed-p tr)
             (if (test-result-error tr)
                 (:span :class "test-detail"
-                 (format nil " error: ~A" (test-result-error tr)))
+                 (tr :wardlisp.puzzle.test_error (test-result-error tr)))
                 (:span :class "test-detail"
-                 (format nil " expected ~A, got ~A"
-                         (if (stringp (test-result-expected tr))
-                             (test-result-expected tr)
-                             (print-value (test-result-expected tr)))
-                         (print-value (test-result-actual tr))))))))
+                 (tr :wardlisp.puzzle.test_expected_got
+                     (if (stringp (test-result-expected tr))
+                         (test-result-expected tr)
+                         (print-value (test-result-expected tr)))
+                     (print-value (test-result-actual tr))))))))
        (:div :class "metrics"
-        (format nil "Fuel: ~D | Cons: ~D | Depth: ~D"
-                (puzzle-result-fuel-used result)
-                (puzzle-result-cons-used result)
-                (puzzle-result-depth-reached result)))))))
+        (tr :wardlisp.puzzle.metrics
+            (puzzle-result-fuel-used result)
+            (puzzle-result-cons-used result)
+            (puzzle-result-depth-reached result)))))))

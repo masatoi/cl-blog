@@ -21,6 +21,8 @@
                 #:editor-textarea)
   (:import-from #:recurya/web/ui/csrf
                 #:csrf-form-block)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render
            #:render-result))
 
@@ -124,7 +126,7 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
     (:html
      (:head (:meta :charset "utf-8")
       (:meta :name "viewport" :content "width=device-width, initial-scale=1")
-      (:title "WardLisp Arena")
+      (:title (tr :wardlisp.arena.page_title))
       (:script :src "https://unpkg.com/htmx.org@2.0.4"
        :integrity "sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"
        :crossorigin "anonymous")
@@ -134,12 +136,12 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
       (:raw (or (csrf-form-block) ""))
       (:main
        (:div :class "breadcrumb"
-        (:a :href "/wardlisp/" "WardLisp") " / Arena")
-       (:h1 "Bot Arena")
+        (:a :href "/wardlisp/" "WardLisp") (tr :wardlisp.arena.breadcrumb_arena))
+       (:h1 (tr :wardlisp.arena.heading))
        (:p :class "arena-desc"
-        "Write a (decide-action state) function that returns an action symbol: "
-        "'up, 'down, 'left, 'right, 'wait, or 'pickup. "
-        "Compete against a greedy enemy bot to collect resources on a 7x7 grid over 20 turns.")
+        (tr :wardlisp.arena.desc_intro)
+        (tr :wardlisp.arena.desc_actions)
+        (tr :wardlisp.arena.desc_compete))
        (:form :class "editor-area"
         (:raw (editor-textarea "code"
                                "(define (decide-action state)
@@ -147,13 +149,13 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
   ;   my-pos, enemy-pos, my-score, enemy-score, turn, max-turns
   ; Return: 'up, 'down, 'left, 'right, 'wait, or 'pickup
   'right)"
-                               :placeholder "Write your decide-action function..."))
+                               :placeholder (tr :wardlisp.arena.editor_placeholder)))
         (:button :class "btn-run" :type "button"
                  :hx-post "/wardlisp/arena/run"
                  :hx-include "closest form, #csrf-form"
                  :hx-target "#arena-panel"
                  :hx-swap "innerHTML"
-                 "Run Simulation"))
+                 (tr :wardlisp.arena.run_button)))
        (:div :id "arena-panel"))))))
 
 (defun render-result (result)
@@ -167,17 +169,17 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
        ;; Scores
        (:div :class "scores"
         (:span :class "score-bot"
-               (format nil "Bot: ~D" (arena-result-bot-score result)))
+               (tr :wardlisp.arena.score_bot (arena-result-bot-score result)))
         (:span :class "score-enemy"
-               (format nil "Enemy: ~D" (arena-result-enemy-score result))))
+               (tr :wardlisp.arena.score_enemy (arena-result-enemy-score result))))
        ;; Turn controls
        (:div :class "turn-controls"
-        (:button :onclick "prevFrame()" (:raw "&laquo; Prev"))
+        (:button :onclick "prevFrame()" (:raw (tr :wardlisp.arena.prev_button)))
         (:button :onclick "resetFrames()" (:raw "&#x23EE;"))
         (:button :onclick "playFrames()" :id "btn-play" (:raw "&#x25B6;"))
         (:button :onclick "stopFrames()" (:raw "&#x25A0;"))
-        (:span :class "turn-info" :id "turn-display" "Turn 0")
-        (:button :onclick "nextFrame()" (:raw "Next &raquo;")))
+        (:span :class "turn-info" :id "turn-display" (tr :wardlisp.arena.turn_display))
+        (:button :onclick "nextFrame()" (:raw (tr :wardlisp.arena.next_button))))
        ;; Frames (hidden, toggled by JS)
        (loop for frame in frames
              for i from 0
@@ -187,16 +189,16 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
                  (let ((output (arena-state-output frame)))
                    (when output
                      (:div :class "frame-output"
-                      (:div :class "frame-output__label" "Output")
+                      (:div :class "frame-output__label" (tr :wardlisp.arena.output_label))
                       (:div :class "frame-output__value" output))))
                  (:div :class "state-display"
-                  (:div :class "state-label" "state")
+                  (:div :class "state-label" (tr :wardlisp.arena.state_label))
                   (state->wardlisp-source frame))))
        ;; Metrics
        (:div :class "metrics"
-        (format nil "Total fuel: ~D | Frames: ~D"
-                (arena-result-fuel-used result)
-                (length frames)))
+        (tr :wardlisp.arena.metrics
+            (arena-result-fuel-used result)
+            (length frames)))
        ;; Minimal JS for frame stepping
        (:script (:raw
         (format nil "

@@ -4,6 +4,8 @@
   (:use #:cl)
   (:import-from #:spinneret #:with-html-string)
   (:import-from #:recurya/web/ui/layout #:page-shell)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:export #:render))
 
 (in-package #:recurya/web/ui/course)
@@ -67,7 +69,7 @@ Empty alist is treated as no progress."
          (status (getf course :status))
          (draft-p (string= status "draft")))
     (page-shell
-     :title (or title "Course")
+     :title (or title (tr :course.page_title_fallback))
      :styles *styles*
      :user user
      :head-extras (when noindex
@@ -76,15 +78,15 @@ Empty alist is treated as no progress."
      (with-html-string
        (when draft-p
          (:div :class "draft-banner"
-               "Draft preview — only visible to the course owner."))
+               (tr :course.draft_banner)))
        (:div :class "course-header"
-             (:h1 (or title "Untitled course"))
+             (:h1 (or title (tr :course.untitled)))
              (when (and summary (string/= summary ""))
                (:p :class "summary" summary)))
        (cond
          ((null notebooks)
           (:p :class "empty"
-              "No notebooks attached to this course yet."))
+              (tr :course.empty_notebooks)))
          (t
           (dolist (nb notebooks)
             (let* ((slug (getf nb :slug))
@@ -103,8 +105,8 @@ Empty alist is treated as no progress."
               (:div :class "nb-card"
                     (when position
                       (:div :class "nb-card__index"
-                            (format nil "Notebook ~A"
-                                    (1+ position))))
+                            (tr :course.notebook_index
+                                (1+ position))))
                     (:h2 :class "nb-card__title"
                          (if href
                              (:a :href href nb-title)
@@ -112,7 +114,7 @@ Empty alist is treated as no progress."
                     (when (and nb-summary (string/= nb-summary ""))
                       (:p :class "nb-card__summary" nb-summary))
                     (:div :class "nb-card__progress"
-                          (format nil "~A passed" passed))
+                          (tr :course.passed_count passed))
                     (when href
                       (:a :class "nb-card__open"
-                          :href href "Open notebook →")))))))))))
+                          :href href (tr :course.open_notebook))))))))))))

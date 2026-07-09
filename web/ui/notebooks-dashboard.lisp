@@ -3,6 +3,8 @@
 (defpackage #:recurya/web/ui/notebooks-dashboard
   (:use #:cl)
   (:import-from #:spinneret #:with-html-string)
+  (:import-from #:recurya/web/i18n/core
+                #:tr)
   (:import-from #:recurya/web/ui/layout
                 #:common-styles
                 #:format-timestamp
@@ -78,10 +80,10 @@ referencing the pill by that id continues to work."
                 ((equal visibility-lower "unlisted") "status-unlisted")
                 (t "status-private")))
          (label
-          (cond ((equal status-lower "draft") "Draft")
-                ((equal visibility-lower "public") "Public")
-                ((equal visibility-lower "unlisted") "Unlisted")
-                (t "Private")))
+          (cond ((equal status-lower "draft") (tr :common.visibility.draft))
+                ((equal visibility-lower "public") (tr :common.visibility.public))
+                ((equal visibility-lower "unlisted") (tr :common.visibility.unlisted))
+                (t (tr :common.visibility.private))))
          (dropdown-id (format nil "state-dropdown-~A" id))
          (dropdown-target (format nil "#state-dropdown-~A" id))
          (state-url (format nil "/dashboard/notebooks/~A/state" id)))
@@ -97,22 +99,22 @@ referencing the pill by that id continues to work."
             :hx-vals "{\"state\":\"draft\"}"
             :hx-target dropdown-target :hx-swap "outerHTML"
             :hx-include "#csrf-form"
-            "Draft")
+            (tr :common.visibility.draft))
           (:button :type "button" :hx-post state-url
             :hx-vals "{\"state\":\"published-private\"}"
             :hx-target dropdown-target :hx-swap "outerHTML"
             :hx-include "#csrf-form"
-            "Private")
+            (tr :common.visibility.private))
           (:button :type "button" :hx-post state-url
             :hx-vals "{\"state\":\"published-unlisted\"}"
             :hx-target dropdown-target :hx-swap "outerHTML"
             :hx-include "#csrf-form"
-            "Unlisted")
+            (tr :common.visibility.unlisted))
           (:button :type "button" :hx-post state-url
             :hx-vals "{\"state\":\"published-public\"}"
             :hx-target dropdown-target :hx-swap "outerHTML"
             :hx-include "#csrf-form"
-            "Public"))))))
+            (tr :common.visibility.public)))))))
 
 (defun render (&key user notebooks pagination message errors)
   "Render the admin notebook list page as an HTML string.
@@ -123,17 +125,17 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
         (user-handle (getf user :handle))
         (styles (concatenate 'string (common-styles) *page-styles*)))
     (page-shell
-     :title "recurya - My Notebooks"
+     :title (tr :notebooks_dashboard.page_title)
      :styles styles
      :user user
      :body-content
      (with-html-string
        (:div :class "card"
-        (:h1 "My Notebooks")
-        (:p :class "muted" "Manage your user-authored notebooks.")
+        (:h1 (tr :notebooks_dashboard.heading))
+        (:p :class "muted" (tr :notebooks_dashboard.subtitle))
         (:div :class "actions-bar"
          (:a :class "new-nb-btn" :href "/dashboard/notebooks/new"
-          "+ New Notebook"))
+          (tr :notebooks_dashboard.new_button)))
         (:div :id "flash-area"
          (when message (:div :class "flash-message success" message))
          (when errors
@@ -143,8 +145,11 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
             (progn
              (:table
               (:thead
-               (:tr (:th "Title") (:th "Status") (:th "Published")
-                (:th "Created") (:th "Actions")))
+               (:tr (:th (tr :notebooks_dashboard.table.title))
+                (:th (tr :notebooks_dashboard.table.status))
+                (:th (tr :notebooks_dashboard.table.published))
+                (:th (tr :notebooks_dashboard.table.created))
+                (:th (tr :notebooks_dashboard.table.actions))))
               (:tbody :id "notebooks-body"
                (dolist (nb notebooks)
                  (let ((id (getf nb :id))
@@ -172,11 +177,11 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
                      (or (format-timestamp created-at user-timezone) "—"))
                     (:td
                      (:div :class "actions-cell"
-                      (:a :class "icon-action" :title "Edit" :aria-label "Edit"
+                      (:a :class "icon-action" :title (tr :common.actions.edit) :aria-label (tr :common.actions.edit)
                        :href (format nil "/dashboard/notebooks/~A/edit" id)
                        (:raw (icon "pen-to-square")))
-                      (:button :class "icon-action danger" :title "Delete"
-                       :aria-label "Delete" :hx-get
+                      (:button :class "icon-action danger" :title (tr :common.actions.delete)
+                       :aria-label (tr :common.actions.delete) :hx-get
                        (format nil "/dashboard/notebooks/~A/confirm-delete"
                                id)
                        :hx-target "#modal-container" :hx-swap "innerHTML"
@@ -185,7 +190,7 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
                                  slug user-handle)
                         (:button :type "button"
                          :class "icon-action copy-link-btn"
-                         :title "Copy link" :aria-label "Copy link"
+                         :title (tr :common.actions.copy_link) :aria-label (tr :common.actions.copy_link)
                          :data-share-url (format nil "/@~A/~A" user-handle slug)
                          :onclick "navigator.clipboard.writeText(location.origin+this.dataset.shareUrl)"
                          (:raw (icon "link")))))))))))
@@ -202,13 +207,17 @@ NOTEBOOKS is a list of plists with :id :title :slug :status
                   (:nav :class "pagination-nav"
                    (if has-prev
                        (:a :class "pagination-btn" :href prev-url
-                        (:raw (icon "arrow-left")) " Previous")
+                        (:raw (icon "arrow-left"))
+                        (tr :notebooks_dashboard.pagination.previous))
                        (:span :class "pagination-btn disabled"
-                        (:raw (icon "arrow-left")) " Previous"))
+                        (:raw (icon "arrow-left"))
+                        (tr :notebooks_dashboard.pagination.previous)))
                    (if has-next
                        (:a :class "pagination-btn" :href next-url
-                        "Next " (:raw (icon "arrow-right")))
+                        (tr :notebooks_dashboard.pagination.next)
+                        (:raw (icon "arrow-right")))
                        (:span :class "pagination-btn disabled"
-                        "Next " (:raw (icon "arrow-right")))))))))
-            (:p :class "muted" "No notebooks yet. Create your first one!")))
+                        (tr :notebooks_dashboard.pagination.next)
+                        (:raw (icon "arrow-right")))))))))
+            (:p :class "muted" (tr :notebooks_dashboard.empty_state))))
        (:div :id "modal-container")))))
