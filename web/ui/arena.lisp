@@ -178,7 +178,9 @@ h1 { font-size: 1.5rem; color: #f8fafc; }
         (:button :onclick "resetFrames()" (:raw "&#x23EE;"))
         (:button :onclick "playFrames()" :id "btn-play" (:raw "&#x25B6;"))
         (:button :onclick "stopFrames()" (:raw "&#x25A0;"))
-        (:span :class "turn-info" :id "turn-display" (tr :wardlisp.arena.turn_display))
+        (:span :class "turn-info" :id "turn-display"
+               :data-turn-label (tr :wardlisp.arena.turn_label)
+               (tr :wardlisp.arena.turn_display))
         (:button :onclick "nextFrame()" (:raw (tr :wardlisp.arena.next_button))))
        ;; Frames (hidden, toggled by JS)
        (loop for frame in frames
@@ -210,7 +212,8 @@ function showFrame(n) {
   document.querySelectorAll('.frame').forEach(function(f) { f.classList.remove('active'); });
   var f = document.querySelector('[data-frame=\"' + n + '\"]');
   if (f) f.classList.add('active');
-  document.getElementById('turn-display').textContent = 'Turn ' + n;
+  var td = document.getElementById('turn-display');
+  td.textContent = (td.getAttribute('data-turn-label') || 'Turn ') + n;
 }
 function nextFrame() {
   if (currentFrame < totalFrames - 1) { currentFrame++; showFrame(currentFrame); }
